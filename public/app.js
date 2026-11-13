@@ -203,11 +203,12 @@ viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   counter.classList.toggle('visible', detail.visible);
 });
 function showModel(item) {
+  viewer.setAttribute('item-id', String(item.id));
+  if (item.dna && item.groupID !== 963) viewer.setAttribute('dna', item.dna);
+  else viewer.removeAttribute('dna');
   return viewer
     .configure({
       ...viewerConfig,
-      itemId: item.id,
-      dna: item.groupID === 963 ? undefined : item.dna || undefined,
       subsystems: subsystemSelections.get(item.id),
       language: locale,
       controlPanel: true,
@@ -647,6 +648,8 @@ function closeDetail(route = true) {
     suppressedClose = true;
     $('model-dialog').close();
   }
+  viewer.removeAttribute('item-id');
+  viewer.removeAttribute('dna');
   viewer.clear();
   delete viewerConfig.hangar;
   currentItem = null;
