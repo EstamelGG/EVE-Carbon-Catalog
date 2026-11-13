@@ -203,13 +203,7 @@ viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   counter.classList.toggle('visible', detail.visible);
 });
 function showModel(item) {
-  if (item.dna && item.groupID !== 963) {
-    viewer.removeAttribute('item-id');
-    viewer.setAttribute('dna', item.dna);
-  } else {
-    viewer.removeAttribute('dna');
-    viewer.setAttribute('item-id', String(item.id));
-  }
+  viewer.setAttribute('item-id', String(item.id));
   return viewer
     .configure({
       ...viewerConfig,
@@ -835,8 +829,8 @@ async function init() {
       ).catch(() => ({})),
       loadJSON('./catalog.json'),
     ]);
-    const dnaByItem = new Map(directory.flatMap(category =>
-      category.groups.flatMap(group => group.items.map(item => [item.id, item.dna]))));
+    const namesByItem = new Map(directory.flatMap(category =>
+      category.groups.flatMap(group => group.items.map(item => [item.id, item.name]))));
     data = index;
     renderFallbacks = fallbackIndex.items || {};
     const resolveAffiliation = createAffiliationResolver(identities);
@@ -855,7 +849,7 @@ async function init() {
         for (const key of ['model', 'effects', 'thumbnail', 'render', 'image']) {
           if (typeof item[key] === 'string') item[key] = resourceURL(item[key]);
         }
-        if (dnaByItem.has(item.id)) item.dna = dnaByItem.get(item.id);
+        if (namesByItem.has(item.id)) item.name = namesByItem.get(item.id);
         item.metaGroupID ??= identities.typeMetaGroups?.[item.id];
         Object.assign(item, resolveAffiliation(item));
         return item;

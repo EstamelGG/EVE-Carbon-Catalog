@@ -7,7 +7,7 @@ def collect(root):
         for group in cat['groups']:
             items=json.loads((root/group['itemsURL']).read_bytes())['items']
             groups.append(dict(id=group['id'],name=group['name'],items=[
-                {k:item.get(k) for k in ('id','name','dna')} for item in items]))
+                {k:item.get(k) for k in ('id','name')} for item in items]))
         categories.append(dict(id=cat['id'],name=cat['name'],groups=groups))
     return categories
 if __name__=='__main__':
