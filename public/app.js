@@ -203,9 +203,13 @@ viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   counter.classList.toggle('visible', detail.visible);
 });
 function showModel(item) {
-  viewer.setAttribute('item-id', String(item.id));
-  if (item.dna && item.groupID !== 963) viewer.setAttribute('dna', item.dna);
-  else viewer.removeAttribute('dna');
+  if (item.dna && item.groupID !== 963) {
+    viewer.removeAttribute('item-id');
+    viewer.setAttribute('dna', item.dna);
+  } else {
+    viewer.removeAttribute('dna');
+    viewer.setAttribute('item-id', String(item.id));
+  }
   return viewer
     .configure({
       ...viewerConfig,
