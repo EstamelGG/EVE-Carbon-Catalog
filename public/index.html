@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101214" />
+    <meta
+      name="description"
+      content="EVE Model Viewer 2.0: Browse the item catalog, ship renders and interactive 3D models."
+    />
+    <title>EVE Model Viewer 2.0</title>
+    <link rel="icon" href="./favicon.ico?v=2" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=2" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="./mark.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=2" />
+    <link rel="stylesheet" href="./github-assets/fonts/fonts.css?v=metrics-v3" />
+    <link rel="stylesheet" href="./styles.css?v=performance-v1" />
+    <script type="module" src="./app.js?v=hangar-performance-v2"></script>
+  </head>
+  <body>
+    <svg class="icon-defs" aria-hidden="true">
+      <defs>
+        <symbol id="i-grid" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m16 16 5 5" />
+        </symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></symbol>
+        <symbol id="i-cube" viewBox="0 0 24 24">
+          <path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10M7.5 4.5l9 5v5" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></symbol>
+        <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 7M4 3v7h7" /></symbol>
+        <symbol id="i-expand" viewBox="0 0 24 24">
+          <path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" />
+        </symbol>
+        <symbol id="i-ship" viewBox="0 0 24 24">
+          <path d="m12 2 3 9 6 7-7-2-2 6-2-6-7 2 6-7z" />
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></symbol>
+        <symbol id="i-info" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v6M12 7h.01" />
+        </symbol>
+      </defs>
+    </svg>
+    <header class="topbar">
+      <button
+        class="icon-button mobile-menu"
+        id="menu-toggle"
+        aria-label="Open catalog"
+        data-i18n-aria-label="openCatalog"
+        aria-expanded="false"
+      >
+        <svg><use href="#i-menu" /></svg>
+      </button>
+      <div class="brand-lockup">
+        <a
+          href="#group=-1"
+          class="brand"
+          aria-label="EVE Model Viewer 2.0 home"
+          data-i18n-aria-label="home"
+          ><img src="./mark.svg" alt="" width="30" height="30" /><span
+            >EVE Model Viewer <span class="app-version">2.0</span></span
+          ></a
+        >
+        <span class="developer-credit"
+          ><span data-i18n="developer">Developed by</span> <strong>EstamelGG</strong></span
+        >
+      </div>
+      <nav class="header-actions" aria-label="About and links" data-i18n-aria-label="aboutLinks">
+        <a class="header-button" href="./viewer-guide.html"
+          ><svg aria-hidden="true"><use href="#i-cube" /></svg
+          ><span data-i18n="viewerGuide">Component guide</span></a
+        >
+        <button id="open-about" class="header-button" aria-haspopup="dialog">
+          <svg aria-hidden="true"><use href="#i-info" /></svg><span data-i18n="about">About</span>
+        </button>
+        <a
+          class="header-button"
+          href="https://github.com/EstamelGG/EVE_Model_Gallery_2"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub website repository (new tab)"
+          data-i18n-aria-label="webRepository"
+          ><img
+            class="github-mark"
+            src="./icons/github-invertocat-white.svg"
+            alt=""
+            width="98"
+            height="96"
+          /><span>GitHub</span></a
+        >
+        <select
+          class="language-select"
+          data-language
+          data-i18n-aria-label="language"
+          aria-label="Language"
+        >
+          <option value="auto" data-i18n="languageAuto" selected>Automatic</option>
+          <option value="zh-CN" lang="en">Chinese</option>
+          <option value="en" lang="en">English</option>
+        </select>
+      </nav>
+    </header>
+    <dialog id="about-dialog" aria-labelledby="about-title">
+      <div class="dialog-top">
+        <span id="about-title" data-i18n="about">About</span
+        ><button
+          id="close-about"
+          class="icon-button"
+          aria-label="Close about"
+          data-i18n-aria-label="closeAbout"
+        >
+          <svg aria-hidden="true"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <div class="about-content">
+        <div class="about-brand">
+          <img src="./mark.svg" alt="" width="48" height="48" />
+          <div>
+            <h2>EVE Model Viewer <span class="app-version">2.0</span></h2>
+            <p><span data-i18n="developer">Developed by</span> · <strong>EstamelGG</strong></p>
+          </div>
+        </div>
+        <dl class="about-release">
+          <dt data-i18n="frontendPublished">Frontend published</dt>
+          <dd>
+            <time id="frontend-published" data-i18n="localPreview"
+              >Local preview · Not published</time
+            >
+          </dd>
+        </dl>
+        <section class="about-section">
+          <h3 data-i18n="copyrightTitle">Copyright and assets</h3>
+          <p data-i18n="copyrightBody">
+            EVE Online and its game models, textures, renders, item icons and faction icons belong
+            to CCP Games. This is a fan-made website, not affiliated with or endorsed by CCP Games.
+          </p>
+          <p class="about-muted" data-i18n="iconCredits">
+            Item renders and icons come from the official EVE image service; faction icons come from
+            game assets. Interface controls use inline SVG icons.
+          </p>
+        </section>
+        <section class="about-sponsor">
+          <h3 data-i18n="sponsorTitle">Support this project</h3>
+          <p data-i18n="sponsorBody">
+            If you find this website useful, you can support development with an in-game transfer.
+          </p>
+          <div class="sponsor-recipient">
+            <img id="sponsor-portrait" alt="" width="48" height="48" hidden />
+            <div class="sponsor-identity">
+              <span data-i18n="gameID">Character name</span
+              ><strong id="sponsor-name" aria-live="polite" data-i18n="loading">Loading…</strong>
+            </div>
+            <button
+              id="copy-sponsor-name"
+              aria-live="polite"
+              class="header-button"
+              type="button"
+              disabled
+              data-i18n="copyName"
+            >
+              Copy name
+            </button>
+          </div>
+          <p id="sponsor-status" class="about-muted" role="status" hidden></p>
+          <p class="about-muted" data-i18n="sponsorThanks">Thank you for your support.</p>
+        </section>
+        <a
+          class="about-repository"
+          href="https://github.com/EstamelGG/EVE_Model_Gallery_2"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-i18n="viewWebRepository"
+          >View website repository on GitHub ↗</a
+        >
+      </div>
+    </dialog>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Catalog" data-i18n-aria-label="catalog">
+        <div class="sidebar-caption">
+          <span data-i18n="catalog">Catalog</span><span id="catalog-count"></span>
+        </div>
+        <nav id="catalog-tree" aria-label="Catalog" data-i18n-aria-label="catalog">
+          <div class="tree-loading" data-i18n="loading">Loading…</div>
+        </nav>
+      </aside>
+      <main id="main" tabindex="-1">
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <section class="page-heading">
+          <h1 id="page-title"></h1>
+        </section>
+        <section class="toolbar" aria-label="Filters and search" data-i18n-aria-label="filters">
+          <div
+            class="scope-tabs"
+            role="group"
+            aria-label="Availability"
+            data-i18n-aria-label="scope"
+          >
+            <button id="scope-ready" class="active" aria-pressed="true">
+              <span data-i18n="ready">Available</span
+              ><span id="ready-badge" class="count-badge"></span></button
+            ><button id="scope-all" aria-pressed="false" data-i18n="all">All items</button>
+          </div>
+          <label class="search-field"
+            ><svg><use href="#i-search" /></svg
+            ><input
+              id="search"
+              type="search"
+              placeholder="Search name or ID"
+              data-i18n-placeholder="searchHint"
+              aria-label="Search name or ID"
+              data-i18n-aria-label="searchHint"
+            /><kbd>/</kbd></label
+          >
+        </section>
+        <section class="filter-row" aria-label="Filters and search" data-i18n-aria-label="filters">
+          <div id="race-filters" class="race-filters"></div>
+          <label class="sort-field"
+            ><span data-i18n="sort">Sort</span
+            ><select id="sort" aria-label="Sort" data-i18n-aria-label="sort">
+              <option value="race" data-i18n="raceSort">Affiliation · Name</option>
+              <option value="name" data-i18n="nameSort">Name</option>
+              <option value="id" data-i18n="id">Type ID</option>
+            </select></label
+          >
+        </section>
+        <div class="results-heading">
+          <span id="results-count" aria-live="polite" data-i18n="loading">Loading…</span>
+        </div>
+        <div
+          id="card-scroll"
+          class="card-scroll"
+          tabindex="0"
+          role="region"
+          aria-labelledby="results-count"
+        >
+          <div id="cards" class="cards" aria-live="polite" aria-busy="true">
+            <div class="catalog-loading">
+              <span class="loading-ring" aria-hidden="true"></span
+              ><span data-i18n="loadingCatalog">Loading catalog…</span>
+            </div>
+          </div>
+          <div id="empty-state" class="empty-state" hidden>
+            <svg><use href="#i-cube" /></svg>
+            <h2 id="empty-title">No models available in this group</h2>
+            <p id="empty-description"></p>
+            <button id="empty-action" class="primary-button">Browse items</button>
+          </div>
+        </div>
+        <footer class="page-footer">
+          <span>EVE Model Viewer <span class="app-version">2.0</span></span>
+          <span data-i18n="credit">Assets © CCP Games · Unofficial project</span>
+        </footer>
+      </main>
+    </div>
+    <dialog id="model-dialog" aria-labelledby="detail-title">
+      <div class="dialog-top">
+        <span
+          ><svg><use href="#i-cube" /></svg><span data-i18n="model">3D model</span
+          ><span id="detail-dna" hidden></span
+        ></span>
+        <div class="dialog-actions">
+          <button
+            id="viewer-performance"
+            class="icon-button"
+            data-i18n-title="performance"
+            data-i18n-aria-label="performance"
+            title="渲染性能"
+            aria-label="渲染性能"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 19V13M9 19V9M14 19V5M19 19V11"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
+            </svg></button
+          ><button
+            id="close-dialog"
+            class="icon-button"
+            aria-label="Close viewer"
+            data-i18n-aria-label="close"
+          >
+            <svg><use href="#i-close" /></svg>
+          </button>
+        </div>
+      </div>
+      <eve-model-viewer id="catalog-viewer" control-panel managed-fullscreen>
+        <div slot="overlay" class="catalog-overlay">
+          <div id="hull-variants" class="hull-variants" hidden>
+            <section
+              id="hull-variants-panel"
+              class="hull-variants-panel"
+              aria-labelledby="hull-variants-toggle"
+              hidden
+            >
+              <p id="hull-variants-status" role="status"></p>
+              <div id="hull-variants-list" class="hull-variants-list"></div>
+            </section>
+            <button
+              id="hull-variants-toggle"
+              class="hull-variants-toggle"
+              aria-expanded="false"
+              aria-controls="hull-variants-panel"
+            >
+              <svg class="hull-variants-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 14 5-5 5 5" />
+              </svg>
+            </button>
+            <div id="orbit-turns" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div slot="details" class="catalog-details">
+          <div id="detail-race" class="detail-race"></div>
+          <h2 id="detail-title"></h2>
+          <div class="detail-tags">
+            <span id="detail-group"></span><span id="detail-tech"></span
+            ><span data-i18n="skin">Default skin</span>
+          </div>
+          <dl class="detail-stats">
+            <div>
+              <dt data-i18n="id">Type ID</dt>
+              <dd id="detail-id"></dd>
+            </div>
+            <div>
+              <dt data-i18n="triangles">Triangles</dt>
+              <dd id="detail-triangles"></dd>
+            </div>
+            <div>
+              <dt data-i18n="size">Asset size</dt>
+              <dd id="detail-size"></dd>
+            </div>
+          </dl>
+          <p id="detail-warnings" role="note" hidden></p>
+        </div>
+        <div slot="navigation">
+          <div class="detail-navigation">
+            <button
+              id="previous-ship"
+              aria-label="← Previous"
+              data-i18n-aria-label="previous"
+              data-i18n="previous"
+            >
+              ← Previous</button
+            ><span id="detail-position"></span
+            ><button
+              id="next-ship"
+              aria-label="Next →"
+              data-i18n-aria-label="next"
+              data-i18n="next"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      </eve-model-viewer>
+    </dialog>
+  </body>
+</html>

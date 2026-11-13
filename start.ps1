@@ -15,5 +15,5 @@ if (!$Addon) {
     $Addon = Join-Path $Renderer 'tools/model_export/.deps/tools-blender'
     if (!(Test-Path $Addon)) { $Addon = Join-Path (Split-Path $Renderer) 'upstream/carbonenginejs/tools-blender' }
 }
-& py -3 (Join-Path $Renderer 'model-catalog/scripts/serve_dna_hulls.py') --cache $Cache --published $Published --frontend $PSScriptRoot --addon $Addon --port $Port
+& py -3 (Join-Path $Renderer 'model-catalog/scripts/serve_dna_hulls.py') --cache $Cache --published $Published --frontend (Join-Path $PSScriptRoot 'public') --addon $Addon --port $Port
 exit $LASTEXITCODE

@@ -11,4 +11,4 @@ def collect(root):
         categories.append(dict(id=cat['id'],name=cat['name'],groups=groups))
     return categories
 if __name__=='__main__':
-    Path(__file__).with_name('catalog.json').write_text(json.dumps(collect(Path(sys.argv[1])),ensure_ascii=False,separators=(',',':')),encoding='utf8')
+    (Path(__file__).parent/'public/catalog.json').write_text(json.dumps(collect(Path(sys.argv[1])),ensure_ascii=False,separators=(',',':')),encoding='utf8')
