@@ -106,7 +106,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
       }
       $('auto-rotate').checked = !!options.autoRotate;
       $('invert-wheel').checked = !!options.invertWheel;
-      $('damage-row').hidden = !viewer?.shipEffects?.hasDamage;
+      $('damage-row').hidden = !viewer?.locatorDamage && !viewer?.shipEffects?.hasDamage;
       $('show-damage').checked = options.damage === true;
       const roles = viewer?.availableTextureRoles;
       for (const role of textureRoles) {

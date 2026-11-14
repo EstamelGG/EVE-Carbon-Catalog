@@ -1,4 +1,4 @@
-export function materialGlb(bytes, template, maps, tier, MeshoptEncoder) {
+export function materialGlb(bytes, template, maps, MeshoptEncoder) {
   const input=Buffer.from(bytes), jsonSize=input.readUInt32LE(12);
   const doc=JSON.parse(input.subarray(20,20+jsonSize));
   const original=input.subarray(28+jsonSize);
@@ -26,7 +26,7 @@ export function materialGlb(bytes, template, maps, tier, MeshoptEncoder) {
     prim.material=prim.extras.materialIndex;
     prim.attributes._CCP_SOURCE_POSITION=prim.attributes.POSITION;
   }
-  const replace = (_,value) => typeof value==='string' && maps.has(value) ? maps.get(value)[tier].file : value;
+  const replace = (_,value) => typeof value==='string' && maps.has(value) ? maps.get(value).file : value;
   doc.materials=JSON.parse(JSON.stringify(template.materials,replace));
   doc.images=JSON.parse(JSON.stringify(template.images,replace));
   doc.textures=template.textures.map(t=>({sampler:t.sampler,extensions:{KHR_texture_basisu:{source:t.extensions?.EXT_texture_webp?.source??t.source}}}));

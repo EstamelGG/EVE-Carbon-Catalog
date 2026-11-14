@@ -51,6 +51,14 @@ export function createFittingPanel({
     task?.progress(2);
     return task;
   }
+  async function mountData(viewer) {
+    const embedded = viewer.originalGltfJson?.extras?.ccpdec?.locators?.hardpoints;
+    try { return await loadData(); }
+    catch (error) {
+      if (!embedded?.length) throw error;
+      return {version:2, equipment:[], ships:{}};
+    }
+  }
   function loadData() {
     return (dataPromise ||= loadResource('data/fitting.json')
       .then((value) => ({
@@ -455,9 +463,9 @@ export function createFittingPanel({
       task = loadingTask('fittingLoadingHardpoints');
     const job = (async () => {
       try {
-        data = await loadData();
+        data = await mountData(c.viewer);
         if (!valid(c) || token !== generation) return;
-        const locators = data.ships?.[c.item.id];
+        const locators = c.viewer.originalGltfJson?.extras?.ccpdec?.locators?.hardpoints ?? data.ships?.[c.item.id];
         if (data.version !== 2 || !locators?.length) {
           status('fittingUnavailable');
           return;
@@ -566,7 +574,7 @@ export function createFittingPanel({
     async refreshFromViewer() {
       const c = context;
       if (!c?.viewer.fitting) return;
-      data = await loadData();
+      data = await mountData(c.viewer);
       if (!valid(c)) return;
       const fitting = c.viewer.fitting;
       state(c.item.id).choices = new Map(

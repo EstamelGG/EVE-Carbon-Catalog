@@ -14,14 +14,18 @@ export async function configureEquipment({
   const checkCurrent = () => {
     if (!isCurrent()) throw new DOMException('Superseded', 'AbortError');
   };
-  const fittingData = await viewer.assetSession.json('data/fitting.json');
+  const embedded = viewer.originalGltfJson?.extras?.ccpdec?.locators?.hardpoints;
+  const fittingData = await viewer.assetSession.json('data/fitting.json').catch(error => {
+    if (!embedded?.length || equipmentIds?.length || options.fitting?.equipment?.length) throw error;
+    return {version:2, equipment:[]};
+  });
   checkCurrent();
   if (fittingData.version !== 2) throw Error('Fitting metadata version 2 is required');
-  const locators = fittingData.ships?.[item.id];
+  const locators = embedded ?? fittingData.ships?.[item.id];
   if (!locators?.length) throw Error('No compatible equipment mounts');
   const equipment = fittingData.equipment.filter((item) => item.supported !== false);
   if (!viewer.fitting) {
-    const settings = await viewer.assetSession.json(nativePreview);
+    const settings = nativePreview ? await viewer.assetSession.json(nativePreview) : {};
     checkCurrent();
     viewer.lifecycle.set(
       'fitting',

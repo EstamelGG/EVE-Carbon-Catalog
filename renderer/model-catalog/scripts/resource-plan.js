@@ -31,11 +31,6 @@ export async function planViewerResources(viewer, item, native, backgroundID, ba
       add(resolveURL(settings.reflection)); add(resolveURL(settings.diffuse));
     }));
   }
-  if (item.renderKind !== 'equipment') tasks.push(read('data/backgrounds.json').then(doc => {
-    const id = backgroundID === 'none' || backgroundID === 'auto' || doc.scenes.some(s => s.id === backgroundID) ? backgroundID : 'auto';
-    const entry = selectedBackground(doc, viewer.previewRace, id);
-    if (entry && !session.skybox?.isReady(entry)) { add(resolveURL(entry.url)); if (entry.stars) add(resolveURL(entry.stars)); }
-  }).catch(() => {})); // Optional backgrounds must not make the model fail.
   await Promise.all(tasks);
   batch.plan(urls);
   return urls;

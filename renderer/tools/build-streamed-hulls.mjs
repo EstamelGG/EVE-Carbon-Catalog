@@ -33,14 +33,19 @@ for (const entry of (await readJSON(path.join(published,'data/resources.json')))
   if (entry.recipe.kind==='source-texture') recipes.set(path.posix.basename(entry.file),entry.recipe);
 }
 const converted = new Map();
-async function texture(uri, scratch, normalMap) {
-  const key = JSON.stringify([uri,normalMap]);
+async function texture(uri, scratch) {
+  const key = uri.toLowerCase();
+  if (!key.startsWith('res:/') || key.slice(5).split('/').some(part=>!part || part==='.' || part==='..' || /[<>:"|?*\\]/.test(part))) throw Error('Invalid resource URI: '+uri);
   if (converted.has(key)) return converted.get(key);
   const dds = parseDds(await resource(uri));
-  const tiers=await encodeTexture({dds,uri,normalMap,scratch,ktx,decodeDdsLevel,
-    save:(tier,bytes)=>publish(tier+'-'+path.posix.basename(uri,'.dds'),'ktx2',bytes)});
-  converted.set(key,tiers);
-  return tiers;
+  const dest=path.join(output,'res',key.slice(5).replace(/\.dds$/,'.ktx2'));
+  const texture=await encodeTexture({dds,uri,scratch,ktx,decodeDdsLevel,save:async bytes=>{
+    await fs.mkdir(path.dirname(dest),{recursive:true});
+    await fs.writeFile(dest,bytes);
+    return path.relative(outputDir,dest).split(path.sep).join('/');
+  }});
+  converted.set(key,texture);
+  return texture;
 }
 const scratch=await fs.mkdtemp(path.resolve(output,'hull-mips-'));
 try {
@@ -54,19 +59,18 @@ try {
     const [hull,faction,race]=await Promise.all([black('hulls',h),black('factions',f),black('races',r)]);
     const scene=decodeGr2(await resource(hull.geometryResFilePath));
     const maps=new Map(), textures={};
-    for (const mat of template.materials) for (const [role,url] of Object.entries(mat.extras.ccpdecNative.textures)) {
+    for (const mat of template.materials) for (const url of Object.values(mat.extras.ccpdecNative.textures)) {
       if (maps.has(url)) continue;
       const recipe=recipes.get(path.posix.basename(url));
       if (!recipe) throw Error('Missing DDS recipe: '+url);
-      const pair=await texture(recipe.source,scratch,role==='NormalMap');
-      maps.set(url,pair);textures[recipe.source]=pair;
+      const asset=await texture(recipe.source,scratch);
+      maps.set(url,asset);textures[recipe.source]=asset;
     }
     const levels=[];
     for (const mesh of scene.meshes) {
       const bytes=encodeGlb({...scene,meshes:[{...mesh,lod:null}]});
-      const tier=mesh.lod===null || mesh.lod>80 ? 'full' : 'low';
-      const file=await publish(id+'-lod-'+(mesh.lod??'full'),'glb',materialGlb(bytes,template,maps,tier,MeshoptEncoder));
-      levels.push({pixels:mesh.lod,triangles:mesh.indices.length/3,file,tier});
+      const file=await publish(id+'-lod-'+(mesh.lod??'full'),'glb',materialGlb(bytes,template,maps,MeshoptEncoder));
+      levels.push({pixels:mesh.lod,triangles:mesh.indices.length/3,file});
     }
     const manifest={version:1,dna,hull:h,faction:f,race:r,geometry:hull.geometryResFilePath,
       areas:hull.opaqueAreas.map(a=>({name:a.name,shader:a.shader})),primary:faction.areaTypes?.Primary,

@@ -1,3 +1,4 @@
+import {locatorFire} from './locator-fire.js';
 import { diagnosticsContext } from './component-diagnostics.js';
 import { createPerformancePanel } from './component-performance.js';
 import { configureEquipment } from './component-equipment.js';
@@ -178,23 +179,37 @@ export function createComponentController(root, emit) {
               isActive: () => runtime.viewer === viewer,
             }),
           );
+        const source = (viewer.appearanceDocument || viewer.originalGltfJson)?.extras?.ccpdec;
+        viewer.lifecycle.release('locatorDamage');
+        if (source?.locators?.damage?.length)
+          viewer.lifecycle.set('locatorDamage', locatorFire(viewer, source.locators.damage, source.sourceRadius || Math.max(...Object.values(viewer.getDimensions()))/2));
         subsystems.install(viewer, item, module);
         fittingPanel.connect(viewer, item, module);
         hangarPanel.connect(viewer, item, module);
       },
       environment(viewer, module) {
         viewer.backgroundLoading = true;
+        backgroundCatalog = undefined;
+        $('skybox-status').hidden = true;
         backgroundTask = (async () => {
-          const catalog = (backgroundCatalog =
-            await viewer.assetSession.json('data/backgrounds.json'));
+          const catalog = await viewer.assetSession.json('res/backgrounds.json');
           if (runtime.viewer !== viewer) return;
+          if (!Array.isArray(catalog?.scenes) || !catalog.defaults) throw Error('Invalid background catalog');
+          backgroundCatalog = catalog;
           viewer.lifecycle.set('skybox', module.createSkybox(viewer, catalog, viewer.previewRace));
           await viewer.skybox.select(options.background || 'auto');
         })();
-        backgroundTask = backgroundTask.finally(() => {
+        backgroundTask = backgroundTask.catch(() => {
+          if (runtime.viewer === viewer) {
+            backgroundCatalog = undefined;
+            $('skybox-status').textContent = t('skyboxError');
+            $('skybox-status').hidden = false;
+          }
+        }).finally(() => {
           if (runtime.viewer === viewer) {
             viewer.backgroundLoading = false;
             loading.backgroundSettled();
+            controls.sync();
             actions.sync();
           }
         });
@@ -275,7 +290,7 @@ export function createComponentController(root, emit) {
     emit,
     selectBackground,
   });
-  const nativeSettings = (viewer) => viewer.assetSession.json(settings.nativePreview);
+  const nativeSettings = (viewer) => settings.nativePreview ? viewer.assetSession.json(settings.nativePreview) : {};
   const loadResource = (url) => resources.load(url);
   const fittingPanel = createFittingPanel({
     saveRecent: (recentEquipment) => emit('settings-change', { recentEquipment }),
@@ -421,7 +436,7 @@ export function createComponentController(root, emit) {
     runtime.viewer.setKillCount?.(runtime.viewer.killCount);
     const damageViewer = runtime.viewer;
     damageViewer.damageEnabled = options.damage === true;
-    damageViewer.shipEffects?.setDamage?.(damageViewer.damageEnabled)?.catch(error => {
+    (damageViewer.locatorDamage ? damageViewer.locatorDamage.setEnabled(damageViewer.damageEnabled) : damageViewer.shipEffects?.setDamage?.(damageViewer.damageEnabled))?.catch(error => {
       if (runtime.viewer === damageViewer) { options.damage = false; controls.sync(); }
       emit('error', {message: error.message});
     });
@@ -509,13 +524,13 @@ export function createComponentController(root, emit) {
       runtime.viewer.killCount = settings.killCount;
       runtime.viewer.setKillCount?.(settings.killCount);
       runtime.viewer.autoRotate = settings.autoRotate;
-      backgroundTask = runtime.viewer.skybox?.select(options.background);
+      runtime.viewer.skybox?.select(options.background)?.catch(() => { if (token === revision) { $('skybox-status').hidden=false; $('skybox-status').textContent=t('skyboxError'); } });
     }
-    await backgroundTask;
+
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
     const viewer = runtime.viewer;
     viewer.damageEnabled = options.damage === true;
-    await viewer.shipEffects?.setDamage?.(viewer.damageEnabled);
+    await (viewer.locatorDamage ? viewer.locatorDamage.setEnabled(viewer.damageEnabled) : viewer.shipEffects?.setDamage?.(viewer.damageEnabled));
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
     const restoreFit=restored?.fit&&restored.fitKey===JSON.stringify([options.equipment,options.fitting]);
     if (

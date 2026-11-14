@@ -72,6 +72,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     viewer.displaySettings = values;
     viewer.dataset.displaySettings = JSON.stringify(values);
     viewer.setDisplaySettings?.(values);
+    viewer.locatorDamage?.setVisible(effectsEnabled(values));
     viewer.shipEffects?.setVisible(effectsEnabled(values));
     viewer.hangar?.setEffectsVisible(effectsEnabled(values));
     applyPostprocessingSettings(viewer);
@@ -230,7 +231,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     viewer.lifecycle.set('disposeResize', api.installViewerResize(viewer));
     viewer.lifecycle.set('disposeAnnotationFocus', api.installAnnotationFocus(viewer));
     viewer.assetSession = controller.session(() => createSession ? createSession(api) : api.createViewerSession());
-    viewer.assetSession.race ||= item.dna?.split(':')[2] || 'gallente';
+    viewer.assetSession.race = item.dna?.split(':')[2] || 'gallente';
     viewer.previewRace = viewer.assetSession.race;
     if (!operation.attach(viewer)) return false;
     const source = await prepare(viewer, item, context);
