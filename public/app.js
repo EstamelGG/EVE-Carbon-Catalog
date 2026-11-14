@@ -804,15 +804,40 @@ function setupEvents() {
 
 applyTranslations();
 const resField = $('res-base');
+const resStatus = $('res-status');
+const applyResButton = $('apply-res-base');
+const siteConfig = loadJSON('./site-config.json', { cache: 'no-cache' }, { optional: true });
+let resCheck;
+
+async function loadModelIndex(url, signal) {
+  const response = await fetch(url, { cache: 'no-cache', signal });
+  if (!response.ok) throw new Error(t('resIndexHttp', { status: response.status }));
+  const index = await response.json();
+  if (index?.version !== 2 || !index.models || typeof index.models !== 'object' ||
+      Array.isArray(index.models) || Object.values(index.models).some(model => !Array.isArray(model?.itemIds)))
+    throw new Error(t('resIndexFormat'));
+  return index;
+}
+
+function resetResCheck() {
+  resCheck?.abort();
+  resCheck = undefined;
+  applyResButton.disabled = false;
+  resStatus.textContent = '';
+  resField.removeAttribute('aria-invalid');
+  resField.setCustomValidity('');
+}
 $('open-settings').onclick = () => {
   resField.value = savedResBase();
-  resField.setCustomValidity('');
+  resetResCheck();
   $('settings-dialog').showModal();
 };
 $('close-settings').onclick = () => $('settings-dialog').close();
-resField.oninput = () => resField.setCustomValidity('');
-$('catalog-settings').onsubmit = event => {
+$('settings-dialog').onclose = resetResCheck;
+resField.oninput = resetResCheck;
+$('catalog-settings').onsubmit = async event => {
   event.preventDefault();
+  if (resCheck) return;
   let value = resField.value.trim();
   try {
     if (value) value = normalizeResBase(value);
@@ -821,6 +846,30 @@ $('catalog-settings').onsubmit = event => {
     resField.reportValidity();
     return;
   }
+  const check = new AbortController();
+  resCheck = check;
+  applyResButton.disabled = true;
+  resField.removeAttribute('aria-invalid');
+  resStatus.textContent = t('resIndexChecking');
+  const signal = AbortSignal.any([check.signal, AbortSignal.timeout(15000)]);
+  try {
+    const base = value || defaultResBase(await siteConfig);
+    await loadModelIndex(new URL('model-index.json', base), signal);
+  } catch (error) {
+    if (check.signal.aborted) return;
+    resField.setAttribute('aria-invalid', 'true');
+    resStatus.textContent = error instanceof SyntaxError ? t('resIndexJson')
+      : signal.aborted ? t('resIndexTimeout')
+      : error instanceof TypeError ? t('resIndexNetwork') : error.message;
+    return;
+  } finally {
+    if (check === resCheck) {
+      resCheck = undefined;
+      applyResButton.disabled = false;
+    }
+  }
+  if (check.signal.aborted || !$('settings-dialog').open) return;
+  resStatus.textContent = '';
   if (value === savedResBase()) return $('settings-dialog').close();
   try {
     saveResBase(value);
@@ -854,7 +903,7 @@ function renderCatalogError() {
 
 async function init() {
   try {
-    const config = await loadJSON('./site-config.json', { cache: 'no-cache' }, { optional: true });
+    const config = await siteConfig;
     rendererModuleURL = config.rendererModuleURL || './eve-model-viewer.js?v=build-index-v1';
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
@@ -894,8 +943,7 @@ async function init() {
     setupEvents();
     await render();
     try {
-      const inventory = await loadJSON(resourceURL('res/model-index.json'), {cache:'no-cache'});
-      if (inventory.version !== 2 || !inventory.models) throw Error('Unsupported model index');
+      const inventory = await loadModelIndex(resourceURL('res/model-index.json'));
       applyInventory(inventory);
       buildTree();
       await render();

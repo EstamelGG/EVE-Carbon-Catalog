@@ -114,9 +114,10 @@
           <option value="en" lang="en">English</option>
         </select>
         <label for="res-base" data-i18n="resBaseLabel">Resource directory URL</label>
-        <input id="res-base" type="text" inputmode="url" spellcheck="false" aria-describedby="res-help">
+        <input id="res-base" type="text" inputmode="url" spellcheck="false" aria-describedby="res-help res-status">
         <small id="res-help" data-i18n="resBaseHelp">Enter the directory containing model-index.json. Leave blank for the site default.</small>
-        <button class="header-button" type="submit" data-i18n="applyResBase">Apply resource URL</button>
+        <small id="res-status" role="status" aria-live="polite"></small>
+        <button id="apply-res-base" class="header-button" type="submit" data-i18n="applyResBase">Apply resource URL</button>
       </form>
     </dialog>
     <dialog id="about-dialog" aria-labelledby="about-title">
