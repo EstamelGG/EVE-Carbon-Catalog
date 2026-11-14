@@ -1,4 +1,4 @@
-import './eve-model-viewer.js?v=dna-route-v1';
+import './eve-model-viewer.js?v=variant-camera-v1';
 import {
   locale,
   t,
