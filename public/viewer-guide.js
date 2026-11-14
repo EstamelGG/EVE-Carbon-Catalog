@@ -13,14 +13,23 @@ let preference = languagePreference(),
   currentCase = 'minimal',
   previewState = { kind: 'initial' },
   viewer,
-  resourceBase,
+  config,
   caseRevision = 0,
   toastTimer;
 const t = (key, values) => guideText(locale, key, values);
 const caseTitle = (example) => t(`case.${example.id}.title`);
 const caseDescription = (example) => t(`case.${example.id}.description`);
 const codeSources = new Map();
-const localizedCode = (value) => value.replaceAll('lang="en"', `lang="${locale}"`);
+function localizedCode(value) {
+  const escapeAttribute = text => text.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+  const resourceBase = config?.resourceBaseURL || new URL('./', document.baseURI).href;
+  const attributes = [
+    `res-base="${escapeAttribute(config?.resBase || './res/')}"`,
+    `resource-base="${escapeAttribute(resourceBase)}"`,
+  ];
+  return value.replaceAll('lang="en"', `lang="${locale}"`)
+    .replaceAll('res-base="./res/"', () => attributes.join('\n  '));
+}
 function updateStatus() {
   const { kind, phase, total, result, error } = previewState;
   $('preview-status').textContent =
@@ -98,6 +107,7 @@ const cases = [
     id: 'hangar',
     options: { hangar: { room: 'amarr' }, controlPanel: true },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   hangar="amarr"
   control-panel
@@ -108,6 +118,7 @@ const cases = [
     id: 'minimal',
     options: {},
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   background="none"
   style="height:500px">
@@ -117,6 +128,7 @@ const cases = [
     id: 'controls',
     options: { controlPanel: true },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   background="none"
   control-panel
@@ -127,6 +139,7 @@ const cases = [
     id: 'background',
     options: { background: 'auto', autoRotate: true },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   background="auto"
   auto-rotate
@@ -137,6 +150,7 @@ const cases = [
     id: 'white',
     options: { whiteModel: true, controlPanel: true },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   background="none"
   white-model
@@ -148,6 +162,7 @@ const cases = [
     id: 'quality',
     options: { render: { reflection: 0.3 }, display: { antialiasMode: 'smaa' } },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   background="none"
   reflection="0.3"
@@ -159,6 +174,7 @@ const cases = [
     id: 'turrets',
     options: { equipment: [484, 484] },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="587"
   equipment="[484,484]"
   background="none"
@@ -169,6 +185,7 @@ const cases = [
     id: 'launchers',
     options: { itemId: 12032, equipment: [503, 503] },
     code: `<eve-model-viewer
+  res-base="./res/"
   item-id="12032"
   equipment="[503,503]"
   background="none"
@@ -221,16 +238,15 @@ function message(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => ($('copy-status').textContent = ''), 2800);
 }
-import { loadPreviewRenderer } from './preview-renderer.mjs';
+import { loadPreviewRenderer, previewConfig } from './preview-renderer.mjs';
 async function initialize() {
-  // The documentation uses the site's resource configuration for local previews.
-  // Copied examples and the component itself keep the production CDN default.
-  resourceBase = (await loadPreviewRenderer()).resourceBaseURL;
+  config = await previewConfig();
+  applyLanguage();
   viewer = document.createElement('eve-model-viewer');
   viewer.setAttribute('item-id', '587');
   viewer.setAttribute('background', 'none');
   viewer.setAttribute('lang', locale);
-  if (resourceBase) viewer.setAttribute('resource-base', resourceBase);
+  await loadPreviewRenderer(viewer, config);
   viewer.addEventListener('progress', ({ detail }) => status('progress', detail));
   viewer.addEventListener('error', ({ detail }) => {
     status('error', { error: detail.message });
@@ -250,7 +266,8 @@ async function runCase(id, scroll = false) {
   const options = {
     ...structuredClone(baseline),
     ...structuredClone(example.options),
-    resourceBase,
+    resBase: config.resBase,
+    resourceBase: config.resourceBaseURL,
     render: { ...baseline.render, ...example.options.render },
     display: { ...baseline.display, ...example.options.display },
   };

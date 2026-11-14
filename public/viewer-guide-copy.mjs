@@ -33,8 +33,16 @@ export const guideCopy = {
   download: ['下载 HTML ↓', 'Download HTML ↓'],
   copy: ['复制代码', 'Copy code'],
   quickNote: [
-    '模型和贴图由我们的资源服务加载，无需另外安装依赖。默认宽度填满父容器，高度跟随窗口（最小 240px）。嵌入局部区域时可用 CSS 设置高度；父容器有明确高度时，也可使用 height:100%。',
-    'Models and textures load from our asset service. No extra dependencies are needed. Width fills the parent by default; height follows the viewport (minimum 240px). Set a CSS height for an embedded area, or use height:100% inside a parent with a defined height.',
+    '示例使用图鉴设置中的资源地址。将 <code>res-base</code> 指向包含 <code>model-index.json</code> 的目录。组件默认填满父容器宽度，高度跟随窗口（最小 240px），也可通过 CSS 指定高度。',
+    'Examples use the resource URL from Catalog settings. Set <code>res-base</code> to the directory containing <code>model-index.json</code>. Width fills the parent and height follows the viewport (minimum 240px). Set a CSS height for an embedded area.',
+  ],
+  resBaseHelp: [
+    '包含 model-index.json 的目录。JavaScript 用法为 <code>viewer.configure({ itemId: 587, resBase: "https://assets.example.org/res/" })</code>。跨域部署时，资源服务需允许页面的来源。',
+    'Directory containing model-index.json. In JavaScript, use <code>viewer.configure({ itemId: 587, resBase: "https://assets.example.org/res/" })</code>. For cross-origin hosting, enable CORS on the resource server.',
+  ],
+  resourceBaseHelp: [
+    '辅助资源（如 data/、assets/）的发布根地址。省略时相对于嵌入页面加载。',
+    'Publication root for supporting files such as data/ and assets/. Defaults to the embedding page’s directory.',
   ],
   examplesIntro: [
     '点击运行，查看上方效果。每页只需 import 一次。',

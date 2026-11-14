@@ -11,7 +11,8 @@ import { createCatalogState } from './catalog-state.mjs?v=dna-route-v1';
 import { joinDirectory } from './build-directory.mjs';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
 import { createAffiliationResolver } from './affiliation.mjs';
-import { configureResourceBase, resourceURL } from './resource-location.mjs?v=pages-backgrounds-v1';
+import { configureResourceBase, normalizeResBase, resourceURL } from './resource-location.mjs';
+import { defaultResBase, savedResBase, saveResBase } from './res-preference.mjs';
 import { loadJSON } from './resource-activity.mjs?v=resource-plan-sky-fade-v1';
 import { prepareRenderImages } from './render-images.mjs?v=render-fallback-v1';
 const $ = (id) => document.getElementById(id);
@@ -800,6 +801,34 @@ function setupEvents() {
 }
 
 applyTranslations();
+const resField = $('res-base');
+$('open-settings').onclick = () => {
+  resField.value = savedResBase();
+  resField.setCustomValidity('');
+  $('settings-dialog').showModal();
+};
+$('close-settings').onclick = () => $('settings-dialog').close();
+resField.oninput = () => resField.setCustomValidity('');
+$('catalog-settings').onsubmit = event => {
+  event.preventDefault();
+  let value = resField.value.trim();
+  try {
+    if (value) value = normalizeResBase(value);
+  } catch {
+    resField.setCustomValidity(t('invalidResBase'));
+    resField.reportValidity();
+    return;
+  }
+  if (value === savedResBase()) return $('settings-dialog').close();
+  try {
+    saveResBase(value);
+  } catch {
+    resField.setCustomValidity(t('resSaveFailed'));
+    resField.reportValidity();
+    return;
+  }
+  location.reload();
+};
 for (const select of document.querySelectorAll('[data-language]')) {
   select.addEventListener('change', () => {
     setLocale(select.value);
@@ -827,8 +856,11 @@ async function init() {
     rendererModuleURL = config.rendererModuleURL || './eve-model-viewer.js?v=build-index-v1';
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
-    configureResourceBase(config.resourceBaseURL, config.backgroundBaseURL, config.backgroundFiles);
+    resField.placeholder = defaultResBase(config);
+    const resBase = savedResBase() || resField.placeholder;
+    configureResourceBase(config.resourceBaseURL, config.backgroundBaseURL, config.backgroundFiles, resBase);
     viewerConfig = {
+      resBase,
       resourceBase: config.resourceBaseURL,
       backgroundBase: config.backgroundBaseURL,
       backgroundFiles: config.backgroundFiles,

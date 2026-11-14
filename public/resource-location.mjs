@@ -1,11 +1,18 @@
 // Shared by the app and the separately bundled viewer. Only resource URLs use
 // this base; application modules, icons and styles remain on the website.
-export function configureResourceBase(value = '', backgrounds = '', files = undefined) {
+export function normalizeResBase(value) {
+  if (typeof value !== 'string' || !value.trim())
+    throw new Error('res-base (resBase) is required');
+  return validatedBase(new URL(value.trim(), globalThis.document?.baseURI).href);
+}
+
+export function configureResourceBase(value = '', backgrounds = '', files = undefined, resBase) {
   if (files !== undefined && (!Array.isArray(files) || files.some(p => typeof p !== 'string' || !/^assets\/backgrounds\/[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(p))))
     throw new Error('Invalid backgroundFiles allowlist');
   globalThis.__eveBackgroundFiles = files === undefined ? undefined : new Set(files);
   globalThis.__eveBackgroundBase = validatedBase(backgrounds);
   globalThis.__eveResourceBase = validatedBase(value);
+  globalThis.__eveResBase = resBase && normalizeResBase(resBase);
 }
 
 function validatedBase(value) {
@@ -21,6 +28,8 @@ function validatedBase(value) {
 export function resourceURL(value) {
   if (!value || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value)) return value;
   const path = value.replace(/^\.?\//, '');
+  if (globalThis.__eveResBase && path.startsWith('res/'))
+    return new URL(path.slice(4), globalThis.__eveResBase).href;
   // Published next to the app, including on project Pages under a subpath.
   // Ignore legacy Raw configuration for this dedicated website directory.
   if (path.startsWith('github-assets/')) return './' + path;
@@ -31,14 +40,16 @@ export function resourceURL(value) {
 }
 
 // An embed owns its URLs; it never writes the host application's configuration.
-export function createResourceLocator(value, backgrounds = '', files = undefined) {
+export function createResourceLocator(value, backgrounds = '', files = undefined, resBase) {
   const base = validatedBase(value), backgroundBase = validatedBase(backgrounds);
+  const res = normalizeResBase(resBase);
   if (files !== undefined && (!Array.isArray(files) || files.some(p => typeof p !== 'string' || !/^assets\/backgrounds\/[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(p))))
     throw new Error('Invalid backgroundFiles allowlist');
   const allowlist = files === undefined ? null : new Set(files);
   return value => {
     if (!value || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value)) return value;
     const path = value.replace(/^\.?\//, '');
+    if (path.startsWith('res/')) return new URL(path.slice(4), res).href;
     const selected = backgroundBase && allowlist?.has(path.split(/[?#]/)[0]) ? backgroundBase : base;
     return selected ? new URL(path, selected).href : value;
   };

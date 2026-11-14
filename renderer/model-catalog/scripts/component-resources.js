@@ -10,6 +10,7 @@ export function componentResourceKey(options) {
     options.resourceBase || '',
     options.backgroundBase || '',
     options.backgroundFiles,
+    options.resBase,
   ]);
 }
 

@@ -16,8 +16,10 @@ npm run build
 
 ```html
 <script type="module" src="./eve-model-viewer.js"></script>
-<eve-model-viewer dna="af1_t1:sarum:amarr" style="display:block;height:60vh"></eve-model-viewer>
+<eve-model-viewer res-base="./res/" dna="af1_t1:sarum:amarr" style="display:block;height:60vh"></eve-model-viewer>
 ```
+
+首次加载必须设置 `res-base`，或调用 `viewer.configure({ itemId: 587, resBase: "https://assets.example.org/res/" })`。该地址直接指向包含 `model-index.json` 的目录，相对地址以嵌入页面为基准。后续局部更新沿用该实例的地址。
 
 传入 `item-id` 时，组件从物品记录取得 DNA，再通过 `POST api/dna-hulls` 加载模型。对已发布物品，请求同时携带物品 ID，用于在共用 DNA 的型号之间保留正确的物品信息和特效。直接传入 `dna` 使用同一接口。战略巡洋舰按所选子系统的 DNA 加载各部件，再组装船体。
 

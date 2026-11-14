@@ -168,8 +168,28 @@ svg {
   object-fit: contain;
   flex-shrink: 0;
 }
-.header-actions .language-select {
-  margin-left: 0;
+#settings-dialog {
+  width: min(440px, calc(100vw - 32px));
+}
+#catalog-settings {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+#catalog-settings select, #catalog-settings input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+}
+#catalog-settings label:not(:first-child), #catalog-settings button {
+  margin-top: 10px;
+}
+#catalog-settings button {
+  justify-self: end;
 }
 #about-dialog {
   width: min(540px, calc(100vw - 32px));

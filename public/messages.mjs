@@ -1,4 +1,11 @@
 export const messages = {
+  catalogSettings: ['设置', 'Settings'],
+  closeSettings: ['关闭设置', 'Close settings'],
+  resBaseLabel: ['资源目录 URL', 'Resource directory URL'],
+  resBaseHelp: ['填写包含 model-index.json 的目录地址。留空使用站点默认地址。', 'Enter the directory containing model-index.json. Leave blank for the site default.'],
+  invalidResBase: ['请输入 HTTP(S) 目录地址或相对路径，不含凭据、查询参数或片段。', 'Enter an HTTP(S) directory URL or relative path without credentials, a query or a fragment.'],
+  resSaveFailed: ['浏览器无法保存资源地址。', 'The browser could not save the resource URL.'],
+  applyResBase: ['应用资源地址', 'Apply resource URL'],
   rendererUnavailable: ['暂时无法加载渲染组件', 'Model viewer unavailable'],
   indexUnavailable: ['暂时无法读取模型索引', 'Model availability unavailable'],
   diagnosticActualAA: ['实际抗锯齿', 'Active anti-aliasing'],
