@@ -29,11 +29,13 @@ function renderPublicationDate() {
   const element = $('frontend-published');
   const date = frontendPublishedAt ? new Date(frontendPublishedAt) : null;
   if (!date || !Number.isFinite(date.getTime())) {
+    element.dataset.i18n = 'localPreview';
     element.removeAttribute('datetime');
     element.textContent = t('localPreview');
     return;
   }
   element.dateTime = date.toISOString();
+  delete element.dataset.i18n;
   element.textContent =
     new Intl.DateTimeFormat(locale, {
       timeZone: 'UTC',
@@ -893,7 +895,7 @@ async function init() {
     await render();
     try {
       const inventory = await loadJSON(resourceURL('res/model-index.json'), {cache:'no-cache'});
-      if (inventory.version !== 1 || !inventory.models) throw Error('Unsupported model index');
+      if (inventory.version !== 2 || !inventory.models) throw Error('Unsupported model index');
       applyInventory(inventory);
       buildTree();
       await render();

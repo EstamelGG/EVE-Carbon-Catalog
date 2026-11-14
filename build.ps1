@@ -25,6 +25,7 @@ Copy-Item -LiteralPath "$renderer/dist/eve-model-viewer.js", "$renderer/dist/ven
 Copy-Item -LiteralPath "$renderer/dist/third-party-notices.txt" -Destination "$destination/renderer-notices.txt"
 $configPath = Join-Path $destination 'site-config.json'
 $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json -AsHashtable
+$config['frontendPublishedAt'] = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
 if ($ResourceBaseURL) { $config['resourceBaseURL'] = $ResourceBaseURL.AbsoluteUri }
 if ($RendererModuleURL) { $config['rendererModuleURL'] = $RendererModuleURL.AbsoluteUri }
 $config | ConvertTo-Json | Set-Content -LiteralPath $configPath -Encoding utf8NoBOM

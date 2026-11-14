@@ -787,7 +787,7 @@
       "viewer-implementation",
       "reference"
     ],
-    "sha256": "f14127a7524a9415b757fcebfa6209f08d9a710ec7c208f0830c6f04d2526b31",
+    "sha256": "03951f9aa732a8210368ee26e668df36f892028ef1505a150c0c28d4a7c6151c",
     "sourceCommentLines": [
       4
     ],
@@ -5100,12 +5100,5 @@
       "previousLines": 47,
       "currentLines": 73
     }
-  },
-  "scripts/dna-path.js": {
-    "classes": [
-      "viewer-implementation"
-    ],
-    "originDetail": "Shared reversible path encoding for the site builder and renderer.",
-    "sha256": "4148ad6447e36ac7d98b654f49cbf88fe1c472ae4862481672f95395b56807a2"
   }
 }

@@ -1,4 +1,3 @@
-import { dnaManifestPath } from './dna-path.js';
 import { createResourceLocator } from '../src/resource-location.mjs';
 
 
@@ -22,26 +21,13 @@ export function createComponentResources(key, fetchJSON) {
   let index, catalog;
   const models = new Map();
   async function resolveModel(value, itemId, staticDNA=value) {
-    const manifest = dnaManifestPath(staticDNA);
     await loadCatalog();
     const expected = staticDNA.trim().toLowerCase();
-    if (!Object.hasOwn(index.models, expected) || !manifest) throw Error('Model has not been built: ' + expected);
-    const item = {...await load(manifest)};
-    if (itemId != null && item.itemIds?.includes(itemId)) item.id = itemId;
-    const key = item.modelDNA || item.dna;
-    if (key?.toLowerCase() !== expected.trim().toLowerCase() || !item.model ||
-        (itemId != null && item.id !== itemId)) throw Error('Invalid DNA response');
-    if (item.renderManifest) {
-      const url = new URL(resolveURL(item.renderManifest), document.baseURI);
-      const manifest = await fetchJSON(url.href);
-      if (manifest.version !== 1 || manifest.dna.toLowerCase() !== value.trim().toLowerCase())
-        throw Error('Invalid hull render manifest');
-      const full = manifest.levels.find(level => level.pixels === null && level.tier === 'full');
-      if (!full?.file) throw Error('Missing full-resolution hull in render manifest');
-      item.model = new URL(full.file, url).href;
-    }
-    return {...item, available:true, id:item.id || item.dna, categoryID:item.categoryID ?? 6,
-      name:item.name || {en:item.dna,zh:item.dna}, model:resolveURL(item.model),
+    if (!Object.hasOwn(index.models, expected)) throw Error('Model has not been built: ' + expected);
+    const item = index.models[expected];
+    if (!item.model || (itemId != null && !item.itemIds.includes(itemId))) throw Error('Invalid model index entry: ' + expected);
+    return {...item, dna:expected, available:true, id:itemId ?? item.id, categoryID:item.categoryID ?? 6,
+      name:item.name || {en:expected,zh:expected}, model:resolveURL(item.model),
       effects:item.effects && resolveURL(item.effects)};
   }
   function dna(value, itemId, staticDNA=value) {
@@ -55,7 +41,7 @@ export function createComponentResources(key, fetchJSON) {
   let loading;
   function loadCatalog() {
     loading ??= load('res/model-index.json').then(data => {
-      if (data.version !== 1 || !data.models) throw Error('Unsupported model index');
+      if (data.version !== 2 || !data.models) throw Error('Unsupported model index');
       const items = new Map();
       for (const [dna, model] of Object.entries(data.models)) {
         for (const id of model.itemIds) {
