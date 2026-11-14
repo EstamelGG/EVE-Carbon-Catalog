@@ -1,5 +1,5 @@
 const defaultSort = group => group === -1 ? 'id' : 'race';
-const initialState = () => ({group:-1, race:0, scope:'ready', query:'', sort:'id', item:0});
+const initialState = () => ({group:-1, race:0, scope:'ready', query:'', sort:'id', item:0, dna:''});
 
 // One selection drives the route, counts and sorted results. The page owns
 // loading and presentation; this module never reads the DOM or mutates assets.
@@ -9,8 +9,10 @@ export function createCatalogState({groups, races, language, name}) {
   const searchText = new WeakMap();
   let sortLanguage, compareNames;
   const update = values => state = Object.freeze({...state, ...values});
-  function readRoute(hash) {
+  function readRoute(hash, search = '') {
     const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(search);
+    const id = params.get('id') ?? params.get('item') ?? queryParams.get('id') ?? queryParams.get('item');
     const group = params.has('group') && groups().has(Number(params.get('group')))
       ? Number(params.get('group')) : -1;
     const race = Number(params.get('race'));
@@ -19,7 +21,8 @@ export function createCatalogState({groups, races, language, name}) {
       scope:params.get('scope') === 'all' ? 'all' : 'ready',
       query:(params.get('q') || '').slice(0,120),
       sort:['race','name','id'].includes(params.get('sort')) ? params.get('sort') : defaultSort(group),
-      item:Number(params.get('item')) || 0,
+      item:Number(id) || 0,
+      dna:id === null ? (params.get('dna') ?? queryParams.get('dna') ?? '').trim() : '',
     });
   }
   function route() {
@@ -29,6 +32,7 @@ export function createCatalogState({groups, races, language, name}) {
     if (state.query) params.set('q', state.query);
     if (state.sort !== defaultSort(state.group)) params.set('sort', state.sort);
     if (state.item) params.set('item', state.item);
+    if (!state.item && state.dna) params.set('dna', state.dna);
     return `#${params}`;
   }
   function project(source) {

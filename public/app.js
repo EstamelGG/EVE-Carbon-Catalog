@@ -1,4 +1,4 @@
-import './eve-model-viewer.js?v=hangar-performance-v2';
+import './eve-model-viewer.js?v=dna-route-v1';
 import {
   locale,
   t,
@@ -7,7 +7,7 @@ import {
   applyTranslations,
 } from './i18n.mjs?v=fitting-depth-v17-guide-v1';
 import { createCardGrid } from './card-grid.mjs';
-import { createCatalogState } from './catalog-state.mjs';
+import { createCatalogState } from './catalog-state.mjs?v=dna-route-v1';
 import { createCatalogLoader } from './catalog-loader.mjs?v=subsystem-assembly-v1';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
 import { createAffiliationResolver } from './affiliation.mjs';
@@ -202,8 +202,14 @@ viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   if (detail.visible) counter.textContent = String(detail.count);
   counter.classList.toggle('visible', detail.visible);
 });
-function showModel(item) {
-  viewer.setAttribute('item-id', String(item.id));
+function showModel(item, dna = '') {
+  if (dna) {
+    viewer.removeAttribute('item-id');
+    viewer.setAttribute('dna', dna);
+  } else {
+    viewer.removeAttribute('dna');
+    viewer.setAttribute('item-id', String(item.id));
+  }
   return viewer
     .configure({
       ...viewerConfig,
@@ -308,13 +314,16 @@ function cardHTML(item, style = '') {
 }
 
 function readRoute() {
-  catalog.readRoute(location.hash);
+  catalog.readRoute(location.hash, location.search);
   $('search').value = catalog.state.query;
   $('sort').value = catalog.state.sort;
 }
 
 function saveRoute(replace = false) {
-  history[replace ? 'replaceState' : 'pushState'](null, '', catalog.route());
+  const url = new URL(location.href);
+  for (const key of ['item', 'id', 'dna']) url.searchParams.delete(key);
+  url.hash = catalog.route();
+  history[replace ? 'replaceState' : 'pushState'](null, '', url);
 }
 
 function changeCatalog(values, replace = false) {
@@ -536,14 +545,14 @@ function detailList() {
     : data.items.filter((i) => i.available);
 }
 
-async function openItem(id, route = true) {
+async function openItem(id, route = true, dna = '') {
   const revision = ++detailRevision;
   viewer.cancel();
   // Give feedback in the click's own task, before waiting for the metadata shard.
-  const preview = catalogLoader.peek(id);
+  const preview = dna ? { dna, name: { en: dna, zh: dna } } : catalogLoader.peek(id);
   if (!$('model-dialog').open) lastFocus = document.activeElement;
   currentItem = { ...preview, id, detailPending: true };
-  catalog.update({ item: id });
+  catalog.update({ item: id, dna });
   if (route) saveRoute();
   renderDetail();
 
@@ -553,7 +562,14 @@ async function openItem(id, route = true) {
   }
   let item;
   try {
-    item = await catalogLoader.item(id, catalog.state.group);
+    if (dna) {
+      const loaded = await showModel(currentItem, dna);
+      if (!loaded || revision !== detailRevision || !Number.isSafeInteger(loaded.itemId)) return;
+      item = await catalogLoader.item(loaded.itemId, catalog.state.group);
+      if (!item) return;
+    } else {
+      item = await catalogLoader.item(id, catalog.state.group);
+    }
   } catch (error) {
     if (revision === detailRevision && $('model-dialog').open) viewer.showError(t('errorItemData'));
     console.error(error);
@@ -570,10 +586,10 @@ async function openItem(id, route = true) {
     if (revision !== detailRevision) return;
   }
   currentItem = item;
-  catalog.update({ item: id });
+  catalog.update({ item: id, dna });
   if (route) saveRoute();
   renderDetail();
-  showModel(currentItem);
+  if (!dna) showModel(currentItem);
 }
 
 function renderDetail() {
@@ -590,7 +606,7 @@ function renderDetail() {
   $('detail-tech').textContent = factionVariant ? t('faction') : `T${item.techLevel}`;
   $('detail-race').innerHTML =
     `${raceMark(item.affiliationID)}${esc(raceName(item.affiliationID))}`;
-  $('detail-id').textContent = item.id;
+  $('detail-id').textContent = item.id || '—';
   $('detail-triangles').textContent = item.triangles == null ? '—' : fmt(item.triangles);
   const omissions = [];
   if (item.warnings?.some((w) => w.startsWith('未显示残骸烟雾/碎屑粒子')))
@@ -652,7 +668,7 @@ function closeDetail(route = true) {
   delete viewerConfig.hangar;
   currentItem = null;
   variantState = { hull: '', open: false, groups: null, status: '' };
-  catalog.update({ item: 0 });
+  catalog.update({ item: 0, dna: '' });
   document.body.style.overflow = '';
   if (route) saveRoute(true);
   lastFocus?.focus({ preventScroll: true });
@@ -770,7 +786,7 @@ function setupEvents() {
     const route = location.hash;
     await render();
     if (location.hash !== route) return;
-    if (catalog.state.item) openItem(catalog.state.item, false);
+    if (catalog.state.item || catalog.state.dna) openItem(catalog.state.item, false, catalog.state.dna);
     else closeDetail(false);
   });
 }
@@ -864,7 +880,7 @@ async function init() {
     buildTree();
     setupEvents();
     await render();
-    if (catalog.state.item) openItem(catalog.state.item, false);
+    if (catalog.state.item || catalog.state.dna) openItem(catalog.state.item, false, catalog.state.dna);
   } catch (error) {
     renderCatalogError();
     console.error(error);
