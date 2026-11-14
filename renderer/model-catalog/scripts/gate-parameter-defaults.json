@@ -1,0 +1,1751 @@
+{
+  "effects": {
+    "res:/graphics/effect.dx11/managed/space/spaceobject/fx/hazespherical.sm_depth": {},
+    "res:/graphics/effect.dx11/managed/space/spaceobject/fx/traffic/traffic.sm_depth": {
+      "BoosterColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "GlowColor1": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "GlowColor2": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "SpriteProperties": [
+        0.800000011920929,
+        0.019999999552965164,
+        1000.0,
+        1.0
+      ],
+      "SpriteSizes": [
+        1.0,
+        1.0,
+        4.0,
+        0.5
+      ],
+      "TextureProperties": [
+        64.0,
+        3.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/fx/fx3dv5.sm_depth": {
+      "BaseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "FxColor": [
+        0.6000000238418579,
+        0.699999988079071,
+        1.0,
+        1.0
+      ],
+      "Layer1Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer3Center": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Layer3Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer3Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/fx/fxdirectionalv5.sm_depth": {
+      "BaseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "DirectionU": [
+        1.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "DirectionV": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/fxdirectionalv5.sm_depth": {
+      "BaseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "DirectionU": [
+        1.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "DirectionV": [
+        0.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/quad/quadglassv5.sm_depth": {
+      "GeneralData": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "GeneralGlowColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl1DiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl1DustDiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl1FresnelColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl1Gloss": [
+        0.4000000059604645,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl1HeatGlowData": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Mtl2DiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl2DustDiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl2FresnelColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl2Gloss": [
+        0.4000000059604645,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl2HeatGlowData": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Mtl3DiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl3DustDiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl3FresnelColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl3Gloss": [
+        0.4000000059604645,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl3HeatGlowData": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Mtl4DiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl4DustDiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl4FresnelColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl4Gloss": [
+        0.4000000059604645,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Mtl4HeatGlowData": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "V5DebugType": 1.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/fx3dv5.sm_depth": {
+      "BaseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "FxColor": [
+        0.6000000238418579,
+        0.699999988079071,
+        1.0,
+        1.0
+      ],
+      "Layer1Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer3Center": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Layer3Scroll": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer3Transform": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/lensflares/flare.sm_depth": {
+      "Brightness": 1.0,
+      "DiffuseColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/motionvector.sm_depth": {
+      "AtlasInfo": [
+        6.0,
+        6.0,
+        10.0,
+        1.0
+      ],
+      "Colors": [
+        0.0,
+        1.0,
+        1.0,
+        0.009999999776482582
+      ],
+      "CurrentTime": 0.0,
+      "Depth": 100.0,
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/motionvectorramp.sm_depth": {
+      "AtlasInfo": [
+        6.0,
+        6.0,
+        10.0,
+        1.0
+      ],
+      "Colors": [
+        0.0,
+        1.0,
+        1.0,
+        0.009999999776482582
+      ],
+      "CurrentTime": 0.0,
+      "Depth": 100.0,
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll1": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll2": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureTransform": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform1": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform2": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform3": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/2layermask.sm_depth": {
+      "AmbientLight": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "Brightness": 1.0,
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "DepthFadeControl": [
+        0.3330000042915344,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Layer1TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1TexCoordSpeed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Layer2TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2TexCoordSpeed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ParticleParams": [
+        0.0,
+        100.0,
+        0.5,
+        0.0
+      ],
+      "SpriteColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/1layerdyndistortionv2.sm_depth": {
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "DistanceScalingParams": [
+        0.0,
+        100.0,
+        1.0,
+        0.5
+      ],
+      "DistortionFactors": [
+        1.0,
+        1.0,
+        10000.0,
+        1.0
+      ],
+      "Layer1TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/1layerdynv2.sm_depth": {
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "DistanceScalingParams": [
+        0.0,
+        100.0,
+        1.0,
+        0.5
+      ],
+      "Layer1TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "ParticleParams": [
+        0.0,
+        100.0
+      ],
+      "SpriteColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/2layerdynmaskv2.sm_depth": {
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "Layer1TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer1TexCoordSpeed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Layer2TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2TexCoordSpeed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "SpriteColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/motionvector.sm_depth": {
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "DistortionStrength": 0.009999999776482582,
+      "Frames": 64.0,
+      "SampleDistance": 0.009999999776482582,
+      "SampleOffset": 0.0,
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "TimeCurve": 1.0,
+      "UseWorldScale": 0.0,
+      "VelocitySmoothness": 1.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/motionvectorramp.sm_depth": {
+      "AtlasInfo": [
+        6.0,
+        6.0,
+        10.0,
+        1.0
+      ],
+      "Colors": [
+        0.0,
+        1.0,
+        1.0,
+        0.009999999776482582
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/gateparticles.sm_depth": {
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "EndFlash": [
+        0.10000000149011612,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "ParticleDynamics": [
+        100.0,
+        0.009999999776482582,
+        0.0,
+        0.0
+      ],
+      "SpriteColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "StartFlash": [
+        0.10000000149011612,
+        1.0,
+        1.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/motionvector.sm_depth": {
+      "AtlasInfo": [
+        6.0,
+        6.0,
+        10.0,
+        1.0
+      ],
+      "Color1": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "Color2": [
+        0.5,
+        0.5,
+        0.5,
+        0.0
+      ],
+      "Color3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ColorMidpoint": 0.5,
+      "Colors": [
+        0.0,
+        1.0,
+        1.0,
+        0.009999999776482582
+      ],
+      "Colors2": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "Depth": 100.0,
+      "ParticleParams": [
+        0.0,
+        100.0,
+        0.5,
+        0.0
+      ],
+      "SelfIllumination": [
+        0.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "SpriteFactors2": [
+        0.05000000074505806,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "VelocityStretch": 0.0
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/static/2layermodulatenoatlasv2.sm_depth": {
+      "Layer1TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "Layer2TexCoordModifier": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "SpriteColor": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "SpriteFactors": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "UseWorldScale": 0.0,
+      "modulate": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/twocolorflare.sm_depth": {
+      "ColorInner": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "ColorOutter": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershader.sm_depth": {
+      "Depth": [
+        10.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "DiffuseColor": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "MaskScroll": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "MaskTransform": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureScroll1": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll2": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureTransform1": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform2": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform3": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershader4layer.sm_depth": {
+      "DiffuseColor1": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "DiffuseColor2": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "FresnelFactors1": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "FresnelFactors2": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll1": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll2": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll3": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll4": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureTransform1": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform2": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform3": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform4": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershaderdistortion.sm_depth": {
+      "DistortionFactors": [
+        1.0,
+        1.0,
+        10000.0,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll1": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll2": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureTransform1": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform2": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershadertwosided.sm_depth": {
+      "DiffuseColor": [
+        0.800000011920929,
+        0.800000011920929,
+        0.800000011920929,
+        1.0
+      ],
+      "FresnelFactors": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll1": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureScroll2": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "TextureTransform1": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "TextureTransform2": [
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/volumesphere.sm_depth": {
+      "HazeColor": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "HazeControl": [
+        1.0,
+        2.0,
+        1.0,
+        0.0
+      ]
+    }
+  },
+  "sources": {
+    "res:/graphics/effect.dx11/managed/space/spaceobject/fx/hazespherical.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "7": 0,
+            "22": 3
+          }
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "9c8a0a3b1d53c94f076ca68bd1806fe40bf14c166571518f825d60bce96c174d",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/fx/traffic/traffic.sm_depth": {
+      "mainStates": [
+        [
+          {},
+          {}
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "aa31907bd07b346b190b09429cb69c0ef10054ea1eacbcc9b735f1f73cb8c49e",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/fx/fx3dv5.sm_depth": {
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 16,
+      "sha256": "b61687d18c723585f2b5d46f7f0f0c6b1406c7bf1040ffa4b4c6fc73c12b273f",
+      "staticOptions": {
+        "ALWAYS_ON": "ACTIVATION_SCALED",
+        "LAYER_SCALE": "NO_SCALE",
+        "SPACE_OBJECT_CLIPPING": "SOC_DISABLED"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/fx/fxdirectionalv5.sm_depth": {
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 4,
+      "sha256": "6539c726083be684a9bfcc3babdf76d3ba4af15440cddbdd35e4d7bc162e6643",
+      "staticOptions": {
+        "SPACE_OBJECT_CLIPPING": "SOC_DISABLED"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/fxdirectionalv5.sm_depth": {
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "e57b5c02a6312f0d85ec70c8796d4c58434413f2ff4d8afb6ed196280a29f46b",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/spaceobject/v5/quad/quadglassv5.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "22": 3
+          },
+          {
+            "22": 2
+          }
+        ]
+      ],
+      "permutations": 96,
+      "sha256": "62c196f6c19124e62286df7d462879535512da32a415ee7afe25ad8cbbeb8a60",
+      "staticOptions": {
+        "SPACE_OBJECT_CLIPPING": "SOC_DISABLED",
+        "SPACE_OBJECT_INSTANCED_ATTACHMENT": "SOIA_DISABLED",
+        "SPACE_OBJECT_PPT_ENABLED": "SOPPT_DISABLED",
+        "SPACE_OBJECT_TRANSPARENCY": "SOT_OPAQUE",
+        "V5_DEBUG": "OFF"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/fx3dv5.sm_depth": {
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 8,
+      "sha256": "98bdbae4c06dbc0ae59eb6a5017b08c6af25f1a2a8a936963e098487b023560b",
+      "staticOptions": {
+        "ALWAYS_ON": "ACTIVATION_SCALED",
+        "LAYER_SCALE": "NO_SCALE",
+        "MASK_TYPE": "VERTEX_POSITION_MASK_TYPE"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/lensflares/flare.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "7": 0,
+            "14": 0,
+            "22": 1
+          }
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "4a1ead8cebbebb60815228965052356cedb4acb28700bf992f191afa0dd59555",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/motionvector.sm_depth": {
+      "currentTimeInput": [
+        [
+          "TIME_SOURCE_PARAMETER",
+          true
+        ],
+        [
+          "TIME_SOURCE_TIME",
+          false
+        ]
+      ],
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 4,
+      "sha256": "30fa91f8e16dc87fc869266a75c32a69ba4f1706b8d06350cafb6ce0ea1bbf21",
+      "staticOptions": {
+        "COLOR_RAMP": "COLOR_RAMP_DISABLED",
+        "TIME_SOURCE": "TIME_SOURCE_TIME"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/motionvectorramp.sm_depth": {
+      "currentTimeInput": [
+        [
+          "",
+          true
+        ]
+      ],
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "meshMotionTextures": {
+        "INTERPOLATION_DISABLED/COLORMAP_RAMP/MASK_DISABLED": [
+          "ColorRampMap",
+          "DepthMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_DISABLED/COLORMAP_RAMP/MASK_ENABLED": [
+          "ColorRampMap",
+          "DepthMap",
+          "MaskMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_DISABLED/COLORMAP_TEXTURE/MASK_DISABLED": [
+          "DepthMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_DISABLED/COLORMAP_TEXTURE/MASK_ENABLED": [
+          "DepthMap",
+          "MaskMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_ENABLED/COLORMAP_RAMP/MASK_DISABLED": [
+          "ColorRampMap",
+          "DepthMap",
+          "GradientMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_ENABLED/COLORMAP_RAMP/MASK_ENABLED": [
+          "ColorRampMap",
+          "DepthMap",
+          "GradientMap",
+          "MaskMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_ENABLED/COLORMAP_TEXTURE/MASK_DISABLED": [
+          "DepthMap",
+          "GradientMap",
+          "TextureMap"
+        ],
+        "INTERPOLATION_ENABLED/COLORMAP_TEXTURE/MASK_ENABLED": [
+          "DepthMap",
+          "GradientMap",
+          "MaskMap",
+          "TextureMap"
+        ]
+      },
+      "namedSamplerUV": {
+        "DiffuseMap1Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "DiffuseMap2Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "DiffuseMap3Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "MaskMapSampler": [
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "permutations": 64,
+      "sha256": "3c3ff50dfde890172afcdce8f3782719ab4706bf9c42f74a0b0e897dc8b97d92",
+      "staticOptions": {
+        "COLORMAP": "COLORMAP_RAMP",
+        "DIFFUSE_MAP_COUNT": "ZERO",
+        "INTERPOLATION": "INTERPOLATION_ENABLED",
+        "MASK": "MASK_DISABLED",
+        "TEXTURE_TRANSFORM": "TRANSFORM_DISABLED"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/2layermask.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "19": 2,
+            "20": 6,
+            "27": 1,
+            "171": 1
+          }
+        ]
+      ],
+      "permutations": 72,
+      "sha256": "22504e95bc0a77eb8efa700dd210f7428fd0a01a90fdf0554ad846de595cf8d9",
+      "staticOptions": {
+        "LIGHTING_MODE": "LIGHTING_DISABLED",
+        "NEAR_FADE": "NEAR_FADE_DISABLED",
+        "NEBULA_BLEEDING": "NEBULA_BLEEDING_DISABLED",
+        "PARTICLE_TYPE": "PARTICLE_STATIC",
+        "TEXTURE_OFFSETS": "TEXTURE_OFFSETS_DISABLED"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/1layerdyndistortionv2.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "14": 0,
+            "19": 2,
+            "20": 2,
+            "22": 2,
+            "171": 1
+          },
+          {
+            "14": 0,
+            "19": 2,
+            "20": 2,
+            "22": 2,
+            "171": 3
+          }
+        ]
+      ],
+      "permutations": 4,
+      "sha256": "afd61c51bbabc1ae5e2d2327ae9f010d0506940afb896993aae1c936ce515ee2",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/1layerdynv2.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "19": 2,
+            "20": 6,
+            "27": 1,
+            "171": 1
+          }
+        ]
+      ],
+      "permutations": 4,
+      "sha256": "31441afc3863b824f16f53ff4f7df23b6190c93879e0db5a616d90ecdcf7b08b",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/2layerdynmaskv2.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "19": 2,
+            "20": 6,
+            "27": 1,
+            "171": 1
+          }
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "c54f6ebe00095421bca6155ed0758ac878f5f50fcb8d9402f2a1feac56e0158d",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/motionvector.sm_depth": {
+      "currentTimeInput": [
+        [
+          "",
+          false
+        ]
+      ],
+      "mainStates": [
+        [
+          {
+            "19": 2,
+            "20": 6,
+            "27": 1,
+            "171": 1
+          }
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "55b859c50a3e00059d8e0babcf8aaae99fb070f958d56378bfb01d41ec344541",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/dynamic/motionvectorramp.sm_depth": {
+      "currentTimeInput": [
+        [
+          "",
+          false
+        ]
+      ],
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 1,
+      "sha256": "a3342c5550045db0516d7ac6543cbc5f893de78cbed925d53cee0beb679e78d3",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/gateparticles.sm_depth": {
+      "mainStates": [
+        [
+          {},
+          {},
+          {},
+          {}
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "66ebdc60dea09f7ad8cb4c71a309ba2904a0e21ee1c2beb6430c82584968bddb",
+      "staticOptions": {
+        "EFFECT_TYPE": "PARTICLE_DEPARTURE"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/motionvector.sm_depth": {
+      "currentTimeInput": [
+        [
+          "",
+          false
+        ]
+      ],
+      "mainStates": [
+        [
+          {}
+        ]
+      ],
+      "permutations": 216,
+      "sha256": "59380d12888d381ad59d3958a0e80abe4aa39690994d21c667490e3f3dd61ca1",
+      "staticOptions": {
+        "COLOR_RAMP": "COLOR_RAMP_DISABLED",
+        "LIGHTING_MODE": "LIGHTING_DISABLED",
+        "NEAR_FADE": "NEAR_FADE_DISABLED",
+        "NEBULA_BLEEDING": "NEBULA_BLEEDING_DISABLED",
+        "PARTICLE_TYPE": "PARTICLE_STATIC"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/particles/static/2layermodulatenoatlasv2.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "19": 2,
+            "20": 6,
+            "27": 1,
+            "171": 1
+          }
+        ]
+      ],
+      "permutations": 2,
+      "sha256": "d992549b10b13bc2fd20ebe1999dd72c3fcf9ff8724a8d4b585c5f0abb20015d",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/twocolorflare.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "22": 1
+          }
+        ]
+      ],
+      "permutations": 1,
+      "sha256": "91afee1c67cd023934751b65d999ece1ebc284b03dcacc0d7f4d8e67730ef81a",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershader.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "22": 2
+          }
+        ]
+      ],
+      "namedSamplerUV": {
+        "DiffuseMap1Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "DiffuseMap2Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "DiffuseMap3Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "MaskMapSampler": [
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "permutations": 96,
+      "sha256": "7e340af29fd67ee13f803d298548764571a48e09ef34f43ac1a2b714ffb26e25",
+      "staticOptions": {
+        "DIFFUSE_MAP_COUNT": "TWO",
+        "MASK_TEXTURE_SAMPLING": "WRAP",
+        "MASK_TRANSFORM": "OFF",
+        "UBER_DEPTH": "UBER_DEPTH_OFF",
+        "VARIATION": "REGULAR"
+      }
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershader4layer.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "22": 2
+          }
+        ]
+      ],
+      "permutations": 1,
+      "sha256": "c86d42e733b5cbc9d30fd1b24e4c839f95dff6de14d9ad85149621a23946d2c2",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershaderdistortion.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "14": 0,
+            "19": 2,
+            "20": 2,
+            "22": 2,
+            "171": 1
+          },
+          {
+            "14": 0,
+            "19": 2,
+            "20": 2,
+            "22": 2,
+            "168": 3,
+            "171": 3
+          }
+        ]
+      ],
+      "permutations": 1,
+      "sha256": "df74ba9f5f5528770718eb1660e116f1b13440ed9649a999ea20bcc753c06f44",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/ubershadertwosided.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "22": 2
+          },
+          {
+            "22": 3
+          }
+        ]
+      ],
+      "namedSamplerUV": {
+        "DiffuseMap1Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "DiffuseMap2Sampler": [
+          [
+            1,
+            1
+          ]
+        ],
+        "MaskMapSampler": [
+          [
+            3,
+            3
+          ]
+        ]
+      },
+      "permutations": 2,
+      "sha256": "db7c7014c5dad81c27fd05e6d7801ee96053a2e88e799968ab9fd561a4fdf015",
+      "staticOptions": {}
+    },
+    "res:/graphics/effect.dx11/managed/space/specialfx/volumesphere.sm_depth": {
+      "mainStates": [
+        [
+          {
+            "22": 2
+          }
+        ]
+      ],
+      "permutations": 1,
+      "sha256": "54de737d65b003e5c8488efd400ad721c3fecada417aeae21b2a3b11adf0bc5e",
+      "staticOptions": {}
+    }
+  }
+}

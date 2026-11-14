@@ -221,14 +221,11 @@ function message(text) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => ($('copy-status').textContent = ''), 2800);
 }
+import { loadPreviewRenderer } from './preview-renderer.mjs';
 async function initialize() {
-  await import('./eve-model-viewer.js');
   // The documentation uses the site's resource configuration for local previews.
   // Copied examples and the component itself keep the production CDN default.
-  try {
-    const response = await fetch('./site-config.json');
-    if (response.ok) resourceBase = (await response.json()).resourceBaseURL;
-  } catch {}
+  resourceBase = (await loadPreviewRenderer()).resourceBaseURL;
   viewer = document.createElement('eve-model-viewer');
   viewer.setAttribute('item-id', '587');
   viewer.setAttribute('background', 'none');

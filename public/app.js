@@ -1,4 +1,4 @@
-import './eve-model-viewer.js?v=variant-camera-v1';
+let rendererModuleURL, rendererModule;
 import {
   locale,
   t,
@@ -8,7 +8,7 @@ import {
 } from './i18n.mjs?v=fitting-depth-v17-guide-v1';
 import { createCardGrid } from './card-grid.mjs';
 import { createCatalogState } from './catalog-state.mjs?v=dna-route-v1';
-import { createCatalogLoader } from './catalog-loader.mjs?v=subsystem-assembly-v1';
+import { joinDirectory } from './build-directory.mjs';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
 import { createAffiliationResolver } from './affiliation.mjs';
 import { configureResourceBase, resourceURL } from './resource-location.mjs?v=pages-backgrounds-v1';
@@ -407,9 +407,7 @@ function buildTree() {
     [...document.querySelectorAll('.tree-category[open]')].map((el) => Number(el.dataset.category)),
   );
   const treeScroll = $('catalog-tree').scrollTop;
-  const visibleCategories = data.categories
-    .map((cat) => ({ ...cat, groups: cat.groups.filter((group) => group.readyCount > 0) }))
-    .filter((cat) => cat.groups.length > 0);
+  const visibleCategories = data.categories;
   $('catalog-count').textContent = t('categories', { count: fmt(visibleCategories.length) });
   const readyByGroup = new Map(
     data.categories.flatMap((c) =>
@@ -547,7 +545,17 @@ function detailList() {
 
 async function openItem(id, route = true, dna = '') {
   const revision = ++detailRevision;
-  viewer.cancel();
+  try {
+    rendererModule ??= import(rendererModuleURL).catch(error => { rendererModule = undefined; throw error; });
+    await rendererModule;
+  } catch (error) {
+    console.error(error);
+    $('model-index-status').textContent = t('rendererUnavailable');
+    $('model-index-status').hidden = false;
+    return;
+  }
+  if (revision !== detailRevision) return;
+  viewer.cancel?.();
   // Give feedback in the click's own task, before waiting for the metadata shard.
   const preview = dna ? { dna, name: { en: dna, zh: dna } } : catalogLoader.peek(id);
   if (!$('model-dialog').open) lastFocus = document.activeElement;
@@ -664,7 +672,7 @@ function closeDetail(route = true) {
   }
   viewer.removeAttribute('item-id');
   viewer.removeAttribute('dna');
-  viewer.clear();
+  viewer.clear?.();
   delete viewerConfig.hangar;
   currentItem = null;
   variantState = { hull: '', open: false, groups: null, status: '' };
@@ -816,6 +824,7 @@ function renderCatalogError() {
 async function init() {
   try {
     const config = await loadJSON('./site-config.json', { cache: 'no-cache' }, { optional: true });
+    rendererModuleURL = config.rendererModuleURL || './eve-model-viewer.js?v=build-index-v1';
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
     configureResourceBase(config.resourceBaseURL, config.backgroundBaseURL, config.backgroundFiles);
@@ -835,51 +844,32 @@ async function init() {
       viewerConfig.invertWheel = localStorage.getItem('viewer.invertWheel') === 'true';
       viewerConfig.killCount = Number(localStorage.getItem('viewer.killCount')) || 0;
     } catch {}
-    const [index, identities, fallbackIndex, directory] = await Promise.all([
-      loadJSON(resourceURL('./data/catalog-index.json'), { cache: 'no-cache' }),
-      loadJSON('./icons/identities.json?v=sde-factions-20261103'),
-      loadJSON(
-        resourceURL('./assets/renders/index.json'),
-        { cache: 'no-cache' },
-        { optional: true },
-      ).catch(() => ({})),
-      loadJSON('./catalog.json'),
+    const [identities, directory] = await Promise.all([
+      loadJSON('./icons/identities.json?v=sde-factions-20261103'), loadJSON('./catalog.json'),
     ]);
-    const namesByItem = new Map(directory.flatMap(category =>
-      category.groups.flatMap(group => group.items.map(item => [item.id, item.name]))));
-    data = index;
-    renderFallbacks = fallbackIndex.items || {};
-    const resolveAffiliation = createAffiliationResolver(identities);
-    const identityByID = new Map(
-      [...identities.races, ...identities.factions].map((r) => [r.id, r]),
-    );
-    const ordered = [...data.races.map((r) => r.id), ...identities.factions.map((r) => r.id)];
-    data.races = [...new Set(ordered)].map((id) => {
-      const r = identityByID.get(id);
-      return { id, ...r.name, icon: r.icon };
-    });
-    catalogLoader = createCatalogLoader(
-      data,
-      (url) => loadJSON(resourceURL(url)),
-      (item) => {
-        for (const key of ['model', 'effects', 'thumbnail', 'render', 'image']) {
-          if (typeof item[key] === 'string') item[key] = resourceURL(item[key]);
-        }
-        if (namesByItem.has(item.id)) item.name = namesByItem.get(item.id);
-        item.metaGroupID ??= identities.typeMetaGroups?.[item.id];
-        Object.assign(item, resolveAffiliation(item));
-        return item;
-      },
-    );
-    data.items = [];
+    const affiliation = createAffiliationResolver(identities);
+    const applyInventory = inventory => {
+      data = joinDirectory(directory, inventory, identities, affiliation);
+      catalogLoader = data.loader;
+      groupsByID = new Map(data.categories.flatMap(c => c.groups.map(g => [g.id, {...g,category:c}])));
+    };
+    applyInventory(null);
     racesByID = new Map(data.races.map((r) => [r.id, r]));
-    groupsByID = new Map(
-      data.categories.flatMap((c) => c.groups.map((g) => [g.id, { ...g, category: c }])),
-    );
     readRoute();
     buildTree();
     setupEvents();
     await render();
+    try {
+      const inventory = await loadJSON(resourceURL('res/model-index.json'), {cache:'no-cache'});
+      if (inventory.version !== 1 || !inventory.models) throw Error('Unsupported model index');
+      applyInventory(inventory);
+      buildTree();
+      await render();
+    } catch (error) {
+      $('model-index-status').hidden = false;
+      console.warn('Model index unavailable', error);
+      return;
+    }
     if (catalog.state.item || catalog.state.dna) openItem(catalog.state.item, false, catalog.state.dna);
   } catch (error) {
     renderCatalogError();

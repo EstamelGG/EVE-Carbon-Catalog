@@ -1,5 +1,5 @@
 const defaultSort = group => group === -1 ? 'id' : 'race';
-const initialState = () => ({group:-1, race:0, scope:'ready', query:'', sort:'id', item:0, dna:''});
+const initialState = () => ({group:-1, race:0, scope:'all', query:'', sort:'id', item:0, dna:''});
 
 // One selection drives the route, counts and sorted results. The page owns
 // loading and presentation; this module never reads the DOM or mutates assets.
@@ -18,7 +18,7 @@ export function createCatalogState({groups, races, language, name}) {
     const race = Number(params.get('race'));
     return update({
       group, race:races().some(r => r.id === race) ? race : 0,
-      scope:params.get('scope') === 'all' ? 'all' : 'ready',
+      scope:params.get('scope') === 'ready' ? 'ready' : 'all',
       query:(params.get('q') || '').slice(0,120),
       sort:['race','name','id'].includes(params.get('sort')) ? params.get('sort') : defaultSort(group),
       item:Number(id) || 0,
@@ -28,7 +28,7 @@ export function createCatalogState({groups, races, language, name}) {
   function route() {
     const params = new URLSearchParams({group:String(state.group)});
     if (state.race) params.set('race', state.race);
-    if (state.scope !== 'ready') params.set('scope', state.scope);
+    if (state.scope !== 'all') params.set('scope', state.scope);
     if (state.query) params.set('q', state.query);
     if (state.sort !== defaultSort(state.group)) params.set('sort', state.sort);
     if (state.item) params.set('item', state.item);

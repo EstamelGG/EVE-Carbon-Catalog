@@ -1,0 +1,72 @@
+import { equipmentChoices } from './equipment-list.js';
+
+// All programmatic fits use the same transactional allocator as the controls.
+export async function configureEquipment({
+  viewer,
+  item,
+  options,
+  equipmentIds,
+  renderer,
+  nativePreview,
+  translate: t,
+  isCurrent,
+}) {
+  const checkCurrent = () => {
+    if (!isCurrent()) throw new DOMException('Superseded', 'AbortError');
+  };
+  const fittingData = await viewer.assetSession.json('data/fitting.json');
+  checkCurrent();
+  if (fittingData.version !== 2) throw Error('Fitting metadata version 2 is required');
+  const locators = fittingData.ships?.[item.id];
+  if (!locators?.length) throw Error('No compatible equipment mounts');
+  const equipment = fittingData.equipment.filter((item) => item.supported !== false);
+  if (!viewer.fitting) {
+    const settings = await viewer.assetSession.json(nativePreview);
+    checkCurrent();
+    viewer.lifecycle.set(
+      'fitting',
+      renderer.installFitting(viewer, {
+        locators,
+        equipment,
+        settings,
+        appearance: fittingData.appearance,
+        dna: item.dna,
+        hullCategory: item.categoryID,
+      }),
+    );
+  }
+  let choices;
+  if (equipmentIds !== undefined) {
+    try {
+      choices = equipmentChoices(equipmentIds, locators, equipment, item.categoryID);
+    } catch (error) {
+      if (error.equipmentIndex !== undefined)
+        error.message = t('equipmentCannotFit', {
+          index: error.equipmentIndex + 1,
+          itemId: error.itemId,
+          reason: error.cause?.message || error.message,
+        });
+      throw error;
+    }
+  } else {
+    choices =
+      options.fitting === undefined
+        ? new Map(
+            viewer.fitting.slots.flatMap(({ slot }) =>
+              viewer.fitting.get(slot) ? [[slot, viewer.fitting.get(slot).id]] : [],
+            ),
+          )
+        : new Map();
+    for (const entry of options.fitting?.equipment || []) {
+      if (!Number.isSafeInteger(entry.slot) || choices.has(entry.slot))
+        throw Error('Invalid or duplicate logical equipment slot');
+      choices.set(entry.slot, entry.itemId);
+    }
+  }
+  checkCurrent();
+  // Stage the complete list and commit it together; failures retain the old fit.
+  await viewer.fitting.replace(choices);
+  checkCurrent();
+  viewer.fitting.setDeployed(options.fitting?.deployed !== false);
+  viewer.fitting.setEditing(!!options.showHardpoints);
+}

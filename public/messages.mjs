@@ -1,4 +1,6 @@
 export const messages = {
+  rendererUnavailable: ['暂时无法加载渲染组件', 'Model viewer unavailable'],
+  indexUnavailable: ['暂时无法读取模型索引', 'Model availability unavailable'],
   diagnosticActualAA: ['实际抗锯齿', 'Active anti-aliasing'],
   diagnosticPerformance: ['渲染指标', 'Rendering metrics'],
   diagnosticScene: ['当前模型与场景', 'Model & scene'],

@@ -1,0 +1,33 @@
+{
+  "first": "717c11021e9f0b041ee68356bf2d80d285615417",
+  "second": "6bfb5b99e0b0d304e3662bb9efbf161dc15093e7",
+  "renderer_files": 170,
+  "physical_lines": 17858,
+  "denominator": 15485,
+  "with_target": 15202,
+  "reviewed": 9068,
+  "closed": 9068,
+  "reviewed_open": 0,
+  "pending": 6417,
+  "engine": {
+    "files": 114,
+    "denominator": 8494,
+    "with_target": 8494,
+    "reviewed": 8494,
+    "closed": 8494,
+    "reviewed_open": 0,
+    "pending": 0,
+    "reviewed_percent": 100.0,
+    "closed_percent": 100.0
+  },
+  "builder_python": {
+    "files": 137,
+    "denominator": 12792,
+    "reviewed": 10893,
+    "closed": 8927,
+    "reviewed_open": 1966,
+    "pending": 1899,
+    "reviewed_percent": 85.15,
+    "closed_percent": 69.79
+  }
+}

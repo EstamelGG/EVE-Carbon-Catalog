@@ -1,0 +1,9 @@
+{
+  "profile": "linear-palette-dielectric-paint-v1",
+  "paintIOR": 1.5,
+  "paintPerceptualRoughness": 0.6,
+  "glowResponse": {
+    "hull": [0.401651, 0.810060],
+    "glass": [1, 1]
+  }
+}

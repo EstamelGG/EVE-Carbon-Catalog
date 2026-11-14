@@ -1,7 +1,22 @@
-# EVE 物品图鉴
+# EVE-Carbon-Catalog
 
-运行 `.\start.ps1` 后打开 http://127.0.0.1:8795/ 。可用 -Renderer、-Published、-Cache、-Addon 和 -Port 指定位置。
+`public/` 保存图鉴网页、目录数据、字体和图标。[renderer/](renderer/) 保存渲染组件的源码、资源和工具。组件构建输出到 `renderer/model-catalog/dist/`，完整站点输出到根目录 `dist/`。两个输出目录都由 Git 忽略。
 
-public 中的图鉴页面、卡片、目录树、详情弹窗、使用指南、样式、字体和图标取自第一代 EVE-Model-Viewer-2 提交 717c11021e9f0b041ee68356bf2d80d285615417。site-config.json 使用同源资源。组件文件由同级 EVE-Carbon-Renderer 提供。详情页统一传 item-id。组件通过发布目录解析 DNA；详情中的 DNA 和同船体变体也读取同一份发布数据。独立调用组件仍可直接指定 dna。
+## GitHub Pages 发布
 
-public/catalog.json 保存分类、组、物品的编号和双语名称，不另存 DNA。运行 `py -3 import_catalog.py PATH_TO_PUBLISHED_DIST` 可刷新。卡片预览、可用状态及阵营等展示信息来自已有发布索引。
+首次发布时，在 **Settings → Pages → Build and deployment → Source** 选择 **GitHub Actions**。每次推送到 `main`，**Publish Catalog** 都会构建当前提交的 Renderer，并将组件、纹理解码器和图鉴一起发布。也可以手动运行该工作流。
+
+在 **Settings → Secrets and variables → Actions → Variables** 设置模型预览使用的发布地址：
+
+- `RESOURCE_BASE_URL` 指向 Builder 产出的资源站根目录，其下应能访问 `res/model-index.json`。
+- `RENDERER_MODULE_URL` 默认留空，图鉴使用本次构建的组件。需要外部组件时才填写其完整 URL。
+
+修改变量后重新运行工作流即可生效。省略变量时，页面从自身目录查找对应资源。使用独立域名时，资源和 ES 模块需允许来自 Pages 站点的跨域请求。
+
+## 本地构建和预览
+
+安装 Node.js 22、npm 和 PowerShell 7 后运行 `./build.ps1`。脚本按锁文件安装 Renderer 依赖并构建完整站点。指定模型资源地址的示例为 `./build.ps1 -ResourceBaseURL https://assets.example.org/`。
+
+单独发布 Renderer 时，在 Actions 中手动运行 **Release Renderer** 并输入新标签。Release 包含组件 JS 和可独立部署的完整 ZIP。[组件构建和使用说明](renderer/README.md)
+
+本地预览可用 `./start.ps1`，支持同样的 URL 参数以及 `-Port`。目录和搜索只读取自带的 `public/catalog.json`。预览状态读取资源站的 `res/model-index.json`，打开模型时才加载渲染组件。
