@@ -483,6 +483,8 @@ export function createComponentController(root, emit) {
       throw Error('item-id must be a positive integer');
     let item = useDNA ? await source.dna(options.dna) : await source.publishedItem(await loader.item(itemId));
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
+    if (options.itemIdentity?.id === item.id && options.itemIdentity.name)
+      item = { ...item, name: options.itemIdentity.name };
     baseItem = item;
     if (item?.groupID === 963 && item.subsystems) {
       await source.loadCatalog();

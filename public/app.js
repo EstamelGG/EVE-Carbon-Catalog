@@ -216,6 +216,7 @@ function showModel(item, dna = '') {
   return viewer
     .configure({
       ...viewerConfig,
+      itemIdentity: dna ? undefined : { id: item.id, name: item.name },
       subsystems: subsystemSelections.get(item.id),
       language: locale,
       controlPanel: true,
@@ -244,18 +245,14 @@ function renderVariants() {
     : null;
   list.innerHTML = (groups || [])
     .map((group) => {
-      const cards = group.items
-        .map((item) => {
-          const selected = item.dna === currentItem?.dna;
-          return `<button type="button" class="hull-variant-card" data-variant="${item.id}"${!item.available ? ' disabled' : ''} aria-pressed="${selected}" title="${esc(localizedName(item.name))}">
+      const item = group.dna === currentItem?.dna ? currentItem : group.items[0];
+      const selected = item.id === currentItem?.id;
+      return `<button type="button" class="hull-variant-card" data-variant="${item.id}"${!item.available ? ' disabled' : ''} aria-pressed="${selected}" title="${esc(localizedName(item.name))}">
       ${renderPreview(item)}
       <span class="hull-variant-name">${esc(localizedName(item.name))}</span>
       <span class="hull-variant-id">ID ${item.id}</span>
       <span class="hull-variant-state">${!item.available ? t('unavailable') : selected ? t('hullVariantCurrent') : ''}</span>
     </button>`;
-        })
-        .join('');
-      return cards;
     })
     .join('');
   prepareRenderImages(list);

@@ -13,6 +13,11 @@ export function componentResourceKey(options) {
   ]);
 }
 
+function itemName(model, id, dna) {
+  if (id == null || id === model.id) return model.name || {en:dna, zh:dna};
+  return model.itemNames?.[id] || {en:`ID ${id}`, zh:`ID ${id}`};
+}
+
 export function createComponentResources(key, fetchJSON) {
   const resolveURL = createResourceLocator(
     ...JSON.parse(key).map((value) => (value === null ? undefined : value)),
@@ -27,7 +32,7 @@ export function createComponentResources(key, fetchJSON) {
     const item = index.models[expected];
     if (!item.model || (itemId != null && !item.itemIds.includes(itemId))) throw Error('Invalid model index entry: ' + expected);
     return {...item, dna:expected, available:true, id:itemId ?? item.id, categoryID:item.categoryID ?? 6,
-      name:item.name || {en:expected,zh:expected}, model:resolveURL(item.model),
+      name:itemName(item, itemId, expected), model:resolveURL(item.model),
       effects:item.effects && resolveURL(item.effects)};
   }
   function dna(value, itemId, staticDNA=value) {
@@ -45,7 +50,7 @@ export function createComponentResources(key, fetchJSON) {
       const items = new Map();
       for (const [dna, model] of Object.entries(data.models)) {
         for (const id of model.itemIds) {
-          items.set(id, {id, dna, name:model.name, groupID:model.groupID, categoryID:model.categoryID, available:true});
+          items.set(id, {id, dna, name:itemName(model, id, dna), groupID:model.groupID, categoryID:model.categoryID, available:true});
         }
       }
       catalog = {
