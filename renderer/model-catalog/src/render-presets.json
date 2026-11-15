@@ -13,6 +13,7 @@
   "rules": [
     { "dna": "^[^:]*:[^:]*:(sansha|triglavian)(:|$)", "settings": { "f0": 2 } },
     { "dna": "^[^:]*:[^:]*:concord(:|$)", "settings": { "fill": 0.3 } },
-    { "dna": "^[^:]*:[^:]*:soe(:|$)", "settings": { "fill": 0.5 } }
+    { "dna": "^[^:]*:[^:]*:soe(:|$)", "settings": { "fill": 0.5 } },
+    { "dna": "^[^:]+:viziam:", "settings": { "sun": 0.7, "fill": 0.5 } }
   ]
 }
