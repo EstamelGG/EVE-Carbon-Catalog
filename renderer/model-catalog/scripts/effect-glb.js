@@ -19,14 +19,15 @@ export async function effectGeometry(session,ref){
         views.set(a.bufferView,raw.buffer);
       }
       const Type=({5123:Uint16Array,5125:Uint32Array,5126:Float32Array})[a.componentType];
-      return new Type(views.get(a.bufferView),a.byteOffset||0,a.count*({SCALAR:1,VEC2:2,VEC3:3})[a.type]);
+      return new Type(views.get(a.bufferView),a.byteOffset||0,a.count*({SCALAR:1,VEC2:2,VEC3:3,VEC4:4})[a.type]);
     }
     return {read,meshes:doc.meshes};
   });
   const primitives=accessor.meshes[ref.mesh].primitives;
   const selected=ref.vertices ? [primitives[0]] : primitives.slice(ref.first,ref.first+ref.count);
   const attrs=selected[0].attributes;
-  const pos=accessor.read(attrs.POSITION),norm=accessor.read(attrs.NORMAL),tex=accessor.read(attrs.TEXCOORD_0);
+  if(ref.instances)return {positions:accessor.read(attrs._INSTANCE_POSITION),data:accessor.read(attrs._INSTANCE_DATA)};
+  const pos=accessor.read(attrs.POSITION),norm=attrs.NORMAL!=null && accessor.read(attrs.NORMAL),tex=attrs.TEXCOORD_0!=null && accessor.read(attrs.TEXCOORD_0);
   const position=[],normal=[],uv=[],indices=[],remap=new Map();
   for(const faces of ref.vertices?[ref.vertices]:selected.map(p=>accessor.read(p.indices))){
     for(const id of faces){
@@ -34,7 +35,7 @@ export async function effectGeometry(session,ref){
       if(!remap.has(id)){
         remap.set(id,remap.size);
         position.push(pos[id*3],pos[id*3+1],pos[id*3+2]);
-        normal.push(norm[id*3],norm[id*3+1],norm[id*3+2]);uv.push(tex[id*2],tex[id*2+1]);
+        normal.push(norm?norm[id*3]:0,norm?norm[id*3+1]:0,norm?norm[id*3+2]:1);uv.push(tex?tex[id*2]:0,tex?tex[id*2+1]:0);
       }
       indices.push(remap.get(id));
     }

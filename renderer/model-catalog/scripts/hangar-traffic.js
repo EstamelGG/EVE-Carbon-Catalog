@@ -4,9 +4,9 @@ import {Group,Mesh,InstancedBufferGeometry,InstancedBufferAttribute,Vector4} fro
 // its phase, interpolating only adjacent samples of the authored track.
 export async function createHangarTraffic(record,resources) {
  const group=new Group(),geometry=resources.own(new InstancedBufferGeometry()),plane=resources.plane();
- geometry.index=plane.index;geometry.attributes={...plane.attributes};geometry.instanceCount=record.traffic.length;
- for(const [name,key] of [['trafficPosition','Position'],['trafficData','TextureCoordinates0']])
-  geometry.setAttribute(name,new InstancedBufferAttribute(new Float32Array(record.traffic.flatMap(v=>v[key])),4));
+ geometry.index=plane.index;geometry.attributes={...plane.attributes};geometry.instanceCount=record.traffic.positions.length/4;
+ geometry.setAttribute('trafficPosition',new InstancedBufferAttribute(record.traffic.positions,4));
+ geometry.setAttribute('trafficData',new InstancedBufferAttribute(record.traffic.data,4));
  const [positionMap,texMap]=await Promise.all([resources.texture(record.material.textures.PositionMap,{repeat:true}),resources.texture(record.material.textures.TexMap)]);
  const uniforms={time:{value:0},PositionMap:{value:positionMap},TexMap:{value:texMap}};
  for(const [name,value] of Object.entries(record.material.parameters))uniforms[name]={value:new Vector4(...value)};

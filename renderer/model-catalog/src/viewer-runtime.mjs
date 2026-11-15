@@ -100,7 +100,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     await plan(viewer, {...item, model:source}, context);
     if (!operation.isCurrent()) return null;
     if (item.renderKind === 'equipment') viewer.equipmentPreview = await api.loadEquipmentPreview(viewer, item.effects);
-    else void api.prefetchViewerAssets(viewer, item.effects, !!settings.nativePreview && !settings.nativePreview.includes("res/lighting/"), source).catch(() => {});
+    else void api.prefetchViewerAssets(viewer, item.effects, !!settings.nativePreview && !item.preview, source).catch(() => {});
     if (!operation.isCurrent()) return null;
     // Observe early errors while warming settings; the installer awaits this
     // same session-cached promise and failed requests remain retryable.
@@ -181,7 +181,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
       if (!new URL(source).pathname.endsWith('.gltf')) return false;
       await plan(viewer, {...item, model:source}, context);
       if (!operation.isCurrent()) return false;
-      void api.prefetchViewerAssets(viewer, item.effects, !!settings.nativePreview && !settings.nativePreview.includes("res/lighting/"), source).catch(() => {});
+      void api.prefetchViewerAssets(viewer, item.effects, !!settings.nativePreview && !item.preview, source).catch(() => {});
       const document = await viewer.assetSession.json(source);
       if (!operation.isCurrent()) return false;
       if (!api.canReuseHull(viewer.baseDocument || viewer.originalGltfJson, viewer.src, document, source)) return false;

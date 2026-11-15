@@ -25,10 +25,13 @@ export async function planViewerResources(viewer, item, native, backgroundID, ba
   const tasks = new URL(source).pathname.endsWith('.gltf') ? [read(source).then(doc => visit(doc, source))] : [];
   if (item.effects) tasks.push(read(item.effects).then(doc => visit(doc, location.href)).catch(error=>{if(error?.name==="AbortError")throw error;}));
   if (native) {
-    tasks.push(read(native).then(settings => visit(settings.environment?.source, location.href)));
-    if (item.renderKind !== 'equipment' && !native.includes('res/lighting/')) tasks.push(read('data/reflection-preview.json').then(doc => {
-      const settings = doc.races[viewer.previewRace] || doc.races.gallente;
-      add(resolveURL(settings.reflection)); add(resolveURL(settings.diffuse));
+    tasks.push(read(native).then(async settings => {
+      if(settings.environment?.source)visit(settings.environment.source, location.href);
+      else if(item.renderKind !== 'equipment'){
+        const doc=await read('data/reflection-preview.json');
+        const race=doc.races[viewer.previewRace] || doc.races.gallente;
+        add(resolveURL(race.reflection));add(resolveURL(race.diffuse));
+      }
     }));
   }
   await Promise.all(tasks);

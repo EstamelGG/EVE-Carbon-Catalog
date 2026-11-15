@@ -129,10 +129,12 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   }
   const paintBones = [];
   for (const record of data.decals.filter(record => !record.material)) {
+    let update;
+    try{update=decalBoneTransform(viewer,scene,root,record.parentBoneIndex,owner);}
+    catch(error){console.warn('[eve-model-viewer] Projected decal skipped',record.geometry?.sharedGeometryURL,error);continue;}
     const material=await createPaintDecal(record,resources,viewer.decalLightingUniforms);
     const object = new Mesh(resources.geometry(record.geometry), material);
     object.name = 'EVE projected decal';
-    const update = decalBoneTransform(viewer, scene, root, record.parentBoneIndex, owner);
     if (update) {
       object.matrixAutoUpdate = false;
       paintBones.push({object, update});

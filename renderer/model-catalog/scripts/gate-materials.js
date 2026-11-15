@@ -75,7 +75,7 @@ export function gateFragment(record) {
   const maps=Object.entries(textures).map(([k,v])=>`uniform ${v.volume?'highp sampler3D':'sampler2D'} ${k};`).join('\n');
   const sample=(name,uv='gateUV')=>name in textures?`texture(${name},${uv})`:'vec4(1)';
   let body;
-  if(shader==='fx3dv5.fx'&&textures.LayerAllMap?.volume)return volumeFieldFragment(record);
+  if(shader==='fx3dv5.fx'&&textures.LayerAllMap)return volumeFieldFragment(record);
   if(shader==='flare.fx') {
     // Interpret the horizontal flare LUT as a disc profile; the repeated rows
     // are padding. Radius one is the edge of the inscribed circle.
@@ -92,7 +92,7 @@ void main(){${body}}`;
 }
 
 export async function gateMaterial(record,resources,context) {
-  if(['quadglassv5.fx','quadv5.fx'].includes(record.shader))return glassAttachmentMaterial(record,resources,context);
+  if(['quadglassv5.fx','quadv5.fx','quaddetailv5.fx'].includes(record.shader))return glassAttachmentMaterial(record,resources,context);
   const uniforms={time:{value:0}};
   for(const [k,v] of Object.entries(gateParameters(record)))
     uniforms[k]={value:new Vector4(...(Array.isArray(v)?v:[v,0,0,0]))};

@@ -48,7 +48,8 @@ export async function gateParticles(record,resources,root,siblingRecords=[], sha
   const pool=new GateParticlePool(record,capacity,siblingRecords),objects=[],passes=[],softPasses=[];
   const gpuDraw = gpu && shareGpu ? {root, pool, visible:false} : null;
   let uploadCapacity = gpu ? Math.min(256, capacity) : capacity;
-  const geometry = gpuDraw ? null : resources.own(particleGeometry(resources.plane(), uploadCapacity));
+  const sourceGeometry = gpuDraw ? null : record.geometry ? resources.geometry(record.geometry) : resources.plane();
+  const geometry = gpuDraw ? null : resources.own(particleGeometry(sourceGeometry, uploadCapacity));
   const transit=record.materials.find(m=>m.shader==='gateparticles.fx');
   // Both DX11 and DX12 packaged static option tables declare PARTICLE_DEPARTURE at the default index.
   const event=transit?(transit.options?.EFFECT_TYPE||'PARTICLE_DEPARTURE'):null;
@@ -209,7 +210,7 @@ export async function gateParticles(record,resources,root,siblingRecords=[], sha
     if (pool.items.length > uploadCapacity) {
       uploadCapacity = Math.min(capacity, 2 ** Math.ceil(Math.log2(pool.items.length)));
       geometry.dispose();
-      particleGeometry(resources.plane(), uploadCapacity, geometry);
+      particleGeometry(sourceGeometry, uploadCapacity, geometry);
     }
     geometry.instanceCount=pool.items.length;
     for(const mesh of objects)mesh.visible=drawVisible&&pool.items.length>0&&(!mesh.userData.eveArea||animation.node(mesh.userData.eveArea).display!==false);
