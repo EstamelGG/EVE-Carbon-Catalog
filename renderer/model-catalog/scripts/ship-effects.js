@@ -13,6 +13,7 @@ import { installGateEffects } from './ship-gates.js';
 import { createShipDamage } from './ship-damage.js';
 import { createEffectResources } from './effect-resources.js';
 import { resolveEffectGeometry } from './effect-geometry.mjs';
+import {effectGeometry} from './effect-glb.js';
 import { loadJSON } from '../src/resource-activity.mjs';
 import { installLightBudget } from './effect-performance.js';
 import { installNavigationLights } from './navigation-lights.js';
@@ -83,14 +84,15 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     // Resolve each independent effect list separately so a corrupt shared mesh or
     // animation only drops the entry that refers to it.
     async function resolveEntry(entry,role) {
-      try { return await resolveEffectGeometry(entry,read); }
+      try { return await resolve(entry); }
       catch(error) {
         if(error?.name==='AbortError')throw error;
         console.error('[eve-model-viewer] Effect skipped',{typeID:data.typeID,role,url},error);
         return null;
       }
     }
-    try {data=await resolveEffectGeometry(packed,read);}
+    const resolve=doc=>resolveEffectGeometry(doc,read,6,ref=>effectGeometry(viewer.assetSession,ref));
+    try {data=await resolve(packed);}
     catch(error){
       if(error?.name==='AbortError')throw error;
       for(const field of ['scene','gate','supplements','lighting','planeGlow']){

@@ -36,7 +36,7 @@ export async function planHangarResources(session, room, ship) {
     catch(error){if(error?.name==="AbortError")throw error;return;}
     function visit(value) {
       if (typeof value === 'string') {
-        if (/\.(?:json|rgba|rgba32f|f32|dds|webp|png|jpe?g|hdr|bin)(?:[?#]|$)/i.test(value) && !/^res:/i.test(value))
+        if (/\.(?:glb|ktx2|json|rgba|rgba32f|f32|dds|webp|png|jpe?g|hdr|bin)(?:[?#]|$)/i.test(value) && !/^res:/i.test(value))
           add(resolveURL(value));
         return;
       }

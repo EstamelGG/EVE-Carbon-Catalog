@@ -5,10 +5,15 @@ const validSamples = data => Array.isArray(data) && data.length > 0 && data.ever
   typeof sample === 'boolean' || Number.isFinite(sample) ||
   (Array.isArray(sample) && sample.length > 0 && sample.every(Number.isFinite)));
 
-export async function resolveEffectGeometry(document, loadJSON, concurrency = 6) {
+export async function resolveEffectGeometry(document, loadJSON, concurrency = 6, loadMesh) {
   const urls = new Set();
+  const meshes=new Map(),references=new Map();
   function visit(value) {
     if (!value || typeof value !== 'object') return;
+    if(value.primitive==='unitQuad'||(value.url?.endsWith?.('.glb')&&Number.isInteger(value.mesh))){
+      const key=JSON.stringify(value);
+      urls.add(key);meshes.set(key,value);references.set(value,key);return;
+    }
     if (sharedURL.test(value.url || '')) { urls.add(value.url); return; }
     if (Array.isArray(value.position) && Array.isArray(value.indices)) return;
     for (const child of (Array.isArray(value) ? value : Object.values(value)))
@@ -20,7 +25,9 @@ export async function resolveEffectGeometry(document, loadJSON, concurrency = 6)
   let cursor = 0;
   async function worker() {
     while (cursor < queue.length) {
-      const url = queue[cursor++], data = await loadJSON(url);
+      const url = queue[cursor++];
+      if(meshes.has(url)){loaded.set(url,await loadMesh(meshes.get(url)));continue;}
+      const data = await loadJSON(url);
       if (url.startsWith('assets/effect-animation/')) {
         if (!validSamples(data)) throw new Error(`Invalid shared effect animation: ${url}`);
         loaded.set(url, data);
@@ -34,6 +41,7 @@ export async function resolveEffectGeometry(document, loadJSON, concurrency = 6)
   await Promise.all(Array.from({length: Math.min(Math.max(1, concurrency), queue.length)}, worker));
   function replace(value) {
     if (!value || typeof value !== 'object') return value;
+    if(references.has(value))return loaded.get(references.get(value));
     if (loaded.has(value.url)) return loaded.get(value.url);
     if (Array.isArray(value.position) && Array.isArray(value.indices)) return value;
     let result = value;

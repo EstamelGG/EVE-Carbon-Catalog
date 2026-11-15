@@ -13,7 +13,7 @@ export async function planViewerResources(viewer, item, native, backgroundID, ba
   const add = (value, base = location.href) => {
     if (typeof value !== 'string' || /^(?:data:|blob:|res:)/i.test(value)) return;
     if (!/\.(?:gltf|glb|bin|rgba|rgba32f|f32|json|webp|dds|png|jpe?g|hdr)(?:[?#]|$)/i.test(value)) return;
-    urls.add(new URL(value.startsWith('assets/') || value.startsWith('github-assets/') ? resolveURL(value) : value, base).href);
+    urls.add(new URL(/^(?:res|assets|github-assets)\//.test(value) ? resolveURL(value) : value, base).href);
   };
   const visit = (value, base) => {
     if (typeof value === 'string') add(value, base);

@@ -1,4 +1,5 @@
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import {loadArrayBuffer} from '../src/resource-activity.mjs';
 
 // A hangar document has independent layout roots sharing mesh/buffer caches.
@@ -7,7 +8,7 @@ import {loadArrayBuffer} from '../src/resource-activity.mjs';
 export async function loadHangarGeometry(document,url,root,{onNode=()=>{},plan=()=>{},valid=()=>true,arrayBuffer=loadArrayBuffer}={}){
  const base=new URL('.',url).href;
  plan((document.buffers||[]).filter(b=>b.uri&&!b.uri.startsWith('data:')).map(b=>new URL(b.uri,base).href));
- const loader=new GLTFLoader();
+ const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  loader.register(parser=>{
   const originalBuffer=parser.loadBuffer.bind(parser),originalScene=parser.loadScene.bind(parser);
   parser.loadBuffer=index=>{

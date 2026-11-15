@@ -2,13 +2,14 @@ import {$scene} from '@google/model-viewer/lib/model-viewer-base.js';
 import {Group, Mesh, LinearSRGBColorSpace, CubeReflectionMapping} from 'three';
 import {createEffectResources, beforeSceneRender} from './effect-resources.js';
 import {resolveEffectGeometry} from './effect-geometry.mjs';
+import {effectGeometry} from './effect-glb.js';
 import {equipmentBackground, equipmentFloorMaterial,installEquipmentFloorBlend,equipmentStarfield} from './equipment-scene.js';
 import {pageAnimationLoop} from './page-activity.js';
 
 export async function loadEquipmentPreview(viewer, url) {
   const packed = await viewer.assetSession.json(url);
   if (packed.equipment?.version !== 1) throw new Error('Missing equipment preview metadata');
-  return resolveEffectGeometry(packed.equipment, path => viewer.assetSession.json(path));
+  return resolveEffectGeometry(packed.equipment, path => viewer.assetSession.json(path),6,ref=>effectGeometry(viewer.assetSession,ref));
 }
 
 // The carrier is a sibling of the model: its huge floor never enters camera

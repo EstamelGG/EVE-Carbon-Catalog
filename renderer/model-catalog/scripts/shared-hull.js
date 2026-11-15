@@ -1,7 +1,7 @@
 // Keep the geometry bytes session-owned. Each GLTFLoader parser gets its own
 // document because it annotates materials, primitives and extension records.
-export async function parseSharedHull(loader, session, geometryURL, appearance) {
-  const shared = await session.buffer(geometryURL, async () => {
+export function sharedGlb(session, geometryURL) {
+  return session.buffer(geometryURL, async () => {
     const bytes = await session.arrayBuffer(geometryURL, undefined, 'resourceModel');
     const view = new DataView(bytes);
     if (view.getUint32(0,true)!==0x46546c67 || view.getUint32(4,true)!==2 ||
@@ -12,6 +12,9 @@ export async function parseSharedHull(loader, session, geometryURL, appearance) 
       throw Error('Missing shared geometry buffer: '+geometryURL);
     return {json:new TextDecoder().decode(new Uint8Array(bytes,20,length)), buffer:bytes.slice(bin+8)};
   });
+}
+export async function parseSharedHull(loader, session, geometryURL, appearance) {
+  const shared=await sharedGlb(session, geometryURL);
   const doc=JSON.parse(shared.json);
   const bonePalette=doc.extras?.ccpdec?.bonePalette;
   const {slotMaterials,materials,images,textures,samplers,extras}=appearance;
