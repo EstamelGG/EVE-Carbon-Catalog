@@ -10,6 +10,7 @@ import { createFlareBatch } from './flare-batch.js';
 import { decalBoneTransform } from './decal-projection.js';
 import { createPaintDecal } from './paint-decal.js';
 import { authoredLocal, authoredWorld } from './ship-authored-spotlights.js';
+import { applyGateModifiers, gateBones } from './gate-transforms.js';
 import { createLayeredMeshMaterial, regularVertex, layerCoordinates } from './layered-mesh-material.js';
 
 // Native texturecolor.fx: UV scaling/translation, sampled color and brightness.
@@ -126,7 +127,18 @@ export async function installSupplements(viewer, scene, root, data, resources, g
       data.decals.filter(record => record.material === 'glow'), resources, () => getState().elapsed, owner);
   } catch (error) { disposeKillMarks(); throw error; }
   const eye=new Vector3(),rotation=new Quaternion(),inverse=new Matrix4();
-  const transforms = createTransformCache(entries.map(entry => entry.transforms), authoredWorld,
+  const paths=entries.map(entry=>entry.transforms);
+  const hasBones=paths.some(path=>path.some(node=>node.transformModifiers?.some(m=>m.type.endsWith('AttachToBone'))));
+  const boneAt=hasBones && gateBones(owner?.document??viewer.originalGltfJson,owner?.model??scene.model);
+  const identityAnimation={node:source=>source};
+  function evaluate(node,parent,eye,rotation){
+    if(!node.transformModifiers?.length)return authoredWorld(node,parent,eye,rotation);
+    const world=parent.clone().multiply(authoredLocal(node));
+    if(!applyGateModifiers(world,node.transformModifiers,identityAnimation,root,eye,rotation,boneAt))
+      world.makeScale(0,0,0);
+    return world;
+  }
+  const transforms = createTransformCache(paths, hasBones?evaluate:authoredWorld,
     node=>node.transformModifiers?.some(modifier=>!modifier.type.endsWith('ModifierSRT')));
   const world = new Matrix4(), center = new Vector3();
   const visibility = entries.some(entry => entry.flare) ? createFlareVisibility() : null;
@@ -143,7 +155,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
     const elapsed=getState().elapsed;
     for(const uniform of clocks)uniform.value=elapsed;
     const width=camera.viewport?.z??renderer.getCurrentViewport(viewport).z;
-    if(previousCamera===camera && previousWidth===width && previousDepth===camera.reversedDepth &&
+    if(!hasBones && previousCamera===camera && previousWidth===width && previousDepth===camera.reversedDepth &&
        view.equals(camera.matrixWorldInverse) && rootWorld.equals(root.matrixWorld) && projection.equals(camera.projectionMatrix))return;
     previousCamera=camera;previousWidth=width;previousDepth=camera.reversedDepth;
     view.copy(camera.matrixWorldInverse);projection.copy(camera.projectionMatrix);rootWorld.copy(root.matrixWorld);
