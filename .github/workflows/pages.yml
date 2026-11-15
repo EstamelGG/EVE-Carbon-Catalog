@@ -23,15 +23,10 @@ jobs:
           cache: npm
           cache-dependency-path: renderer/model-catalog/package-lock.json
       - name: Build Catalog
-        shell: pwsh
         env:
           RESOURCE_BASE_URL: ${{ vars.RESOURCE_BASE_URL }}
           RENDERER_MODULE_URL: ${{ vars.RENDERER_MODULE_URL }}
-        run: |
-          $options = @{}
-          if ($env:RESOURCE_BASE_URL) { $options.ResourceBaseURL = $env:RESOURCE_BASE_URL }
-          if ($env:RENDERER_MODULE_URL) { $options.RendererModuleURL = $env:RENDERER_MODULE_URL }
-          ./build.ps1 @options
+        run: npm run build
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

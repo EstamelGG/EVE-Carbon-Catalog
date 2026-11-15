@@ -1,0 +1,32 @@
+name: Check Tranquility SDE
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # 21:00 Asia/Shanghai
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: check-tranquility-sde
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Check official SDE version
+        run: python3 scripts/sde.py
+      - name: Push version change for Cloudflare Pages
+        run: |
+          if git diff --quiet -- sde-version.txt; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- sde-version.txt
+          git commit -m "Update Tranquility SDE to $(cat sde-version.txt)"
+          git pull --rebase origin main
+          git push origin HEAD:main
