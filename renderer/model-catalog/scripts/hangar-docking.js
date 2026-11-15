@@ -9,9 +9,14 @@ const platforms=[
  {name:'mdepl_s_01a',kind:'small',position:[0,-.020935099571943283,-.04888070002198219]},
  {name:'mdepl_m_01a',kind:'medium',position:[-.6601563096046448,-.3714067041873932,-.20597140491008759]},
 ];
+// Modular hangar size classes by SDE group (hangar_camera.py's
+// SHIP_SIZE_CLASS_LOOKUP_DICTIONARY). Capsules and small hulls share a berth.
+const capitalGroups=new Set([30,485,513,547,659,883,902,1538,4594,5120]);
+const mediumGroups=new Set([26,27,28,358,380,419,463,540,543,832,833,894,898,900,
+  906,941,963,1201,1202,1305,1972,4902,5087]);
 function platformAt(room,kind,dock){
  return platforms.find(p=>p.kind===kind&&room.locatorSets?.some(set=>
-  (set.name===p.name||set.name===p.name+'_FOB'||set.name===p.name+'_deathless')&&
+  [p.name,p.name+'_fob',p.name+'_deathless'].includes(set.name.toLowerCase())&&
   set.locators.some(([pos])=>pos.every((v,i)=>Math.abs(v-dock.position[i])<.01))));
 }
 export function hangarDockPose(room,item,box,radius){
@@ -20,12 +25,14 @@ export function hangarDockPose(room,item,box,radius){
   const support=box.getCenter(new Vector3());support.y=box.min.y;
   return {position:new Vector3(...room.environment.anchor).sub(support.applyQuaternion(rotation)),rotation,source:'anchorpoint'};
  }
- const size=Number(room.sizeClasses?.[item.groupID]??1),kind=size>=3?'capital':size>=2?'medium':'small';
+ const group=Number(item.groupID);
+ const size=room.sizeClasses?.[group] ?? (capitalGroups.has(group)?3:mediumGroups.has(group)?2:1);
+ const kind=size>=3?'capital':size>=2?'medium':'small';
  let selected=kind,dock=room.docks?.[kind];
  if(!dock){
   const substitute=kind==='small'?'small':'medium';
   const platform=platforms.filter(p=>p.kind===substitute).flatMap(p=>
-   [p.name,p.name+'_FOB',p.name+'_deathless']).map(name=>room.locatorSets?.find(s=>s.name===name&&s.locators.length)).find(Boolean);
+   [p.name,p.name+'_fob',p.name+'_deathless']).map(name=>room.locatorSets?.find(s=>s.name.toLowerCase()===name&&s.locators.length)).find(Boolean);
   if(platform){const [position,rotation]=platform.locators[0];selected=substitute;dock={position,rotation,source:platform.name};}
  }
  if(!dock){selected=['capital','medium','small'].find(key=>room.docks?.[key]);dock=room.docks?.[selected];}

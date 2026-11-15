@@ -5,7 +5,7 @@ import {createHangarObstacles} from './hangar-obstacles.js';
 // Three's default perspective lens is the viewer's base lens for a room.
 // EveCamera::CalculateProjectionMatrix caps horizontal span at aspect 1.6.
 // https://github.com/carbonengine/trinity/blob/f644516ae4f921f6f3a3e58dc5d19107781571ec/trinity/Eve/EveCamera.cpp#L602-L635
-const baseHalfAngle = MathUtils.degToRad(50 / 2);
+const baseHalfAngle = 0.5; // Hangar orbit lens: one radian vertically at aspect 1.6.
 const validAspect = aspect => Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
 export function hangarFieldOfView(aspect) {
  const ratio = validAspect(aspect);
@@ -28,6 +28,14 @@ export function hangarCameraRange(room, radius, aspect, nearClip) {
 
 export function createHangarCamera(viewer,scene,controls){
  let saved=null;
+ const adjustOrbit=controls.adjustOrbit;
+ function orbitInRoom(theta,phi,zoom){
+  adjustOrbit.call(controls,theta,phi,0);
+  if(zoom){
+   const goal=controls.goalSpherical;
+   controls.setOrbit(goal.theta,goal.phi,goal.radius*Math.exp(zoom));
+  }
+ }
  let obstacles=null,obstacleRoot=null,safeRadius=null,lastFrame=-1,lastTime=0;
  const direction=new Vector3(),origin=new Vector3(),desired=new Vector3(),right=new Vector3(),up=new Vector3();
  const corners=Array.from({length:4},()=>new Vector3());
@@ -78,7 +86,7 @@ export function createHangarCamera(viewer,scene,controls){
  return {
   setObstacles(value){obstacleRoot=value;obstacles=value?createHangarObstacles(value):null;safeRadius=null;lastFrame=-1;lastDesired.set(Infinity,0,0);
    if(!value&&controls.spherical){scene.getCamera().position.setFromSpherical(controls.spherical);scene.getCamera().updateMatrixWorld(true);}},
-  configure(range,scale,{preserveView=false,fieldOfView}={}){
+  configure(range,scale,{preserveView=false}={}){
    if(!saved)saved={minimumRadius:controls.options.minimumRadius,maximumRadius:controls.options.maximumRadius,
     fov:controls.getFieldOfView()};
    const radii=preserveView?[controls.goalSpherical?.radius,viewer.getCameraOrbit?.().radius]
@@ -87,10 +95,11 @@ export function createHangarCamera(viewer,scene,controls){
    // background's limits cannot silently reframe an already zoomed view.
    controls.applyOptions({minimumRadius:Math.min(range.minimum*scale,...radii),
     maximumRadius:Math.max(range.maximum*scale,...radii)});
-   if(fieldOfView!==undefined||!preserveView)controls.setFieldOfView(fieldOfView??hangarFieldOfView(scene.aspect));
+   controls.adjustOrbit=orbitInRoom;
+   controls.setFieldOfView(hangarFieldOfView(scene.aspect));
   },
   restore(){this.setObstacles(null);if(!saved)return;const {fov,...options}=saved;saved=null;
-   controls.applyOptions(options);controls.setFieldOfView(fov);},
+   controls.adjustOrbit=adjustOrbit;controls.applyOptions(options);controls.setFieldOfView(fov);},
   dispose(){this.restore();stop();},
  };
 }

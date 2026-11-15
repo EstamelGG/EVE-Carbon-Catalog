@@ -103,7 +103,7 @@ export function createHangarViewer(viewer,{item,settings}) {
   }else if(ship)ship.add(next.room.dockLights);
   viewer.dataset.hangarDock=JSON.stringify({room:next.entry.key,source:dock.source,kind:dock.kind,platform:dock.platform,anchor:dock.anchor?.toArray(),lift:dock.lift,position:dock.position.toArray(),rotation:dock.rotation.toArray()});
  }
- function configureCamera(preserveView=false,fieldOfView){
+ function configureCamera(preserveView=false){
   // SkinnedMesh updates its inverse bind frame in updateMatrixWorld, not
   // updateWorldMatrix. Without this, newly attached large ships measure tiny.
   root.updateWorldMatrix(true,false);root.updateMatrixWorld(true);
@@ -115,15 +115,16 @@ export function createHangarViewer(viewer,{item,settings}) {
    const home=Number(viewer.dataset.homeDistance)/scale;
    if(home>0){range.minimum=Math.min(range.minimum,home);range.maximum=Math.max(range.maximum,home);}
   }
-  hangarCamera.configure(range,scale,{preserveView,fieldOfView});
+  hangarCamera.configure(range,scale,{preserveView});
   return {range,scale};
  }
  function reset(instant=false){
   if(!current)return;
   restoreFocusLimits(viewer);
   if(isShip){
-   // Ships have one home view, independent of the chosen background.
-   configureCamera(true,30);resetView(viewer,{reducedMotion:instant});return;
+   const {range,scale}=configureCamera();
+   viewer.cameraOrbit=`35deg 70deg ${range.distance*scale}m`;
+   resetView(viewer,{reducedMotion:instant,preserveOrbit:true});return;
   }
   const {range,scale}=configureCamera();
   const target=root.localToWorld(center.clone());scene.target.worldToLocal(target);
