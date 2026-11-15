@@ -61,12 +61,14 @@ async function choose(first=false){
   el('modifiers').disabled=true;el('copy').disabled=true;
   try{
     const hull=el('hull').value;
-    select('faction',Object.keys(recipes).filter(k=>k.startsWith(hull+':')).map(k=>k.split(':')[1]),first?initialFaction:undefined);
-    const entry=recipes[hull+':'+el('faction').value];
+    const entry=recipes[hull];
     const url=key=>new URL(key.slice(4),base);
     const [next,opts]=await Promise.all([read(url(entry.recipe.palette).href),read(url(entry.recipe.options).href)]);
     if(seq!==selection)return;
     palette=next;options=opts;
+    const factions=Object.keys(opts.bindings);
+    if(first && initial && !factions.includes(initialFaction))throw Error(text('未发布的阵营','Unpublished faction'));
+    select('faction',factions,first?initialFaction||entry.baseFaction:undefined);
     if(first && initial){
       const pattern=initialParts.get('pattern')?.split(';')[0], insert=initialParts.get('respathinsert');
       if(!Object.hasOwn(palette.races,initialRace) || (pattern && !Object.hasOwn(opts.patterns,pattern)) ||
@@ -103,8 +105,8 @@ async function init(){
   const [index]=await Promise.all([read(new URL('model-index.json',base).href),import(config.rendererModuleURL||'./eve-model-viewer.js')]);
   recipes=index.dnaRecipes||{};
   if(!Object.keys(recipes).length)throw Error(text('当前资源站尚未发布 DNA 配方库。','This resource site has no published DNA recipes.'));
-  const hulls=[...new Set(Object.keys(recipes).map(k=>k.split(':')[0]))];
-  if(initial && !Object.hasOwn(recipes,initialHull+':'+initialFaction))
+  const hulls=[...new Set(Object.keys(recipes))];
+  if(initial && !Object.hasOwn(recipes,initialHull))
     throw Error(text('链接中的舰体或阵营未发布。','The hull or faction in this link has not been published.'));
   select('hull',hulls,initialHull||'mf4_t1');el('components').disabled=false;await choose(true);
 }

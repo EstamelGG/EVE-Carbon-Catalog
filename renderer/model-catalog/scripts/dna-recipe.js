@@ -6,8 +6,10 @@ function option(options,key,label){
 
 export async function assembleDNA(dna,index,load,resolveURL){
   const [hull,faction,race,...tokens]=dna.split(':');
-  const base=option(index.dnaRecipes||{},hull+':'+faction,'未发布舰体与阵营组合');
+  const base=option(index.dnaRecipes||{},hull,'未发布舰体');
   const [palette,options,packet]=await Promise.all([load(base.recipe.palette),load(base.recipe.options),load(base.effects)]);
+  const factionData=option(palette.factions,faction,'未发布阵营');
+  const selection=option(options.bindings,faction,'舰体缺少该阵营的绑定');
   const style=option(palette.races,race,'缺少种族配置');
   const commands=new Map();
   for(const token of tokens){
@@ -22,9 +24,10 @@ export async function assembleDNA(dna,index,load,resolveURL){
   const layers=pattern.length?option(options.patterns,pattern[0],'图案没有此舰体的投影'):null;
   const insert=commands.get('respathinsert')?.[0];
   const variants=insert && insert!=='none'?option(options.inserts,insert,'缺少贴图变体'):
-    insert==='none'?{}:options.inserts[base.recipe.insert]||{};
+    insert==='none'?{}:options.inserts[factionData.insert]||{};
   for(const name of [...materials,...pattern.slice(1)])if(name!=='none')option(palette.materials,name,'未知材质');
-  const appearance=structuredClone(base.appearance);
+  const layout=options.layouts[selection.layout];
+  const appearance=structuredClone({...layout,materials:layout.materials.map(i=>options.materialPool[i]),extras:base.appearance.extras});
   const directory=base.model.split('/').slice(0,-1);
   const relative=url=>'../'.repeat(directory.length-1)+url.slice(4);
   const modelURL=new URL('/'+base.model,location.href);
@@ -50,7 +53,7 @@ export async function assembleDNA(dna,index,load,resolveURL){
           if(value)native.parameters[key]=value;
         }
         if(key==='GeneralHeatGlowColor' && ['Primary','Reactor'].includes(area.area))
-          native.parameters[key]=base.recipe.colors[style.heat[area.area==='Primary'?0:1]];
+          native.parameters[key]=factionData.colors[style.heat[area.area==='Primary'?0:1]];
       }
       if(layers){
         native.patterns=[];
@@ -67,18 +70,31 @@ export async function assembleDNA(dna,index,load,resolveURL){
       }
     }
   }
-  const effects={...packet,booster:{...packet.booster,...style.style}};
-  if(!packet.booster.placements.length)effects.booster=packet.booster;
-  if(Object.keys(variants).length && packet.supplements){
-    effects.supplements={...packet.supplements,decals:packet.supplements.decals.map(decal=>({...decal,
-      textures:Object.fromEntries(Object.entries(decal.textures).map(([k,map])=>[k,variants[map.url]||map]))}))};
+  function selected(field){
+    return selection[field].flatMap(i=>options.parts[field][i]);
+  }
+  const children=selected('children');
+  const smart=selected('smart');
+  const effects={...packet,booster:packet.booster.placements.length?{...packet.booster,...style.style}:packet.booster,
+    sprites:selected('sprites'),attachmentSpotlights:selected('spotlights'),
+    planeGlow:{...packet.planeGlow,sets:selected('planes')},
+    lighting:{...packet.lighting,mode:smart.length?'smart':'none',sets:smart},
+    supplements:{meshes:children.flatMap(c=>c.meshes),flares:children.flatMap(c=>c.flares),
+      unsupported:children.flatMap(c=>c.unsupported||[]),decals:selected('decals').map(decal=>({...decal,
+        textures:Object.fromEntries(Object.entries(decal.textures).map(([k,map])=>[k,variants[map.url]||map]))}))}};
+  function restoreGeometry(node){
+    if(!node || typeof node!=='object')return node;
+    if(Object.hasOwn(node,'geometryIndex'))return options.geometry[node.geometryIndex];
+    if(Array.isArray(node))return node.map(restoreGeometry);
+    return Object.fromEntries(Object.entries(node).map(([key,value])=>[key,restoreGeometry(value)]));
   }
   const url=new URL(resolveURL(base.effects),location.href);
+  url.searchParams.set('faction',faction);
   url.searchParams.set('race',race);
-  url.searchParams.set('insert',insert??base.recipe.insert);
+  url.searchParams.set('insert',insert??factionData.insert);
   url.searchParams.set('palette',base.recipe.palette);
   url.searchParams.set('options',base.recipe.options);
   return {...base,dna,available:true,name:{zh:(base.name?.zh||hull)+' · 自定义',en:(base.name?.en||hull)+' · Custom'},model:resolveURL(base.model),preview:style.preview.url,
     appearance,appearanceRevision:base.appearanceRevision+'-'+base.recipe.options+'-'+base.recipe.palette+'-'+dna,
-    effects:url.href,recipeEffects:effects};
+    effects:url.href,recipeEffects:restoreGeometry(effects)};
 }
