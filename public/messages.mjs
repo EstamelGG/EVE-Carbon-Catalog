@@ -1,4 +1,5 @@
 export const messages = {
+  dnaRecipes: ['DNA 配方', 'DNA recipes'],
   catalogSettings: ['设置', 'Settings'],
   closeSettings: ['关闭设置', 'Close settings'],
   resBaseLabel: ['资源目录 URL', 'Resource directory URL'],

@@ -37,6 +37,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
   const sourceURL = item => {
     const url = new URL(resolveURL(item.model), location.href);
     url.searchParams.set('v', item.modelRevision);
+    if(item.appearance)url.searchParams.set('appearance',item.appearanceRevision);
     return url.href;
   };
   const reportCleanup = errors => {
@@ -90,6 +91,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
   }
   async function prepare(viewer, item, context) {
     const {settings, operation} = context, source = sourceURL(item);
+    if (item.recipeEffects) viewer.assetSession.remember(item.effects,item.recipeEffects);
     if (item.subsystemParts) {
       const {prepareSubsystemModel} = await import('./subsystem-assembly.mjs?v=assembly-v1');
       await trackResource(source, () => prepareSubsystemModel(viewer.assetSession, item, source, location.href), 'resourceModel');
@@ -103,7 +105,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     // Observe early errors while warming settings; the installer awaits this
     // same session-cached promise and failed requests remain retryable.
     if (settings.nativePreview) viewer.assetSession.json(settings.nativePreview).catch(() => {});
-    const preload = await api.preloadModel(viewer, source, () => {});
+    const preload = await api.preloadModel(viewer, source, () => {}, item);
     if (!operation.isCurrent()) { preload.release(); return null; }
     viewer.lifecycle.set('releasePreload', preload.release);
     viewer.sourceDimensions = preload.dimensions;

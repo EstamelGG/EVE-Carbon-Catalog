@@ -1,3 +1,4 @@
+import {assembleDNA} from './dna-recipe.js';
 import { createResourceLocator } from '../src/resource-location.mjs';
 
 
@@ -25,10 +26,21 @@ export function createComponentResources(key, fetchJSON) {
   const load = (url) => fetchJSON(resolveURL(url));
   let index, catalog;
   const models = new Map();
+  const recipes = new Map();
+  function loadRecipe(url) {
+    if (!recipes.has(url)) recipes.set(url, load(url).catch(error => {
+      recipes.delete(url);
+      throw error;
+    }));
+    return recipes.get(url);
+  }
   async function resolveModel(value, itemId, staticDNA=value) {
     await loadCatalog();
     const expected = staticDNA.trim().toLowerCase();
-    if (!Object.hasOwn(index.models, expected)) throw Error('Model has not been built: ' + expected);
+    if (!Object.hasOwn(index.models, expected)) {
+      if(itemId != null || !index.dnaRecipes)throw Error('Model has not been built: '+expected);
+      return assembleDNA(expected,index,loadRecipe,resolveURL);
+    }
     const item = index.models[expected];
     if (!item.model || (itemId != null && !item.itemIds.includes(itemId))) throw Error('Invalid model index entry: ' + expected);
     return {...item, dna:expected, available:true, id:itemId ?? item.id, categoryID:item.categoryID ?? 6,
@@ -36,6 +48,8 @@ export function createComponentResources(key, fetchJSON) {
       effects:item.effects && resolveURL(item.effects)};
   }
   function dna(value, itemId, staticDNA=value) {
+    if (index && !Object.hasOwn(index.models,staticDNA.trim().toLowerCase()))
+      return resolveModel(value,itemId,staticDNA);
     const key = JSON.stringify([value.trim().toLowerCase(), itemId, staticDNA]);
     if (!models.has(key)) models.set(key, resolveModel(value, itemId, staticDNA).catch(error => {
       models.delete(key);

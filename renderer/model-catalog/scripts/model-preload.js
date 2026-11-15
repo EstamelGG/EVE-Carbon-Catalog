@@ -4,11 +4,12 @@ import { CachingGLTFLoader, $evictionPolicy, $loader } from '@google/model-viewe
 import { ModelViewerGLTFInstance } from '@google/model-viewer/lib/three-components/gltf-instance/ModelViewerGLTFInstance.js';
 import {surfaceDDSPlugin} from './surface-dds.js';
 import { gltfDimensions } from './model-bounds.js';
+import { parseSharedHull } from './shared-hull.js';
 import { resourceActivity, loadArrayBuffer, trackResource } from '../src/resource-activity.mjs';
 
 // Use the viewer's own cache: one download/parse, then configure scale BEFORE
 // the scene initializes skeletons and computes its framing.
-export async function preloadModel(viewer, source, progress) {
+export async function preloadModel(viewer, source, progress, item) {
   const url = new URL(source, location.href).href;
   const loader = viewer[$renderer].loader;
   if (new URL(url).pathname.endsWith('.glb')) loader[$loader].setMeshoptDecoder(MeshoptDecoder);
@@ -18,6 +19,13 @@ export async function preloadModel(viewer, source, progress) {
   const release = () => { if (!released) { released = true; policy.release(url); } };
   const finish = resourceActivity.begin(url, 'resourceModel');
   try {
+    if(item?.appearance && !CachingGLTFLoader.cache.has(url)){
+      const geometryURL=new URL(item.model,location.href).href;
+      const prepared=parseSharedHull(loader[$loader],viewer.assetSession,geometryURL,item.appearance)
+        .then(raw=>new ModelViewerGLTFInstance(ModelViewerGLTFInstance.prepare(raw)));
+      CachingGLTFLoader.cache.set(url,prepared);
+      try {await prepared;} catch(error){CachingGLTFLoader.cache.delete(url);throw error;}
+    }
     if (viewer.assetSession && new URL(url).pathname.endsWith('.gltf')) {
       const session = viewer.assetSession;
       // Retain the unmodified document: GLTFLoader annotates its working copy.
