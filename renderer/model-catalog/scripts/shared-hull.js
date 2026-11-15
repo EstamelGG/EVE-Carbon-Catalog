@@ -13,12 +13,20 @@ export async function parseSharedHull(loader, session, geometryURL, appearance) 
     return {json:new TextDecoder().decode(new Uint8Array(bytes,20,length)), buffer:bytes.slice(bin+8)};
   });
   const doc=JSON.parse(shared.json);
+  const bonePalette=doc.extras?.ccpdec?.bonePalette;
   const {slotMaterials,materials,images,textures,samplers,extras}=appearance;
   for(const mesh of doc.meshes){
     mesh.primitives=mesh.primitives.filter(primitive=>{
       const slot=primitive.extras.materialIndex, material=slotMaterials[slot];
       if(material===null)return false;
       if(!materials[material])throw Error('Missing hull material slot '+slot);
+      // Previously published shared hulls used a standard glTF color for
+      // Carbon's shader input. Normalize it before both display and GLB export.
+      const attrs=primitive.attributes;
+      if(Object.hasOwn(attrs,'COLOR_0')){
+        attrs._CCP_DIFFUSE_COLOR_0 ??= attrs.COLOR_0;
+        delete attrs.COLOR_0;
+      }
       primitive.material=material;
       return true;
     });
@@ -26,7 +34,9 @@ export async function parseSharedHull(loader, session, geometryURL, appearance) 
   Object.assign(doc,{materials,images,extras:structuredClone(extras),
     samplers:samplers.map(s=>({...s,minFilter:9987})),
     textures:textures.map(t=>({sampler:t.sampler,extensions:{KHR_texture_basisu:{source:t.source}}}))});
-  if(doc.skins?.length)doc.extras.ccpdec.bonePalette=doc.skins[0].joints.map(j=>doc.nodes[j].name);
+  if(bonePalette)doc.extras.ccpdec.bonePalette=bonePalette;
+  else if(doc.skins?.length && !doc.extras.ccpdec.bonePalette)
+    doc.extras.ccpdec.bonePalette=doc.skins[0].joints.map(j=>doc.nodes[j].name);
   if(textures.length){
     doc.extensionsUsed.push('KHR_texture_basisu');
     doc.extensionsRequired.push('KHR_texture_basisu');
