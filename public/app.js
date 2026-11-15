@@ -174,7 +174,7 @@ viewer.addEventListener('load', (event) => {
 });
 viewer.addEventListener('settings-change', (event) => {
   // Preferences are a catalog concern; standalone instances never write these keys.
-  const patch = event.detail;
+  const { render, ...patch } = event.detail; // Slider edits belong to the active DNA.
   viewerConfig = {
     ...viewerConfig,
     ...patch,

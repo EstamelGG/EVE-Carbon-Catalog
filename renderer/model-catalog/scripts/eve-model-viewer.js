@@ -62,7 +62,11 @@ export class EveModelViewer extends HTMLElement {
     if (this._controller) return;
     this.shadowRoot.innerHTML = `<style>${nativeStyles}\n${styles}</style><div class="layout"><main id="viewer-stage"><div id="mount"></div><canvas id="snapshot" hidden></canvas>${overlay}<div id="status" role="status"></div><button id="retry" class="reset-button" hidden data-i18n="retry">Retry</button><slot name="overlay"></slot><div class="footer"><div class="hint"><span data-i18n="gestures">Drag to orbit · Scroll to zoom · Right-drag to pan</span><span id="gpu"></span></div><button id="reset" class="icon-button" title="Reset view" aria-label="Reset view" data-i18n-title="reset" data-i18n-aria-label="reset">${icons.reset}</button><button id="fullscreen" class="icon-button" title="Fullscreen" aria-label="Fullscreen" data-i18n-title="fullscreen" data-i18n-aria-label="fullscreen">${icons.expand}</button><span id="fps">— FPS</span></div></main><aside id="panel" class="detail-info" hidden></aside></div>`;
     this._controller = createComponentController(this.shadowRoot, (type, value) => {
-      if (type === 'settings-change') this._merge(value);
+      if (type === 'settings-change') {
+        const { render, ...other } = value;
+        this._merge(other);
+        if (render === null) this._options.render = {};
+      }
       if (type === 'load' && value.subsystems) this._options.subsystems = value.subsystems;
       this.dispatchEvent(new CustomEvent(type, { detail: value }));
     });
@@ -111,7 +115,10 @@ export class EveModelViewer extends HTMLElement {
       subsystems: 'subsystems',
     };
     if (name === 'equipment') this._merge({ equipment: values.equipment ?? [] });
-    else if (name === 'exposure' || name === 'reflection')
+    else if ((name === 'exposure' || name === 'reflection') && !this.hasAttribute(name)) {
+      if (this._options.render) delete this._options.render[name];
+      this._controller?.clearPanelRender({ [name]: true });
+    } else if (name === 'exposure' || name === 'reflection')
       this._merge({ render: { [name]: values.render[name] } });
     else if (name === 'antialias') this._merge({ display: values.display });
     else this._merge({ [keys[name]]: values[keys[name]] });
@@ -142,10 +149,11 @@ export class EveModelViewer extends HTMLElement {
   _merge(options) {
     if (Object.hasOwn(options, 'fitting') && !Object.hasOwn(options, 'equipment'))
       this._options.equipment = undefined;
+    if (options.render !== undefined) this._controller?.clearPanelRender(options.render);
     this._options = {
       ...this._options,
       ...options,
-      render: { ...this._options.render, ...options.render },
+      render: options.render === null ? {} : { ...this._options.render, ...options.render },
       display: { ...this._options.display, ...options.display },
     };
   }

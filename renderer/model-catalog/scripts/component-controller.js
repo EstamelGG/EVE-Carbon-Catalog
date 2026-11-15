@@ -87,6 +87,11 @@ export function createComponentController(root, emit) {
     currentItem,
     backgroundTask;
   let fittingData, loadedItem, backgroundCatalog, baseItem;
+  let panelRender = {};
+  let panelDNA;
+  function resolvedRender(dna) {
+    return normalizeRenderSettings({ ...renderDefaultsForDNA(dna), ...options.render, ...panelRender });
+  }
   $('official-skin').onchange=()=>{
     requestConfigure({officialSkin:$('official-skin').value});
   };
@@ -422,11 +427,13 @@ export function createComponentController(root, emit) {
   }
   function update(patch) {
     if (!settings || !runtime.viewer) return;
-    options = { ...options, ...patch };
-    settings.render = normalizeRenderSettings({
-      ...renderDefaultsForDNA(currentItem.dna),
-      ...options.render,
-    });
+    const { render, ...other } = patch;
+    options = { ...options, ...other };
+    if (render === null) {
+      options.render = {};
+      panelRender = {};
+    } else if (render) Object.assign(panelRender, render);
+    settings.render = resolvedRender(currentItem.dna);
     settings.display = normalizeDisplaySettings({
       ...options.display,
       effects: options.effects,
@@ -515,11 +522,13 @@ export function createComponentController(root, emit) {
     }
     if (!item?.model) throw Error(`No model for item ${itemId}`);
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
+    if (panelDNA !== item.dna) panelRender = {};
+    panelDNA = item.dna;
     currentItem = item;
     settings = {
       nativePreview: item.preview || index?.nativePreview,
       background: options.background,
-      render: normalizeRenderSettings({ ...renderDefaultsForDNA(item.dna), ...options.render }),
+      render: resolvedRender(item.dna),
       display: normalizeDisplaySettings({
         ...options.display,
         effects: options.effects,
@@ -604,6 +613,10 @@ export function createComponentController(root, emit) {
     },
     placements,
     setLanguage,
+    clearPanelRender(overrides) {
+      if (overrides === null) panelRender = {};
+      else for (const key of Object.keys(overrides)) delete panelRender[key];
+    },
     cancel() {
       ++revision;
       requests.abort();

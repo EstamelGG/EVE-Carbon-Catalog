@@ -82,17 +82,6 @@ const baseline = {
   showHardpoints: false,
   hangar: { room: '' },
   killCount: 0,
-  render: {
-    exposure: 0.7,
-    reflection: 0.7,
-    bloom: 0.2,
-    sun: 1,
-    fill: 1,
-    f0: 1,
-    roughness: 1,
-    dirt: 1,
-    depthOfField: 1,
-  },
   display: {
     antialiasMode: 'auto',
     occlusion: true,
@@ -268,7 +257,7 @@ async function runCase(id, scroll = false) {
     ...structuredClone(example.options),
     resBase: config.resBase,
     resourceBase: config.resourceBaseURL,
-    render: { ...baseline.render, ...example.options.render },
+    render: example.options.render ?? null,
     display: { ...baseline.display, ...example.options.display },
   };
   currentCase = id;

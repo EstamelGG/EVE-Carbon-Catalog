@@ -1,4 +1,3 @@
-import { renderDefaultsForDNA } from '../src/render-settings.mjs';
 import {
   normalizeDisplaySettings,
   textureRoles,
@@ -24,7 +23,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
   const report = (error) => emit('error', { message: error.message });
   for (const key of renderKeys)
     $(key).oninput = () =>
-      update({ render: { ...state().options.render, [key]: Number($(key).value) } });
+      update({ render: { [key]: Number($(key).value) } });
   for (const [key, id] of Object.entries(performanceControls)) {
     $(id).onchange = () => {
       const options = state().options;
@@ -78,7 +77,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
   };
   $('reset-render').onclick = () =>
     update({
-      render: renderDefaultsForDNA(state().item.dna),
+      render: null,
       display: normalizeDisplaySettings(),
       effects: true,
       whiteModel: false,
