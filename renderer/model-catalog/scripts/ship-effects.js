@@ -8,6 +8,7 @@ import { installLighting } from './ship-lighting.js';
 import { installAttachmentLights } from './ship-attachment-lights.js';
 import { installPlanes } from './ship-planes.js';
 import { installSupplements } from './ship-supplements.js';
+import {bindChildMotion} from './child-motion.js';
 import { installHullOverlays } from './ship-hull-overlays.js';
 import { installGateEffects } from './ship-gates.js';
 import { createShipDamage } from './ship-damage.js';
@@ -210,6 +211,8 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     }
     const fixtures=await installHullFixtures(data,resources,group,viewer.assetSession?.bannerImages);
     if(data.supplements)data.supplements={...data.supplements,lights:[...(data.supplements.lights||[]),...fixtures.lights],transparent:[...(data.supplements.transparent||[]),...fixtures.meshes]};
+    const motion = bindChildMotion(data.supplements);
+    if (motion) data.supplements = motion.supplements;
     disposeSupplements = await installSupplements(viewer, scene, group, data.supplements, resources, () => ({elapsed}), onCommit, attachmentOwner);
     const child=data.supplements;
     if(child?.particles?.length || child?.transparent?.length || child?.softFlares?.length || child?.lines?.length){
@@ -244,6 +247,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
       if (lastTime !== null && activity.active && mode !== 'paused')
         elapsed += Math.max(0, now - lastTime) / 1000;
       lastTime = now;
+      motion?.update(elapsed);
       const gain = currentGain();
       boosterGain.value = gain;
       if (flames.length && gain !== lastFlameGain) {

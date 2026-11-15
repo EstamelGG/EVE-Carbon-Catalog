@@ -151,6 +151,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   } catch (error) { disposeKillMarks(); throw error; }
   const eye=new Vector3(),rotation=new Quaternion(),inverse=new Matrix4();
   const paths=entries.map(entry=>entry.transforms);
+  const hasMotion=paths.some(path=>path.some(node=>node.motionTrack!==undefined));
   const hasBones=paths.some(path=>path.some(node=>node.transformModifiers?.some(m=>m.type.endsWith('AttachToBone'))));
   const boneAt=hasBones && gateBones(owner?.document??viewer.originalGltfJson,owner?.model??scene.model);
   const identityAnimation={node:source=>source};
@@ -162,7 +163,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
     return world;
   }
   const transforms = createTransformCache(paths, hasBones?evaluate:authoredWorld,
-    node=>node.transformModifiers?.some(modifier=>!modifier.type.endsWith('ModifierSRT')));
+    node=>node.motionTrack!==undefined || node.transformModifiers?.some(modifier=>!modifier.type.endsWith('ModifierSRT')));
   const world = new Matrix4(), center = new Vector3();
   const visibility = entries.some(entry => entry.flare) ? createFlareVisibility() : null;
   const updateFlares = createFlareBatch(root, entries.filter(entry => entry.flare), resources);
@@ -182,7 +183,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
     }
     for(const uniform of clocks)uniform.value=elapsed;
     const width=camera.viewport?.z??renderer.getCurrentViewport(viewport).z;
-    if(!hasBones && previousCamera===camera && previousWidth===width && previousDepth===camera.reversedDepth &&
+    if(!hasMotion && !hasBones && previousCamera===camera && previousWidth===width && previousDepth===camera.reversedDepth &&
        view.equals(camera.matrixWorldInverse) && rootWorld.equals(root.matrixWorld) && projection.equals(camera.projectionMatrix))return;
     previousCamera=camera;previousWidth=width;previousDepth=camera.reversedDepth;
     view.copy(camera.matrixWorldInverse);projection.copy(camera.projectionMatrix);rootWorld.copy(root.matrixWorld);
@@ -190,6 +191,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
     visibility?.begin(camera, renderer, root.matrixWorld, inverse);
     transforms.update(root.matrixWorld, eye, rotation);
     for(const [index, entry] of entries.entries()){
+      if(hasMotion && entry.transforms.some(node=>node.display===false)){entry.object.visible=false;continue;}
       world.copy(transforms.get(index));
       if(entry.flare){
         const uniforms = entry.object.material.uniforms;
