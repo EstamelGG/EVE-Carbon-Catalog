@@ -1,10 +1,21 @@
-import presets from './render-presets.json' with { type: 'json' };
+export const renderDefaults = Object.freeze({
+  exposure: 0.7,
+  reflection: 0.7,
+  bloom: 0.2,
+  sun: 1,
+  fill: 1,
+  f0: 1,
+  roughness: 1,
+  dirt: 1,
+  depthOfField: 1,
+});
 
-export const renderDefaults = Object.freeze(presets.defaults);
-const rules = presets.rules.map(({ dna, settings }) => ({
-  pattern: new RegExp(dna, 'i'),
-  settings,
-}));
+const rules = [
+  { pattern: /^[^:]*:[^:]*:(sansha|triglavian)(:|$)/i, settings: { f0: 2 } },
+  { pattern: /^[^:]*:[^:]*:concord(:|$)/i, settings: { fill: 0.3 } },
+  { pattern: /^[^:]*:[^:]*:soe(:|$)/i, settings: { fill: 0.5 } },
+  { pattern: /^[^:]+:viziam:/i, settings: { sun: 0.7, fill: 0.5 } },
+];
 
 export function renderDefaultsForDNA(dna) {
   const result = { ...renderDefaults };
