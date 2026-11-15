@@ -258,6 +258,7 @@ export const messages = {
   fullscreenFailed: ['当前浏览器不支持全屏', 'Fullscreen is unavailable'],
   frigate: ['护卫舰', 'Frigate'],
   skin: ['默认涂装', 'Default skin'],
+  officialSkin: ['官方涂装', 'Official SKIN'],
   graphic: ['图形编号', 'Graphic ID'],
   dimensionWidth: ['宽 X', 'W X'],
   dimensionHeight: ['高 Y', 'H Y'],

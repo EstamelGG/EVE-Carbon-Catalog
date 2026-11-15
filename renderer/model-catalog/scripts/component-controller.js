@@ -87,6 +87,11 @@ export function createComponentController(root, emit) {
     currentItem,
     backgroundTask;
   let fittingData, loadedItem, backgroundCatalog, baseItem;
+  $('official-skin').onchange=()=>{
+    configure({...options,officialSkin:$('official-skin').value}).catch(error=>{
+      if(error.name!=='AbortError')$('status').textContent=error.message;
+    });
+  };
   const resolveURL = (url) => resources.resolveURL(url);
   let tab = 'visual';
   const loading = createLoadingPanel({
@@ -485,6 +490,17 @@ export function createComponentController(root, emit) {
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
     if (options.itemIdentity?.id === item.id && options.itemIdentity.name)
       item = { ...item, name: options.itemIdentity.name };
+    const skins=item.officialSkins?.[item.id]||[];
+    const picker=$('official-skin');
+    $('official-skin-row').hidden=!skins.length;
+    picker.replaceChildren(new Option(t('skin'),''),...skins.map(s=>new Option(name(s.name)||String(s.id),String(s.id))));
+    const skin=skins.find(s=>String(s.id)===String(options.officialSkin));
+    if(skin){
+      picker.value=String(skin.id);
+      const styled=await source.dna(skin.dna);
+      if(token!==revision)throw new DOMException('Superseded','AbortError');
+      item={...styled,name:item.name,id:item.id,officialSkins:item.officialSkins};
+    }
     baseItem = item;
     if (item?.groupID === 963 && item.subsystems) {
       await source.loadCatalog();

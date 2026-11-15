@@ -6,8 +6,9 @@ import {perlinNoise1D} from './trinity-noise.js';
 
 export function scalarInput(keys, seconds) {
   const last = keys.at(-1);
-  if (seconds <= 0) return keys[0][1];
+  if (keys.length===1 || last[0]<=0 || !Number.isFinite(seconds) || seconds<=keys[0][0]) return keys[0][1];
   const time = seconds > last[0] ? seconds % last[0] : seconds;
+  if(time<keys[0][0])return keys[0][1];
   if (time >= last[0]) return last[1];
   const index = keys.findIndex(key => key[0] > time);
   const [leftTime, left, , outgoing, mode] = keys[index - 1];

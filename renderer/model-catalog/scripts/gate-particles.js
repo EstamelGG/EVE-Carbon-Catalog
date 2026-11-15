@@ -129,7 +129,7 @@ export async function gateParticles(record,resources,root,siblingRecords=[], sha
       for(const binding of emitter.rateBindings){
         const range=binding.ranges.find(r=>r.name===animation.hullName);
         if(!range && (!binding.playing || binding.ranges.length))continue;
-        const time=range?range.start+Math.min(animation.hullTime??0,Math.max(0,range.end-range.start)):elapsed;
+        const time=range?range.start+Math.min(animation.hullTime??0,Math.max(0,(range.end??0)-range.start)):elapsed;
         rate=scalarInput(binding.keys,time)*binding.scale+binding.offset;
       }
       return {...emitter,rate};
