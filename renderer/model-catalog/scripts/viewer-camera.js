@@ -53,13 +53,13 @@ export function captureFrame(viewer, canvas, previousOpacity = 0) {
     context.globalAlpha = 1;
   }
 }
-export async function waitForFrame(viewer) {
+export async function waitForFrame(viewer, signal) {
   await viewer.updateComplete;
   const scene = viewer[$scene], previous = scene.renderCount;
   scene.queueRender();
   // A completed asset load does not mean the restored camera/materials have
   // reached the screen. Wait for the renderer, not an arbitrary delay.
-  while (viewer.isConnected && scene.renderCount === previous) {
+  while (viewer.isConnected && !signal?.aborted && scene.renderCount === previous) {
     await new Promise(resolve => requestAnimationFrame(resolve));
   }
 }

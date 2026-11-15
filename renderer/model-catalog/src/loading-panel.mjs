@@ -12,13 +12,14 @@ export function createLoadingPanel({root, translate:t, backgroundPending, automa
     element, ring:element.querySelector('.loading-ring'), text:element.querySelector('.resource-status-text'),
   }));
   let batch, stage = 1, complete = false, timer, generation=0, taskTitle=null, automatic=false, fixedPlan=false;
+  let stageDetail;
   function render() {
     if (!batch) return;
     const {pending, completed, total, planned, failed} = batch.snapshot();
     panel.hidden = false;
     title.dataset.i18n = taskTitle || (complete ? 'loadingResources' : 'loadingModel');
     title.textContent = t(title.dataset.i18n);
-    const step = t('loadingStep', {step:stage, total:steps.length, name:t(steps[stage-1])});
+    const step = t('loadingStep', {step:stage, total:steps.length, name:t(stageDetail || steps[stage-1])});
     detail.hidden = complete;
     detail.textContent = step;
     // Until a dependency plan exists this measures stages, never guessed bytes.
@@ -73,7 +74,7 @@ export function createLoadingPanel({root, translate:t, backgroundPending, automa
     begin() {
       generation++;taskTitle=null;automatic=false;fixedPlan=false;
       updateStatus.hidden = true;
-      complete = false; stage = 1;
+      complete = false; stage = 1; stageDetail = undefined;
       rows.reset();
       batch?.stop();
       batch = createResourceBatch();
@@ -87,7 +88,7 @@ export function createLoadingPanel({root, translate:t, backgroundPending, automa
         finish(){if(token===generation){finish();taskTitle=null;}},
       };
     },
-    progress(value) { stage = value; render(); },
+    progress(value, detailKey) { stage = value; stageDetail = detailKey; render(); },
     finish,
     background(urls) {
       if (backgroundPending()) {

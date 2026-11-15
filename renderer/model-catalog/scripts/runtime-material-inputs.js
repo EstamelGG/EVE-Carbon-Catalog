@@ -15,8 +15,9 @@ export function runtimeUniforms(native, loaded, dirtLevel) {
     uniforms['eve_' + role] = { value: texture };
   if (/quadheatdetailv5/i.test(native.effect || '')) uniforms.eve_Detail3Map = {value:loaded.Detail2Map};
   for (const [name, suffix, fallback] of [
-    ['diffuse', 'DiffuseColor'],
-    ['fresnel', 'FresnelColor'],
+    // The shader has four slots even when the hull only authors three.
+    ['diffuse', 'DiffuseColor', [1, 1, 1]],
+    ['fresnel', 'FresnelColor', [0, 0, 0]],
     ['dustColor', 'DustDiffuseColor', [1, 1, 1]],
   ])
     uniforms['eve_' + name] = {
@@ -25,7 +26,7 @@ export function runtimeUniforms(native, loaded, dirtLevel) {
         return [color[0]??0,color[1]??0,color[2]??0];
       })),
     };
-  uniforms.eve_gloss = { value: new Vector4(...[1, 2, 3, 4].map((i) => p[`Mtl${i}Gloss`][0])) };
+  uniforms.eve_gloss = { value: new Vector4(...[1, 2, 3, 4].map((i) => p[`Mtl${i}Gloss`]?.[0] ?? 0)) };
   uniforms.eve_paint = { value: p.GeneralData?.[0] || 0 };
   uniforms.eve_glowColor = {
     value: new Vector3(...(p.GeneralGlowColor || p.GeneralHeatGlowColor || [0, 0, 0]).slice(0, 3)),

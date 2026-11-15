@@ -112,6 +112,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
   }
   async function install(viewer, item, context) {
     const {settings, operation, savedView, request, composer} = context;
+    view.progress(3, 'applyingMaterials');
     viewer.lifecycle.set('disposeDimensionFrame', api.watchDimensionFrame(viewer, view.dimensionFrame));
     if (settings.nativePreview) viewer.lifecycle.set('pendingNativeSurfaces', api.prepareNativeSurfaces(viewer));
     viewer.lifecycle.set('disposeOcclusion', api.installHullOcclusion(composer));
@@ -129,8 +130,9 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
       applyDisplaySettings(view.settings().display);
     }
     if (!savedView) {
+      view.progress(3, 'renderingFirstFrame');
       composer.queueRender();
-      await api.waitForFrame(viewer);
+      await api.waitForFrame(viewer, operation.signal);
       if (!operation.isCurrent()) return false;
       viewer.geometryReady = transition.revealGeometry(request);
     }
@@ -159,7 +161,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
       viewer.jumpCameraToGoal();
     }
     if (kind === 'model') context.composer.queueRender();
-    await api.waitForFrame(viewer);
+    await api.waitForFrame(viewer, operation.signal);
     if (!operation.isCurrent()) return false;
     viewer.lifecycle.clearTimer();
     const previous = transition.view?.target;
@@ -209,7 +211,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
       viewer.lifecycle.set('disposeDimensionFrame', api.watchDimensionFrame(viewer, view.dimensionFrame));
       view.dimensions(item, viewer.sourceDimensions);
       applyDisplaySettings(view.settings().display);
-      await api.waitForFrame(viewer);
+      await api.waitForFrame(viewer, operation.signal);
       if (!operation.finish()) return false;
       view.ready(viewer, item, 'subsystems');
       return true;
@@ -254,7 +256,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     });
     if (!loaded || !operation.isCurrent()) return false;
     context.errorKey = 'errorInit';
-    view.progress(3);
+    view.progress(3, 'preparingCamera');
     if (!await initializeViewerCamera(viewer, {...context, profile, isActive:() => controller.viewer === viewer})) return false;
     if (!operation.isCurrent() || !await install(viewer, item, context)) return false;
     return present(viewer, item, context, 'model');

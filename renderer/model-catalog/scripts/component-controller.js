@@ -112,8 +112,8 @@ export function createComponentController(root, emit) {
         for (const axis of ['x', 'y', 'z'])
           $('dimension-' + axis).textContent = formatDimension(size?.[axis]);
       },
-      progress: (phase) => {
-        loading.progress(phase);
+      progress: (phase, detailKey) => {
+        loading.progress(phase, detailKey);
         emit('progress', { phase, total: 5 });
       },
       begin(item) {
