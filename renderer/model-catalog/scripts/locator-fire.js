@@ -5,10 +5,15 @@ import {ambientAnimationLoop} from './page-activity.js';
 import {motionVectorFragment} from './motion-vector-material.js';
 
 const vertex = `
+uniform vec3 jetAxis;
 out vec2 gateUV; out vec3 effectEye,effectNormal; out float effectDepth,softDistance;
 void main(){
   vec4 center=modelViewMatrix*vec4(0.,0.,0.,1.);
-  center.xy+=position.xy*vec2(length(modelViewMatrix[0].xyz),length(modelViewMatrix[1].xyz));
+  vec3 axis=normalize(mat3(modelViewMatrix)*jetAxis);
+  float sideView=length(axis.xy);
+  vec2 along=sideView>0.001 ? axis.xy/sideView : vec2(0.,1.);
+  vec2 across=vec2(along.y,-along.x);
+  center.xy+=(across*position.x+along*position.y*(1.+1.3*sideView))*length(modelViewMatrix[0].xyz);
   gateUV=uv;effectEye=effectNormal=vec3(0.,0.,1.);
   effectDepth=-center.z;softDistance=0.;gl_Position=projectionMatrix*center;
 }`;
@@ -30,14 +35,14 @@ export function locatorFire(viewer, locators, radius, effect) {
       [candidates[i],candidates[j]]=[candidates[j],candidates[i]];
       const point=candidates[i],origin=new Vector3().fromArray(point.position);
       const rotation=new Quaternion().fromArray(point.rotation||[0,0,0,1]).normalize();
-      const length=radius*(.12+.14*Math.random());
+      const length=radius*(.23+.18*Math.random());
       for(let k=0;k<5;k++){
         const age={value:new Vector4()};
+        const direction=new Vector3(.2*(Math.random()-.5),1,.2*(Math.random()-.5)).applyQuaternion(rotation).normalize();
         const material=new ShaderMaterial({vertexShader:vertex,fragmentShader,glslVersion:GLSL3,
-          uniforms:{...uniforms,CurrentTime:age},transparent:true,depthWrite:false});
+          uniforms:{...uniforms,CurrentTime:age,jetAxis:{value:direction}},transparent:true,depthWrite:false});
         const particle=new Mesh(geometry,material);
         particle.frustumCulled=false;particle.name='VDS hull fire';
-        const direction=new Vector3(.2*(Math.random()-.5),1,.2*(Math.random()-.5)).applyQuaternion(rotation);
         particles.push({particle,origin,direction,length,phase:(k+Math.random())/5,age});
         group.add(particle);
       }
@@ -49,7 +54,7 @@ export function locatorFire(viewer, locators, radius, effect) {
         const t=(time*.001/duration+p.phase)%1;
         p.age.value.x=t*duration;
         p.particle.position.copy(p.origin).addScaledVector(p.direction,t*p.length);
-        p.particle.scale.setScalar(p.length*(.32+.58*Math.sin(Math.PI*t)));
+        p.particle.scale.setScalar(p.length*(.19+.32*Math.sin(Math.PI*t)));
       }
       scene.queueRender();
     };

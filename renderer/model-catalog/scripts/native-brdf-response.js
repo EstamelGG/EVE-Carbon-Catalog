@@ -9,7 +9,7 @@
 export const directBRDF = `
  // Zero-contribution lights must not pay for the clean and dust GGX lobes.
  if (!directLight.visible) return;
- #ifndef EVE_OPAQUE_QUAD_HULL
+ #if !defined(EVE_OPAQUE_QUAD_HULL) && !defined(EVE_SKINNED_QUAD_HULL)
  if (!eveSameReflectionSide(eve_referenceNormal,geometryViewDir,directLight.direction)) return;
  #endif
  float nl=max(dot(geometryNormal,directLight.direction),0.0);

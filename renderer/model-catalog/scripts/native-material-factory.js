@@ -34,6 +34,10 @@ export function createNativeMaterial(definition, original, loaded, context) {
         native.surfaceKind === 'opaqueAreas' && /\/quad(?:heat)?v5\.fx$/i.test(native.effect)) {
       material.defines = {...material.defines, EVE_OPAQUE_QUAD_HULL: 1};
     }
+    if (runtime && !context.materialRoot.userData.eveEnvironment &&
+        native.surfaceKind === 'opaqueAreas' && /\/skinned_quad(?:heat)?v5\.fx$/i.test(native.effect)) {
+      material.defines = {...material.defines, EVE_SKINNED_QUAD_HULL: 1};
+    }
     material.envMapIntensity = 0;
     if (runtime)
       exportRecipes.set(material, {
