@@ -60,6 +60,8 @@ export function subsystemItem(item, code, baseURL) {
   const path = `__assembled/${item.id}-${config.code}`;
   return {
     ...item,
+    appearance:undefined,
+    appearanceRevision:undefined,
     subsystemSelection: config.code,
     subsystemParts: parts,
     dna: parts.map((p) => p.hull).join(';') + ':' + item.dna.split(':').slice(1).join(':'),

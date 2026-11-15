@@ -1,6 +1,9 @@
 import {effectsEnabled} from '../src/display-settings.mjs';
-import { $scene } from '@google/model-viewer/lib/model-viewer-base.js';
+import { $scene,$renderer } from '@google/model-viewer/lib/model-viewer-base.js';
+import {$loader} from '@google/model-viewer/lib/three-components/CachingGLTFLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {subsystemDocument} from './shared-hull.js';
 import { assembleGeometry, assembleEffects } from '../src/subsystem-assembly.mjs';
 import { resourceURL } from '../src/resource-location.mjs';
 import { loadArrayBuffer, trackResource } from '../src/resource-activity.mjs';
@@ -26,8 +29,10 @@ function effectViewer(viewer, document) {
   });
 }
 
-async function parsePart(session, document, url) {
+async function parsePart(session, document, url,ktx2Loader) {
   const loader = new GLTFLoader();
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  loader.setKTX2Loader(ktx2Loader);
   loader.register((parser) => {
     const load = parser.loadBuffer.bind(parser),
       image = parser.loadTextureImage.bind(parser);
@@ -102,7 +107,7 @@ export async function installSubsystemParts(viewer, item, settings, installEffec
       const url = new URL(resolveURL(part.model));
       url.searchParams.set('v', part.modelRevision || 'material-options-v1');
       const [document, rawEffects] = await Promise.all([
-        session.json(url.href),
+        subsystemDocument(session,url.href,part),
         session.json(resolveURL(part.effects)),
       ]);
       const data = {
@@ -115,7 +120,7 @@ export async function installSubsystemParts(viewer, item, settings, installEffec
       };
       const geometry = assembleGeometry([data]);
       if (!root) {
-        const parsed = await parsePart(session, geometry, url.href);
+        const parsed = await parsePart(session, geometry, url.href,viewer[$renderer].loader[$loader].ktx2Loader);
         root = parsed.scene.children[0];
         root.removeFromParent();
         disposeGeometry = geometryDisposer(root);
@@ -130,7 +135,7 @@ export async function installSubsystemParts(viewer, item, settings, installEffec
             { root, document: geometry },
           );
       }
-      const packed = await assembleEffects([data], (url) => session.json(url), resolveURL);
+      const packed = part.appearance?rawEffects:await assembleEffects([data], (url) => session.json(url), resolveURL);
       const effectsURL = new URL(
         `__subsystem-effects/${item.id}-${slot}-${part.id}.json?v=${encodeURIComponent(part.modelRevision || '')}`,
         location.href,

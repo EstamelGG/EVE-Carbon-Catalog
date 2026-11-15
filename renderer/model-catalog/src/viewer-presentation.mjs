@@ -190,6 +190,7 @@ export async function initializeViewerCamera(
   // Preserve authored/exported material values; scene scale and AO must
   // never serve as a reason to retune surface roughness or metalness.
   for (const [index, material] of viewer.model.materials.entries()) {
+    if (!material.isLoaded) continue;
     const pbr = material.pbrMetallicRoughness;
     const original =
       viewer.originalGltfJson.materials[index]?.pbrMetallicRoughness?.roughnessFactor ?? 1;

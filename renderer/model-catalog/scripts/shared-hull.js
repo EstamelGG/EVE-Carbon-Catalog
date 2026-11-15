@@ -10,11 +10,10 @@ export function sharedGlb(session, geometryURL) {
     const length=view.getUint32(12,true), bin=20+length;
     if (view.getUint32(bin+4,true)!==0x004e4942 || bin+8+view.getUint32(bin,true)!==bytes.byteLength)
       throw Error('Missing shared geometry buffer: '+geometryURL);
-    return {json:new TextDecoder().decode(new Uint8Array(bytes,20,length)), buffer:bytes.slice(bin+8)};
+    return {json:new TextDecoder().decode(new Uint8Array(bytes,20,length)), buffer:bytes.slice(bin+8),offset:bin+8};
   });
 }
-export async function parseSharedHull(loader, session, geometryURL, appearance) {
-  const shared=await sharedGlb(session, geometryURL);
+function bindHull(shared,appearance) {
   const doc=JSON.parse(shared.json);
   const bonePalette=doc.extras?.ccpdec?.bonePalette;
   const {slotMaterials,materials,images,textures,samplers,extras}=appearance;
@@ -44,6 +43,23 @@ export async function parseSharedHull(loader, session, geometryURL, appearance) 
     doc.extensionsUsed.push('KHR_texture_basisu');
     doc.extensionsRequired.push('KHR_texture_basisu');
   }
+  return doc;
+}
+export async function subsystemDocument(session,url,part){
+  if(!part.appearance)return session.json(url);
+  const shared=await sharedGlb(session,url);
+  const doc=bindHull(shared,part.appearance);
+  doc.buffers[0]={uri:url,byteLength:shared.offset+shared.buffer.byteLength};
+  for(const v of doc.bufferViews){
+    const compressed=v.extensions?.EXT_meshopt_compression;
+    if(compressed)compressed.byteOffset=(compressed.byteOffset||0)+shared.offset;
+    else if(v.buffer===0)v.byteOffset=(v.byteOffset||0)+shared.offset;
+  }
+  return doc;
+}
+export async function parseSharedHull(loader, session, geometryURL, appearance) {
+  const shared=await sharedGlb(session, geometryURL);
+  const doc=bindHull(shared,appearance);
   const embedded=parser=>{
     const load=parser.loadBuffer.bind(parser);
     parser.loadBuffer=index=>index===0 ? Promise.resolve(shared.buffer) : load(index);

@@ -1,5 +1,6 @@
 // Combine descriptors only. Geometry buffers and texture files stay shared.
 import { resourceURL } from './resource-location.mjs?v=pages-backgrounds-v1';
+import {subsystemDocument} from '../scripts/shared-hull.js';
 const arrays = [
   'buffers',
   'bufferViews',
@@ -15,9 +16,9 @@ const arrays = [
 const clone = (value) => structuredClone(value);
 const add = (a, b) => a.map((v, i) => v + b[i]);
 function validateGeometry(d) {
-  if (d.animations?.length || d.nodes.some((n) => n.skin != null))
+  if (d.animations?.length)
     throw Error('Animated parts require separate binding support');
-  if (d.extensionsRequired?.some((e) => e !== 'EXT_texture_webp'))
+  if (d.extensionsRequired?.some((e) => !['EXT_texture_webp','EXT_meshopt_compression','KHR_texture_basisu'].includes(e)))
     throw Error('Unsupported subsystem geometry extension');
   if (d.materials.some((m) => m.extras?.ccpdecNative?.patterns?.length))
     throw Error('Projected subsystem patterns require assembled coordinates');
@@ -25,7 +26,10 @@ function validateGeometry(d) {
 
 function remapResources(d, off, absolute) {
   for (const b of d.buffers) if (b.uri) b.uri = absolute(b.uri);
-  for (const v of d.bufferViews) v.buffer += off.buffers;
+  for (const v of d.bufferViews) {
+    v.buffer += off.buffers;
+    if(v.extensions?.EXT_meshopt_compression)v.extensions.EXT_meshopt_compression.buffer+=off.buffers;
+  }
   for (const a of d.accessors) {
     if (a.bufferView != null) a.bufferView += off.bufferViews;
     if (a.sparse) {
@@ -199,14 +203,15 @@ export async function prepareSubsystemModel(session, item, source, pageURL) {
       const url = new URL(resolveURL(part.model));
       url.searchParams.set('v', part.modelRevision || 'material-options-v1');
       const [document, effects] = await Promise.all([
-        session.json(url.href),
+        subsystemDocument(session,url.href,part),
         session.json(resolveURL(part.effects)),
       ]);
       return { ...part, url: url.href, document, effects };
     }),
   );
   const document = assembleGeometry(parts);
-  const effects = await assembleEffects(parts, (url) => session.json(url), resolveURL);
+  const effects = parts.every(p=>p.appearance)?{parts:parts.map(p=>p.effects)}:
+    await assembleEffects(parts, (url) => session.json(url), resolveURL);
   document.extras.ccpdec.typeID = item.id;
   document.extras.ccpdec.dna = item.dna;
   effects.typeID = item.id;

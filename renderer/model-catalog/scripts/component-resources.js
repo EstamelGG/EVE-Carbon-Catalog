@@ -1,4 +1,5 @@
 import {assembleDNA} from './dna-recipe.js';
+import {isStrategicCruiser, subsystemSlots, subsystemGroups} from '../src/subsystems.mjs';
 import { createResourceLocator, normalizeModelIndex } from '../src/resource-location.mjs';
 
 
@@ -65,6 +66,25 @@ export function createComponentResources(key, fetchJSON) {
         group: async id => [...items.values()].filter(item => item.groupID === id),
       };
       index = data;
+      for (const [dna, model] of Object.entries(data.models)) {
+        if (!isStrategicCruiser(model) || model.subsystems) continue;
+        const hull = dna.split(':')[0];
+        const slots = subsystemSlots.map(key => ({key, options: []}));
+        for (const part of items.values()) {
+          const slot = subsystemGroups.indexOf(part.groupID);
+          if (slot < 0) continue;
+          const partHull = part.dna.split(':')[0];
+          const prefix = hull + '_s' + (slot + 1) + 'v';
+          if (!partHull.startsWith(prefix)) continue;
+          const suffix = partHull.slice(prefix.length);
+          if (!/^[1-3]$/.test(suffix)) continue;
+          const variant = Number(suffix);
+          const options = slots[slot].options;
+          if (!options.some(option => option.variant === variant))
+            options.push({variant, hull: partHull, id: part.id, name: part.name});
+        }
+        if (slots.every(slot => slot.options.length)) model.subsystems = {default: '1111', slots};
+      }
     }).catch(error => { loading = undefined; throw error; });
     return loading;
   }
