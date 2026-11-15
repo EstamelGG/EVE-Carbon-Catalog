@@ -495,7 +495,7 @@ export function createComponentController(root, emit) {
     const skin=skins.find(s=>String(s.id)===String(options.officialSkin));
     if(skin){
       picker.value=String(skin.id);
-      const styled=await source.dna(skin.dna);
+      const styled=await source.officialSkin(skin);
       if(token!==revision)throw new DOMException('Superseded','AbortError');
       item={...styled,name:item.name,id:item.id,officialSkins:item.officialSkins};
     }

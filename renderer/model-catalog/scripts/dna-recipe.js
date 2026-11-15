@@ -5,7 +5,7 @@ function option(options,key,label){
   return options[key];
 }
 
-export async function assembleDNA(dna,index,load,resolveURL){
+export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}={}){
   const [hull,faction,race,...tokens]=dna.split(':');
   const base=option(index.dnaRecipes||{},hull,'未发布舰体');
   const [palette,options,packet]=await Promise.all([load(base.recipe.palette),load(base.recipe.options),load(base.effects)]);
@@ -21,11 +21,13 @@ export async function assembleDNA(dna,index,load,resolveURL){
     commands.set(key,values);
   }
   const materials=commands.get('material')||[], pattern=commands.get('pattern')||[];
-  const layers=pattern.length?option(options.patterns,pattern[0],'图案没有此舰体的投影'):options.modern?
+  const layers=pattern.length?(pattern[0]==='none' || (officialSkin && !own(options.patterns,pattern[0]))?[]:
+    option(options.patterns,pattern[0],'图案没有此舰体的投影')):options.modern?
     options.patterns[factionData.definition.defaultPatternName]??[]:legacyLayers(factionData.definition.defaultPattern,options.projection);
   const insert=commands.get('respathinsert')?.[0];
-  const variants=insert && insert!=='none'?option(options.inserts,insert,'缺少贴图变体'):
-    insert==='none'?{}:options.inserts[factionData.insert]||{};
+  // A SOF insert overrides individual textures only when that resource exists.
+  const insertName=insert??factionData.insert;
+  const variants=insertName && insertName!=='none' && own(options.inserts,insertName)?options.inserts[insertName]:{};
   for(const name of [...materials,...pattern.slice(1)])if(name!=='none')option(palette.materials,name,'未知材质');
   const appearance=structuredClone({...options.layout,extras:base.appearance.extras});
   const directory=base.model.split('/').slice(0,-1);

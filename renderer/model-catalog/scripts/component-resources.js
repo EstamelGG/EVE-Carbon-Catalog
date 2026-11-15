@@ -80,6 +80,7 @@ export function createComponentResources(key, fetchJSON) {
   }
   return {
     key, resolveURL, load, dna, loadCatalog,
+    officialSkin:skin=>assembleDNA(skin.dna,index,loadRecipe,resolveURL,{officialSkin:true}),
     get index() { return index; },
     get catalog() { return catalog; },
     async publishedItem(item) {
