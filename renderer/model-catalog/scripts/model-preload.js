@@ -12,7 +12,7 @@ import { resourceActivity, loadArrayBuffer, trackResource } from '../src/resourc
 export async function preloadModel(viewer, source, progress, item) {
   const url = new URL(source, location.href).href;
   const loader = viewer[$renderer].loader;
-  if (new URL(url).pathname.endsWith('.glb')) loader[$loader].setMeshoptDecoder(MeshoptDecoder);
+  loader[$loader].setMeshoptDecoder(MeshoptDecoder);
   const policy = loader[$evictionPolicy];
   policy.retain(url);
   let released = false;

@@ -74,9 +74,13 @@ export function gateFragment(record) {
   const declarations=Object.keys(params).map(k=>`uniform vec4 ${k};`).join('\n');
   const maps=Object.entries(textures).map(([k,v])=>`uniform ${v.volume?'highp sampler3D':'sampler2D'} ${k};`).join('\n');
   const sample=(name,uv='gateUV')=>name in textures?`texture(${name},${uv})`:'vec4(1)';
-  let body;
   if(shader==='fx3dv5.fx'&&textures.LayerAllMap)return volumeFieldFragment(record);
-  if(shader==='flare.fx') {
+  let body;
+  if(shader==='texturecolor.fx'){
+    const uv='gateUV*'+('TextureScaling' in params?'TextureScaling.xy':'vec2(1.0)')+
+      ('TextureTranslation' in params?'+TextureTranslation.xy':'');
+    body=`fragColor=${sample('DiffuseMap',uv)}*DiffuseColor*Brightness.x;`;
+  } else if(shader==='flare.fx') {
     // Interpret the horizontal flare LUT as a disc profile; the repeated rows
     // are padding. Radius one is the edge of the inscribed circle.
     body=`float r=min(1.0,length(gateUV*2.0-1.0));fragColor=${sample('GradientMap','vec2(r,0.5)')}*DiffuseColor*Brightness.x;`;
@@ -164,6 +168,11 @@ export async function gateMaterial(record,resources,context) {
   } else {
     const vertex=record.shader==='ubershader4layer.fx'?fourLayerVertex:gateVertex;
     material=resources.additiveMaterial(vertex,gateFragment(record),uniforms);
+    if(record.blend==='opaqueAreas'){
+      material.transparent=false;
+      material.blending=NormalBlending;
+      material.depthWrite=true;
+    }
     if(record.blend==='additiveAreas') {
       // RM_ALPHA_ADDITIVE writes RGB only. Preserve the intermediate target's
       // alpha independently of what the source fragment and colour wrapper emit.
