@@ -1,22 +1,20 @@
-// The catalog presentation uses fixed exposure and a modest emission bloom.
-// Values are viewer defaults; authored per-source light and material multipliers use 1.
-export const renderDefaults = Object.freeze({
-  exposure: 0.7, reflection: 0.7, bloom: 0.2, sun: 1, fill: 1, f0: 1, roughness: 1,
-  dirt: 1, depthOfField: 1,
-});
+import presets from './render-presets.json' with { type: 'json' };
 
-// Legacy viewer appearance presets (first-generation commit c699060).
-// Exact F0 and fill gains have no identified Trinity/SOF source.
-const raceDefaults = {
-  sansha: { f0: 2 },
-  triglavian: { f0: 2 },
-  concord: { fill: 0.3 },
-  soe: { fill: 0.5 },
-};
+export const renderDefaults = Object.freeze(presets.defaults);
+const rules = presets.rules.map(({ dna, settings }) => ({
+  pattern: new RegExp(dna, 'i'),
+  settings,
+}));
 
 export function renderDefaultsForDNA(dna) {
-  const race = typeof dna === 'string' ? dna.trim().toLowerCase().split(':')[2] : '';
-  return { ...renderDefaults, ...(Object.hasOwn(raceDefaults, race) ? raceDefaults[race] : {}) };
+  const result = { ...renderDefaults };
+  if (typeof dna === 'string') {
+    const value = dna.trim();
+    for (const { pattern, settings } of rules) {
+      if (pattern.test(value)) Object.assign(result, settings);
+    }
+  }
+  return result;
 }
 
 export function switchRenderDefaults(values, previousDNA, nextDNA) {
