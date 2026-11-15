@@ -37,6 +37,8 @@ export function createComponentResources(key, fetchJSON) {
   async function resolveModel(value, itemId, staticDNA=value) {
     await loadCatalog();
     const expected = staticDNA.trim().toLowerCase();
+    if(itemId==null && Object.hasOwn(index.dnaRecipes||{},expected.split(':')[0]))
+      return assembleDNA(expected,index,loadRecipe,resolveURL);
     if (!Object.hasOwn(index.models, expected)) {
       if(itemId != null || !index.dnaRecipes)throw Error('Model has not been built: '+expected);
       return assembleDNA(expected,index,loadRecipe,resolveURL);

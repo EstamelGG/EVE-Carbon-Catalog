@@ -1,3 +1,4 @@
+import {hullEffects,factionParameter,legacyLayers} from './hull-definition.js';
 const own=(object,key)=>Object.hasOwn(object,key);
 function option(options,key,label){
   if(!own(options,key))throw Error(label+' · '+key);
@@ -9,7 +10,6 @@ export async function assembleDNA(dna,index,load,resolveURL){
   const base=option(index.dnaRecipes||{},hull,'未发布舰体');
   const [palette,options,packet]=await Promise.all([load(base.recipe.palette),load(base.recipe.options),load(base.effects)]);
   const factionData=option(palette.factions,faction,'未发布阵营');
-  const selection=option(options.bindings,faction,'舰体缺少该阵营的绑定');
   const style=option(palette.races,race,'缺少种族配置');
   const commands=new Map();
   for(const token of tokens){
@@ -21,13 +21,13 @@ export async function assembleDNA(dna,index,load,resolveURL){
     commands.set(key,values);
   }
   const materials=commands.get('material')||[], pattern=commands.get('pattern')||[];
-  const layers=pattern.length?option(options.patterns,pattern[0],'图案没有此舰体的投影'):null;
+  const layers=pattern.length?option(options.patterns,pattern[0],'图案没有此舰体的投影'):options.modern?
+    options.patterns[factionData.definition.defaultPatternName]??[]:legacyLayers(factionData.definition.defaultPattern,options.projection);
   const insert=commands.get('respathinsert')?.[0];
   const variants=insert && insert!=='none'?option(options.inserts,insert,'缺少贴图变体'):
     insert==='none'?{}:options.inserts[factionData.insert]||{};
   for(const name of [...materials,...pattern.slice(1)])if(name!=='none')option(palette.materials,name,'未知材质');
-  const layout=options.layouts[selection.layout];
-  const appearance=structuredClone({...layout,materials:layout.materials.map(i=>options.materialPool[i]),extras:base.appearance.extras});
+  const appearance=structuredClone({...options.layout,extras:base.appearance.extras});
   const directory=base.model.split('/').slice(0,-1);
   const relative=url=>'../'.repeat(directory.length-1)+url.slice(4);
   const modelURL=new URL('/'+base.model,location.href);
@@ -45,6 +45,8 @@ export async function assembleDNA(dna,index,load,resolveURL){
       if(!native)continue;
       for(const [role,uri] of Object.entries(native.textures))if(variant(uri))native.textures[role]=relative(variant(uri));
       for(const key of area.parameters){
+        const value=factionParameter(key,area.area,options,factionData,palette);
+        if(value)native.parameters[key]=value;
         for(const [prefixes,names,blocked] of [[palette.materialPrefixes,materials,area.blocked],
               [palette.patternPrefixes,pattern.slice(1),0]]){
           const i=prefixes.findIndex(prefix=>key.toLowerCase().startsWith(prefix.toLowerCase()));
@@ -55,7 +57,7 @@ export async function assembleDNA(dna,index,load,resolveURL){
         if(key==='GeneralHeatGlowColor' && ['Primary','Reactor'].includes(area.area))
           native.parameters[key]=factionData.colors[style.heat[area.area==='Primary'?0:1]];
       }
-      if(layers){
+      if(layers.length){
         native.patterns=[];
         for(const role of ['PatternMask1Map','PatternMask2Map']){
           const fallback=area.patternDefaults?.[role];
@@ -70,24 +72,8 @@ export async function assembleDNA(dna,index,load,resolveURL){
       }
     }
   }
-  function selected(field){
-    return selection[field].flatMap(i=>options.parts[field][i]);
-  }
-  const children=selected('children');
-  const smart=selected('smart');
-  const effects={...packet,booster:packet.booster.placements.length?{...packet.booster,...style.style}:packet.booster,
-    sprites:selected('sprites'),attachmentSpotlights:selected('spotlights'),
-    planeGlow:{...packet.planeGlow,sets:selected('planes')},
-    lighting:{...packet.lighting,mode:smart.length?'smart':'none',sets:smart},
-    supplements:{meshes:children.flatMap(c=>c.meshes),flares:children.flatMap(c=>c.flares),
-      unsupported:children.flatMap(c=>c.unsupported||[]),decals:selected('decals').map(decal=>({...decal,
-        textures:Object.fromEntries(Object.entries(decal.textures).map(([k,map])=>[k,variants[map.url]||map]))}))}};
-  function restoreGeometry(node){
-    if(!node || typeof node!=='object')return node;
-    if(Object.hasOwn(node,'geometryIndex'))return options.geometry[node.geometryIndex];
-    if(Array.isArray(node))return node.map(restoreGeometry);
-    return Object.fromEntries(Object.entries(node).map(([key,value])=>[key,restoreGeometry(value)]));
-  }
+  const effects=hullEffects(options,packet,factionData,variants);
+  if(effects.booster.placements.length)effects.booster={...effects.booster,...style.style};
   const url=new URL(resolveURL(base.effects),location.href);
   url.searchParams.set('faction',faction);
   url.searchParams.set('race',race);
@@ -96,5 +82,5 @@ export async function assembleDNA(dna,index,load,resolveURL){
   url.searchParams.set('options',base.recipe.options);
   return {...base,dna,available:true,name:{zh:(base.name?.zh||hull)+' · 自定义',en:(base.name?.en||hull)+' · Custom'},model:resolveURL(base.model),preview:style.preview.url,
     appearance,appearanceRevision:base.appearanceRevision+'-'+base.recipe.options+'-'+base.recipe.palette+'-'+dna,
-    effects:url.href,recipeEffects:restoreGeometry(effects)};
+    effects:url.href,recipeEffects:effects};
 }

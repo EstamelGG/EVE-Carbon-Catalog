@@ -66,7 +66,7 @@ async function choose(first=false){
     const [next,opts]=await Promise.all([read(url(entry.recipe.palette).href),read(url(entry.recipe.options).href)]);
     if(seq!==selection)return;
     palette=next;options=opts;
-    const factions=Object.keys(opts.bindings);
+    const factions=Object.keys(next.factions);
     if(first && initial && !factions.includes(initialFaction))throw Error(text('未发布的阵营','Unpublished faction'));
     select('faction',factions,first?initialFaction||entry.baseFaction:undefined);
     if(first && initial){
