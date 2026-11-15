@@ -1,4 +1,4 @@
-import { Vector4 } from 'three';
+import { SRGBColorSpace, Vector4 } from 'three';
 import { displayDecode } from './lighting-shaders.js';
 
 // The facing-power model also occurs in Godot's VisualShaderNodeFresnel.
@@ -132,7 +132,11 @@ export async function createLayeredMeshMaterial(record, resources, layerCount) {
   for (const i of layers) coordinates('TextureTransform' + i, 'TextureScroll' + i);
   await Promise.all(['MaskMap', ...layers.map(i => 'DiffuseMap' + i)].map(async name => {
     const repeat = name !== 'MaskMap' || !record.maskClamp;
-    uniforms[name] = { value: await resources.texture(record.textures[name], { repeat }) };
+    const source = record.textures[name];
+    // Jita uses the same display-encoded projection atlas as both a diffuse
+    // layer and a mask. Its legacy DDS has no transfer-function metadata.
+    const projection = source.url.split('?')[0].endsWith('/dx9/model/hangar/shared/jita_hologram_01b.ktx2');
+    uniforms[name] = { value: await resources.texture(projection ? { ...source, colorSpace: SRGBColorSpace } : source, { repeat }) };
   }));
   return resources.additiveMaterial(record.twoSided ? twoSidedVertex : regularVertex,
     fragment(layers, record.maskTransform, record.twoSided), uniforms);
