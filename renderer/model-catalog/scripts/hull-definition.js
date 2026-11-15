@@ -50,7 +50,7 @@ export function hullEffects(options,packet,faction,variants){
       parts[rule.field].push(value);
     }
   }
-  return {...packet,sprites:parts.sprites,attachmentSpotlights:parts.spotlights,
+  return {...packet,fixtureColors:faction.colors,fixtureVisibility:[...visible],sprites:parts.sprites,attachmentSpotlights:parts.spotlights,
     planeGlow:{...packet.planeGlow,sets:parts.planes},lighting:{...packet.lighting,mode:parts.smart.length?'smart':'none',sets:parts.smart},
     supplements:{meshes:parts.children.flatMap(c=>c.meshes),flares:parts.children.flatMap(c=>c.flares),
       lights:parts.children.flatMap(c=>c.lights||[]),particles:parts.children.flatMap(c=>c.particles||[]),
