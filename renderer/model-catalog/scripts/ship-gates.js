@@ -93,6 +93,7 @@ export async function installGateEffects(viewer,scene,root,data,resources,getTim
     }
     rangeChanged=false;
     const hullName=(viewer.animationName||'').split('.').pop();
+    animation.hullTime=viewer.currentTime;
     if (data.animation.generic && !data.animation.hangar && animation.hullName!==hullName) particles.forEach(p=>p.pool.reset());
     animation.evaluate(time,data.animation.generic && !data.animation.hangar ? {
       name:hullName, time:viewer.currentTime,

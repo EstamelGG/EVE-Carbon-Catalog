@@ -53,6 +53,8 @@ export function hullEffects(options,packet,faction,variants){
   return {...packet,sprites:parts.sprites,attachmentSpotlights:parts.spotlights,
     planeGlow:{...packet.planeGlow,sets:parts.planes},lighting:{...packet.lighting,mode:parts.smart.length?'smart':'none',sets:parts.smart},
     supplements:{meshes:parts.children.flatMap(c=>c.meshes),flares:parts.children.flatMap(c=>c.flares),
+      lights:parts.children.flatMap(c=>c.lights||[]),particles:parts.children.flatMap(c=>c.particles||[]),
+      transparent:parts.children.flatMap(c=>c.transparent||[]),
       unsupported:parts.children.flatMap(c=>c.unsupported||[]),decals:parts.decals}};
 }
 

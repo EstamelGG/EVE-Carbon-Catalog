@@ -1,6 +1,8 @@
 // Mesh supplements are drawn with their authored transforms and texture inputs.
 /*! Source-authored ubershader mesh effects and projected decals. See third-party-notices.txt. */
-import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, Quaternion, Vector3, Vector4 } from 'three';
+import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, Quaternion, Vector3, Vector4, Color, PointLight } from 'three';
+import {setSourceLightRadii} from './source-light-contract.js';
+import {hangarLightIntensity} from './hangar-lighting.js';
 import { installKillMarks } from './kill-marks.js';
 import { installGlowDecals } from './glow-decals.js';
 import { beforeSceneRender } from './effect-resources.js';
@@ -70,6 +72,17 @@ void main(){
 export async function installSupplements(viewer, scene, root, data, resources, getState, onCommit, owner) {
   if (!data) return () => {};
   const entries=[];
+  const childLights=[];
+  for(const record of data.lights||[]){
+    if(((record.flags??1)&1)===0 || record.display===false)continue;
+    const object=new Object3D(),color=record.color??[1,1,1];
+    const light=new PointLight(new Color(...color.slice(0,3)),record.brightness??1);
+    light.name=record.name||'Tr2PointLight';
+    light.position.fromArray(record.position??[0,0,0]);
+    object.add(light);object.matrixAutoUpdate=false;root.add(object);
+    entries.push({object,transforms:record.transforms});
+    childLights.push({object,light,record:{brightness:1,...record}});
+  }
   const vector=(p,k,d)=>({value:new Vector4(...(p[k] || d))});
   await Promise.all(data.meshes.map(async record=>{
     const p=record.parameters;
@@ -144,7 +157,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   const visibility = entries.some(entry => entry.flare) ? createFlareVisibility() : null;
   const updateFlares = createFlareBatch(root, entries.filter(entry => entry.flare), resources);
   const view=new Matrix4(),projection=new Matrix4(),rootWorld=new Matrix4(),viewport=new Vector4();
-  const clocks=entries.map(entry=>entry.object.material.uniforms.time).filter(Boolean);
+  const clocks=entries.map(entry=>entry.object.material?.uniforms.time).filter(Boolean);
   let previousCamera,previousWidth,previousDepth;
   const unsubscribe=beforeSceneRender(scene,(camera,renderer)=>{
     if (!root.visible) return;
@@ -153,6 +166,10 @@ export async function installSupplements(viewer, scene, root, data, resources, g
       object.updateMatrixWorld(true);
     }
     const elapsed=getState().elapsed;
+    for(const {light,record,object} of childLights){
+      light.intensity=hangarLightIntensity(record,elapsed);
+      setSourceLightRadii(light,record.radius??0,record.innerRadius,object.matrixWorld.getMaxScaleOnAxis());
+    }
     for(const uniform of clocks)uniform.value=elapsed;
     const width=camera.viewport?.z??renderer.getCurrentViewport(viewport).z;
     if(!hasBones && previousCamera===camera && previousWidth===width && previousDepth===camera.reversedDepth &&

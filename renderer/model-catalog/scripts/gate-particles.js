@@ -1,4 +1,5 @@
 import { Mesh,Vector3,Matrix3,Matrix4 } from 'three';
+import {scalarInput} from './cloud-brightness.js';
 import {particleGeometry} from './particle-geometry.js';
 import {gpuAtlasMaterial} from './gpu-particle-batch.js';
 import {defaultMaxGpuParticles} from './gpu-particle-slots.js';
@@ -121,8 +122,20 @@ export async function gateParticles(record,resources,root,siblingRecords=[], sha
   if (gpu) pool.motion = new GpuEmissionMotion();
   let last=null, pulseKey=null;
   return {reset(){pool.reset();pool.motion?.reset();last=null;if(geometry)geometry.instanceCount=0;if(gpuDraw)gpuDraw.visible=false;cpuSort?.reset();uploadRevision=-1;},update(animation,world,visible,elapsed,camera,viewportWidth){
-    const sourceEmitter=animation.node(record.emitter),parameters=animation.parameters(record.materials[0]||{parameters:{}});
-    const siblings = siblingRecords.length ? siblingRecords.map(sibling => animation.node(sibling.emitter)) : siblingRecords;
+    const evaluateEmitter=record=>{
+      const emitter=animation.node(record.emitter);
+      if(!emitter.rateBindings?.length)return emitter;
+      let rate=emitter.rate??0;
+      for(const binding of emitter.rateBindings){
+        const range=binding.ranges.find(r=>r.name===animation.hullName);
+        if(!range && (!binding.playing || binding.ranges.length))continue;
+        const time=range?range.start+Math.min(animation.hullTime??0,Math.max(0,range.end-range.start)):elapsed;
+        rate=scalarInput(binding.keys,time)*binding.scale+binding.offset;
+      }
+      return {...emitter,rate};
+    };
+    const sourceEmitter=evaluateEmitter(record),parameters=animation.parameters(record.materials[0]||{parameters:{}});
+    const siblings = siblingRecords.length ? siblingRecords.map(evaluateEmitter) : siblingRecords;
     local.copy(root.matrixWorld).invert().multiply(world);
     scaleVector.setFromMatrixScale(local);
     const emitter = gpu ? gpuEmitterInScene(sourceEmitter, local, scaleVector) : sourceEmitter;
@@ -169,6 +182,11 @@ export async function gateParticles(record,resources,root,siblingRecords=[], sha
     // Tr2GpuParticleSystem::Update dispatches Emit before a single UpdateParticle.
     if (gpu) {
       if (dt > 0) pool.step(dt, emitter, enabled);
+    } else if(dt>0 && !cpuSort && !hasStaticEmitter && record.emitter.rateBindings){
+      // A short jet can live for less than one display frame. Distribute births
+      // through the frame so integrating one large step cannot erase the batch.
+      const steps=Math.ceil(dt*60), interval=dt/steps;
+      for(let i=0;i<steps;i++)pool.step(interval,emitter,enabled,0,siblings);
     } else if (dt>0 || hasStaticEmitter) {
       pool.step(dt,emitter,enabled,0,siblings,false);
       if(cpuInterval>0)pool.dynamics.update(pool.items,cpuInterval);

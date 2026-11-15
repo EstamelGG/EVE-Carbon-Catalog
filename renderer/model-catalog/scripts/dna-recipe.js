@@ -41,7 +41,7 @@ export async function assembleDNA(dna,index,load,resolveURL){
       const root=material.extras.ccpdecNative;
       const offset=visited.get(slot)||0;
       visited.set(slot,offset+1);
-      const native=offset?root.overlays?.[offset-1]:root;
+      const native=root.profile==='fx-surface-v1'?root.overlays?.[offset]:offset?root.overlays?.[offset-1]:root;
       if(!native)continue;
       for(const [role,uri] of Object.entries(native.textures))if(variant(uri))native.textures[role]=relative(variant(uri));
       for(const key of area.parameters){
@@ -57,7 +57,7 @@ export async function assembleDNA(dna,index,load,resolveURL){
         if(key==='GeneralHeatGlowColor' && ['Primary','Reactor'].includes(area.area))
           native.parameters[key]=factionData.colors[style.heat[area.area==='Primary'?0:1]];
       }
-      if(layers.length){
+      if(layers.length && native.profile==='quad-runtime-v1'){
         native.patterns=[];
         for(const role of ['PatternMask1Map','PatternMask2Map']){
           const fallback=area.patternDefaults?.[role];

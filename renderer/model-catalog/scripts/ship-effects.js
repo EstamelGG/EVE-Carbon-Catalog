@@ -48,7 +48,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     disposePlanes,
     disposeSupplements,
     disposeHullOverlays,
-    gate, sceneEffects, damage;
+    gate, sceneEffects, childEffects, damage;
   const activity = pageActivity(viewer.ownerDocument);
   const syncVideoPlayback = () => resources.setPlaying(!disposed && group.visible && activity.active && mode !== 'paused');
   const unsubscribeActivity = activity.subscribe(syncVideoPlayback);
@@ -65,6 +65,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     disposeHullOverlays?.();
     gate?.dispose();
     sceneEffects?.dispose();
+    childEffects?.dispose();
     damage?.dispose();
     group.removeFromParent();
     resources.dispose();
@@ -190,6 +191,12 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
       return { dispose: cleanup, setMode() {} };
     }
     disposeSupplements = await installSupplements(viewer, scene, group, data.supplements, resources, () => ({elapsed}), onCommit, attachmentOwner);
+    const child=data.supplements;
+    if(child?.particles?.length || child?.transparent?.length){
+      const particles=(child.particles||[]).flatMap((g,i)=>g.draws.map(d=>({...d,particleNodeIndex:i})));
+      childEffects=await installGateEffects(viewer,scene,group,{animation:{generic:true,targets:[],sets:[]},
+        particles,meshes:child.transparent||[],flares:[],unsupported:[]},resources,()=>elapsed,'childEffects',[],onCommit,attachmentOwner);
+    }
     gate = await installGateEffects(viewer, scene, group, data.gate, resources, () => elapsed, null, [], onCommit);
     sceneEffects = await installGateEffects(viewer, scene, group, data.scene, resources, () => elapsed, null, hangarBodies, onCommit, attachmentOwner);
     damage = createShipDamage(viewer, scene, group, data.damage, () => elapsed);

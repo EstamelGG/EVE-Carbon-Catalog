@@ -41,7 +41,7 @@ export async function equipmentFloorMaterial(record, resources) {
 
 // Capture the opaque scene immediately before each carrier layer for display-space
 // compositing. The authored carrier plane has a diffuse alpha of 0.5.
-export function installEquipmentFloorBlend(mesh) {
+export function installSceneColorCapture(mesh) {
   const original=mesh.onBeforeRender,material=mesh.material,size=new Vector2();
   let frame=null,framebuffer=null,context=null;
   mesh.onBeforeRender=function(renderer,scene,camera,geometry,current,...rest){
@@ -72,7 +72,9 @@ export function installEquipmentFloorBlend(mesh) {
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER,read);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,draw);
     }
     material.uniforms.carrierSize.value.copy(size);
-    material.uniforms.carrierLinear.value=Boolean(target) || renderer.outputColorSpace!==SRGBColorSpace;
+    if(material.uniforms.carrierLinear)
+      material.uniforms.carrierLinear.value=Boolean(target) || renderer.outputColorSpace!==SRGBColorSpace;
   };
   return ()=>{mesh.onBeforeRender=original;frame?.dispose();frame=null;if(framebuffer)context.deleteFramebuffer(framebuffer);framebuffer=null;};
 }
+export {installSceneColorCapture as installEquipmentFloorBlend};

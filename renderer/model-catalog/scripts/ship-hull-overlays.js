@@ -1,6 +1,7 @@
-import { Vector4, NormalBlending } from 'three';
+import { Vector2, Vector4, NormalBlending, NoBlending, GLSL3, ShaderMaterial } from 'three';
 import { beforeSceneRender } from './effect-resources.js';
-import {directionalVertex, uvEffectVertex, overlayFragment} from './overlay-shaders.js';
+import {directionalVertex, uvEffectVertex, overlayFragment, distortionVertex, distortionFragment} from './overlay-shaders.js';
+import {installSceneColorCapture} from './equipment-scene.js';
 
 export {directionalVertex, uvEffectVertex, overlayFragment as directionalFragment};
 
@@ -16,29 +17,37 @@ export async function installHullOverlays(viewer, scene, root, resources, getTim
   let unsubscribe;
   const dispose = () => {
     unsubscribe?.();
-    for (const {mesh} of draws) mesh.removeFromParent();
+    for (const {mesh,release} of draws) {release?.();mesh.removeFromParent();}
     draws.length = 0;
   };
   try {
     for (const source of sources) {
       for (const layer of definitions.get(source.material.name)) {
         const directional = layer.profile === 'fxdirectional-v1';
-        if (!directional && layer.profile !== 'fx-uv-v1') throw new Error(`Unsupported hull overlay: ${layer.profile}`);
+        const distortion = layer.profile === 'fx-distortion-v1';
+        if (!directional && !distortion && layer.profile !== 'fx-uv-v1') throw new Error(`Unsupported hull overlay: ${layer.profile}`);
         if (directional && (!source.geometry.hasAttribute('_ccp_source_position') || !(layer.sourceRadius > 0)))
           throw new Error('Hull overlay lacks native projection coordinates or radius; rebuild the model');
         const uniforms = Object.fromEntries(Object.entries(layer.parameters)
           .filter(([,value]) => Array.isArray(value) && value.length === 4)
           .map(([name,value]) => [name,{value:new Vector4(...value)}]));
-        await Promise.all(['Layer1Map','Layer2Map','LayerMaskMap'].map(async role => {
+        const roles=distortion?['DistortionMap','Layer2Map']:['Layer1Map','Layer2Map','LayerMaskMap'];
+        await Promise.all(roles.map(async role => {
           const url = new URL(layer.textures[role], new URL(viewer.appearanceURL || viewer.src, location.href)).href;
           uniforms[role] = {value:await resources.texture({url},{repeat:true})};
         }));
         uniforms.time = {value:0};
         uniforms.sourceRadius = {value:layer.sourceRadius};
-        const material = resources.additiveMaterial(directional ? directionalVertex : uvEffectVertex,overlayFragment,uniforms);
+        let material;
+        if(distortion){
+          uniforms.carrierFrame={value:null};
+          uniforms.carrierSize={value:new Vector2()};
+          material=resources.own(new ShaderMaterial({glslVersion:GLSL3,vertexShader:distortionVertex,
+            fragmentShader:distortionFragment,uniforms,transparent:true,depthWrite:false,blending:NoBlending}));
+        }else material=resources.additiveMaterial(directional ? directionalVertex : uvEffectVertex,overlayFragment,uniforms);
         if (layer.blend === 'alpha') material.blending = NormalBlending;
         else if (layer.blend && layer.blend !== 'additive') throw new Error(`Unsupported hull blend: ${layer.blend}`);
-        material.name = 'EVE directional hull overlay';
+        material.name = distortion?'EVE hull refraction':'EVE directional hull overlay';
         const mesh = source.clone(false);
         mesh.name = material.name;
         mesh.material = material;
@@ -49,7 +58,8 @@ export async function installHullOverlays(viewer, scene, root, resources, getTim
         mesh.receiveShadow = false;
         mesh.visible = false;
         onCommit(() => source.parent.add(mesh));
-        draws.push({source,mesh,material});
+        if(distortion)mesh.renderOrder=source.renderOrder+2;
+        draws.push({source,mesh,material,release:distortion?installSceneColorCapture(mesh):null});
       }
     }
     if (draws.length) unsubscribe = beforeSceneRender(scene, () => {
