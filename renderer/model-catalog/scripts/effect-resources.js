@@ -95,6 +95,11 @@ export function createEffectResources(loadTexture = loadSourceImage, resolveURL 
             result.needsUpdate = true;
           } else {
             result = await loadTexture(source, event => progress(event.loaded, event.lengthComputable ? event.total : 0), record.url);
+            if (result.isData3DTexture) {
+              result.wrapS=result.wrapT=result.wrapR=RepeatWrapping;
+              result.minFilter=result.magFilter=LinearFilter;
+              result.needsUpdate=true;
+            }
             // A shared image can also be bound as linear data by another
             // material. Change only this cache entry's sampler view.
             if (record.colorSpace && result.colorSpace !== record.colorSpace) {

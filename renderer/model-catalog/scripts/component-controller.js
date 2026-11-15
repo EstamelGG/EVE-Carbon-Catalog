@@ -181,8 +181,8 @@ export function createComponentController(root, emit) {
           );
         const source = (viewer.appearanceDocument || viewer.originalGltfJson)?.extras?.ccpdec;
         viewer.lifecycle.release('locatorDamage');
-        if (source?.locators?.damage?.length)
-          viewer.lifecycle.set('locatorDamage', locatorFire(viewer, source.locators.damage, source.sourceRadius || Math.max(...Object.values(viewer.getDimensions()))/2));
+        if (source?.locators?.vdsTrail?.length && source.hullFire)
+          viewer.lifecycle.set('locatorDamage', locatorFire(viewer, source.locators.vdsTrail, source.sourceRadius || Math.max(...Object.values(viewer.getDimensions()))/2, source.hullFire));
         subsystems.install(viewer, item, module);
         fittingPanel.connect(viewer, item, module);
         hangarPanel.connect(viewer, item, module);

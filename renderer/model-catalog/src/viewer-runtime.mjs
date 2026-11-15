@@ -119,12 +119,6 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     if (viewer.equipmentPreview) viewer.lifecycle.set('disposeEquipment', await api.installEquipmentPreview(viewer));
     else void view.environment(viewer, api);
     if (!operation.isCurrent()) return false;
-    if (!savedView) {
-      composer.queueRender();
-      await api.waitForFrame(viewer);
-      if (!operation.isCurrent()) return false;
-      viewer.geometryReady = transition.revealGeometry(request);
-    }
     const native = settings.nativePreview ? await viewer.assetSession.json(settings.nativePreview) : null;
     if (!operation.isCurrent()) return false;
     if (native) {
@@ -133,6 +127,12 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
       viewer.lifecycle.set('disposeNative', dispose);
       if (!operation.isCurrent()) return false;
       applyDisplaySettings(view.settings().display);
+    }
+    if (!savedView) {
+      composer.queueRender();
+      await api.waitForFrame(viewer);
+      if (!operation.isCurrent()) return false;
+      viewer.geometryReady = transition.revealGeometry(request);
     }
     view.progress(4);
     if (item.effects && !viewer.equipmentPreview) {
