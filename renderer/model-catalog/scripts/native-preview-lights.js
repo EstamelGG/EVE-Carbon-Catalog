@@ -37,14 +37,6 @@ export function installPreviewLightRig(context) {
       eve_roughnessScale: controls.roughness,
     };
     const sun = new DirectionalLight(new Color(...reflection.settings.sunColor), 1);
-    // CCPDec AGame's reference orbit: the authored rig is unrotated at 35 deg yaw, 20 deg elevation.
-    const yaw = 0.610865, pitch = -0.349066;
-    const referenceEye = new Vector3(Math.sin(yaw)*Math.cos(pitch), -Math.sin(pitch), Math.cos(yaw)*Math.cos(pitch));
-    const referenceInverse = new Quaternion().setFromRotationMatrix(
-      new Matrix4().lookAt(referenceEye, new Vector3(), new Vector3(0,1,0))
-    ).invert();
-    const cameraRotation = new Quaternion();
-    const toSun = new Vector3(...settings.sunDirection).normalize().negate();
     group.add(sun, sun.target);
     lights.push({ light: sun, kind: 'sun', base: equipment ? 4.5 : 1 });
 
@@ -74,21 +66,17 @@ export function installPreviewLightRig(context) {
       return {light, source};
     });
     scene.add(group);
-    const world = new Vector3(), rotationMatrix = new Matrix4();
+    const world = new Vector3(), rotationMatrix = new Matrix4(), modelRotation = new Quaternion();
     const updateLights = camera => {
       model.updateWorldMatrix(true, false);
       group.updateWorldMatrix(true, false);
-      if (equipment) {
-        sun.position.copy(group.worldToLocal(camera.getWorldPosition(world)));
-        sun.target.position.copy(scene.target.position);
-      } else {
-        camera.getWorldQuaternion(cameraRotation);
-        group.quaternion.copy(scene.getWorldQuaternion(rotation).invert()).multiply(cameraRotation).multiply(referenceInverse);
-        sun.position.copy(toSun);
-        sun.target.position.set(0,0,0);
+      sun.position.copy(group.worldToLocal(camera.getWorldPosition(world)));
+      sun.target.position.copy(scene.target.position);
+      if (!equipment) {
+        // Keep the authored fill lights in the hull frame as the camera orbits.
+        group.getWorldQuaternion(rotation).invert().multiply(model.getWorldQuaternion(modelRotation));
         model.getWorldScale(scale);
-        pointRig.matrix.makeScale(scale.x,scale.y,scale.z).multiply(containers);
-        pointRig.matrix.setPosition(scene.target.position);
+        pointRig.matrix.compose(scene.target.position,rotation,scale).multiply(containers);
       }
       group.updateMatrixWorld(true);
       // EveChildContainer::GetLights takes the arithmetic mean of the three world basis lengths.
