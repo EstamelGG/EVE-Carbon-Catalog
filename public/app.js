@@ -134,10 +134,9 @@ $('about-dialog').addEventListener('click', (event) => {
     $('about-dialog').close();
 });
 function renderPreview(item, badge = '') {
-  const useIcon = item.renderKind === 'equipment' || item.categoryID === 7;
   const imageURL = `https://images.evetech.net/types/${item.id}/icon?size=64`;
   return `<div class="render-preview" data-image-state="loading" aria-busy="true">${badge}
-    <img data-render src="${useIcon ? imageURL : renderURL(item)}" ${useIcon ? 'class="official-icon"' : `${renderFallbacks[item.id] ? `data-fallback="${esc(resourceURL(renderFallbacks[item.id]))}"` : ''} data-icon="${imageURL}"`} alt="${esc(t('poster', { name: localizedName(item.name) }))}" loading="lazy" decoding="async" width="512" height="512">
+    <img data-render src="${esc(renderFallbacks[item.id] ? resourceURL(renderFallbacks[item.id]) : renderURL(item))}" data-icon="${imageURL}" alt="${esc(t('poster', { name: localizedName(item.name) }))}" loading="lazy" decoding="async" width="512" height="512">
     <span class="loading-ring render-spinner" aria-hidden="true"></span>
     <span class="render-image-error" role="img" aria-label="${esc(t('renderUnavailable'))}">${icon('ship', 'placeholder-cube')}</span>
   </div>`;
@@ -958,6 +957,7 @@ async function init() {
     ]);
     const affiliation = createAffiliationResolver(identities);
     const applyInventory = inventory => {
+      renderFallbacks = inventory?.renderFallbacks || {};
       data = joinDirectory(directory, inventory, identities, affiliation);
       catalogLoader = data.loader;
       groupsByID = new Map(data.categories.flatMap(c => c.groups.map(g => [g.id, {...g,category:c}])));

@@ -43,6 +43,28 @@ function bindHull(shared,appearance) {
     doc.extensionsUsed.push('KHR_texture_basisu');
     doc.extensionsRequired.push('KHR_texture_basisu');
   }
+  const mounts = doc.extras?.ccpdec?.mounts;
+  if (doc.extras?.ccpdec?.renderKind === 'equipment' && mounts?.length === 2) {
+    const roots = doc.scenes[doc.scene ?? 0].nodes;
+    const nodeOffset = doc.nodes.length, skinOffset = doc.skins?.length ?? 0;
+    const mirrorNodes = structuredClone(doc.nodes);
+    for (const node of mirrorNodes) {
+      if (node.children) node.children = node.children.map(i => i + nodeOffset);
+      if (node.skin != null) node.skin += skinOffset;
+    }
+    doc.nodes.push(...mirrorNodes);
+    if (skinOffset) for (const skin of structuredClone(doc.skins)) {
+      skin.joints = skin.joints.map(i => i + nodeOffset);
+      if (skin.skeleton != null) skin.skeleton += nodeOffset;
+      doc.skins.push(skin);
+    }
+    for (const anim of doc.animations || []) for (const channel of structuredClone(anim.channels)) {
+      channel.target.node += nodeOffset;
+      anim.channels.push(channel);
+    }
+    doc.scenes[doc.scene ?? 0].nodes = mounts.map((matrix, i) =>
+      doc.nodes.push({matrix, children:roots.map(n => n + i * nodeOffset)}) - 1);
+  }
   return doc;
 }
 export async function subsystemDocument(session,url,part){
