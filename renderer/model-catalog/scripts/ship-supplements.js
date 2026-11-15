@@ -13,7 +13,7 @@ import { decalBoneTransform } from './decal-projection.js';
 import { createPaintDecal } from './paint-decal.js';
 import { authoredLocal, authoredWorld } from './ship-authored-spotlights.js';
 import { applyGateModifiers, gateBones } from './gate-transforms.js';
-import { createLayeredMeshMaterial, regularVertex, layerCoordinates } from './layered-mesh-material.js';
+import { createLayeredMeshMaterial, diffuseAtlases, regularVertex, layerCoordinates } from './layered-mesh-material.js';
 
 // Native texturecolor.fx: UV scaling/translation, sampled color and brightness.
 // Opaque child meshes must write depth before the additive effect shells.
@@ -71,6 +71,7 @@ void main(){
 
 export async function installSupplements(viewer, scene, root, data, resources, getState, onCommit, owner) {
   if (!data) return () => {};
+  const colorAtlases = diffuseAtlases(data.meshes.filter(mesh => mesh.layers));
   const entries=[];
   const childLights=[];
   for(const record of data.lights||[]){
@@ -115,7 +116,7 @@ export async function installSupplements(viewer, scene, root, data, resources, g
       root.add(object);entries.push({object,transforms:record.transforms});
       return;
     }
-    const material = await createLayeredMeshMaterial(record, resources, record.layers);
+    const material = await createLayeredMeshMaterial(record, resources, record.layers, colorAtlases);
     const object = new Mesh(resources.geometry(record.geometry), material);
     object.name=record.name; object.matrixAutoUpdate=false; object.frustumCulled=false;
     root.add(object);entries.push({object,transforms:record.transforms});

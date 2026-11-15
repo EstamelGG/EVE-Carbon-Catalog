@@ -1,4 +1,4 @@
-import { SRGBColorSpace, Vector4 } from 'three';
+import { LinearSRGBColorSpace, SRGBColorSpace, Vector4 } from 'three';
 import { displayDecode } from './lighting-shaders.js';
 
 // The facing-power model also occurs in Godot's VisualShaderNodeFresnel.
@@ -116,7 +116,29 @@ void main() {
 }`;
 }
 
-export async function createLayeredMeshMaterial(record, resources, layerCount) {
+// Layered effects multiply RGB for emission and sample alpha independently.
+// A projected color atlas is sometimes bound to MaskMap on a second mesh.
+export function diffuseAtlases(materials) {
+  const urls = new Set();
+  for (const material of materials) {
+    for (const [slot, source] of Object.entries(material?.textures ?? {})) {
+      if (/^DiffuseMap[1-4]$/.test(slot) && source?.url) urls.add(source.url);
+    }
+  }
+  return urls;
+}
+
+export function layeredTexture(source, slot, colorAtlases) {
+  if (source.colorSpace !== undefined || source.video || source.float32 || source.volume || source.cube) return source;
+  if (source.sourceTransfer === 'linear') return { ...source, colorSpace: LinearSRGBColorSpace };
+  if (source.sourceTransfer === 'srgb' || /^DiffuseMap[1-4]$/.test(slot) ||
+      (/^MaskMap[12]?$/.test(slot) && colorAtlases?.has(source.url))) {
+    return { ...source, colorSpace: SRGBColorSpace };
+  }
+  return source;
+}
+
+export async function createLayeredMeshMaterial(record, resources, layerCount, colorAtlases) {
   const layers = Array.from({ length: layerCount }, (_, i) => i + 1);
   const uniforms = { time: { value: 0 } };
   function vector(name, fallback) {
@@ -133,10 +155,7 @@ export async function createLayeredMeshMaterial(record, resources, layerCount) {
   await Promise.all(['MaskMap', ...layers.map(i => 'DiffuseMap' + i)].map(async name => {
     const repeat = name !== 'MaskMap' || !record.maskClamp;
     const source = record.textures[name];
-    // Jita uses the same display-encoded projection atlas as both a diffuse
-    // layer and a mask. Its legacy DDS has no transfer-function metadata.
-    const projection = source.url.split('?')[0].endsWith('/dx9/model/hangar/shared/jita_hologram_01b.ktx2');
-    uniforms[name] = { value: await resources.texture(projection ? { ...source, colorSpace: SRGBColorSpace } : source, { repeat }) };
+    uniforms[name] = { value: await resources.texture(layeredTexture(source, name, colorAtlases), { repeat }) };
   }));
   return resources.additiveMaterial(record.twoSided ? twoSidedVertex : regularVertex,
     fragment(layers, record.maskTransform, record.twoSided), uniforms);

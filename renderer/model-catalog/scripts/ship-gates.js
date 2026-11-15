@@ -4,6 +4,7 @@ import { beforeSceneRender } from './effect-resources.js';
 import { GateAnimation } from './gate-animation.js';
 import { gateBones,gateWorld } from './gate-transforms.js';
 import { gateMaterial } from './gate-materials.js';
+import { diffuseAtlases } from './layered-mesh-material.js';
 import {installGpuParticleBatches} from './gpu-particle-batch.js';
 import { gateParticles, groupParticleSystems } from './gate-particles.js';
 import {createFlareVisibility} from './flare-visibility.js';
@@ -23,9 +24,10 @@ export async function installGateEffects(viewer,scene,root,data,resources,getTim
   const animation=new GateAnimation(data.animation),meshes=[],particles=[],flares=[],lines=[];
   const boneAt=gateBones(owner?.document ?? viewer.originalGltfJson,owner?.model ?? scene.model),eye=new Vector3(),rotation=new Quaternion(),inverse=new Matrix4();
   const hazeBox=data.meshes.some(m=>m.haze)?resources.own(new BoxGeometry(1,1,1)):null;
+  const colorAtlases=diffuseAtlases(data.meshes.map(mesh=>mesh.material));
   const prepared=await concurrentMap(data.meshes,async record=>{
     const traffic=record.traffic?await createHangarTraffic(record,resources):null;
-    const pass=traffic?.pass||await gateMaterial(record.material,resources,{viewer,scene});
+    const pass=traffic?.pass||await gateMaterial(record.material,resources,{viewer,scene,colorAtlases});
     // The volume shader clips the ray interval against opaque scene depth.
     // Testing the exit face against that wall would discard the visible front of the volume.
     if(record.material.shader==='volumesphere.fx')pass.material.depthTest=false;

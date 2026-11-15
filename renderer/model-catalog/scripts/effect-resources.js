@@ -102,7 +102,7 @@ export function createEffectResources(loadTexture = loadSourceImage, resolveURL 
             }
             // A shared image can also be bound as linear data by another
             // material. Change only this cache entry's sampler view.
-            if (record.colorSpace && result.colorSpace !== record.colorSpace) {
+            if (record.colorSpace !== undefined && result.colorSpace !== record.colorSpace) {
               const view = own(result.clone());
               if (loadTexture === loadSourceImage) own(result);
               view.colorSpace = record.colorSpace;

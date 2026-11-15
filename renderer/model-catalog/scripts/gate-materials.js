@@ -9,7 +9,7 @@ import { displayDecode } from './lighting-shaders.js';
 import {motionVectorVertex,motionVectorFragment} from './motion-vector-material.js';
 import { glassAttachmentMaterial } from './glass-attachment-material.js';
 import {twoColorFlareVertex,twoColorFlareFragment} from './two-color-flare.js';
-import {gateLayerFragment, gateLayerOptions} from './layered-mesh-material.js';
+import {gateLayerFragment, gateLayerOptions, layeredTexture} from './layered-mesh-material.js';
 import parameterMetadata from './gate-parameter-defaults.json' with {type:'json'};
 import {fourLayerInputs, fourLayerCoordinates, fourLayerFragment} from './four-layer-material.js';
 
@@ -104,7 +104,8 @@ export async function gateMaterial(record,resources,context) {
     // samplers for its optional diffuse layers and mask.
     const motionWrap = record.shader==='motionvectorramp.fx' && /^(MaskMap|DiffuseMap[123])$/.test(k);
     const repeat = !clampMask && !(record.shader==='flare.fx' && k==='GradientMap') && (!motion || motionWrap);
-    uniforms[k] = {value: await resources.texture(v, {repeat})};
+    const source = isLayeredGate(record.shader) || record.shader==='ubershader4layer.fx' ? layeredTexture(v,k,context?.colorAtlases) : v;
+    uniforms[k] = {value: await resources.texture(source, {repeat})};
   }));
   let material;
   if(record.shader==='fxdirectionalv5.fx') {
