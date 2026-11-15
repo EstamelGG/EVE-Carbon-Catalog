@@ -88,9 +88,7 @@ export function createComponentController(root, emit) {
     backgroundTask;
   let fittingData, loadedItem, backgroundCatalog, baseItem;
   $('official-skin').onchange=()=>{
-    configure({...options,officialSkin:$('official-skin').value}).catch(error=>{
-      if(error.name!=='AbortError')$('status').textContent=error.message;
-    });
+    requestConfigure({officialSkin:$('official-skin').value});
   };
   const resolveURL = (url) => resources.resolveURL(url);
   let tab = 'visual';
@@ -106,7 +104,7 @@ export function createComponentController(root, emit) {
     transition: createViewerTransition($('viewer-stage'), $('snapshot')),
     loadRenderer: async () => renderer,
     resolveURL: (url) => resolveURL(url),
-    createSession: (module) => module.createViewerSession((url) => resolveURL(url)),
+    createSession: (module) => Object.assign(module.createViewerSession((url) => resolveURL(url)),{bannerImages:options.bannerImages}),
     view: {
       dimensionFrame: $('dimension-frame'),
       label: (item) => t('modelAlt', { name: name(item.name) || String(item.id) }),

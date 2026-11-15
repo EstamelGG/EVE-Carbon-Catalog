@@ -1,6 +1,6 @@
 // Animated child lenses share the hull glass shader and receive authored curve values.
 // Published Chimera Siren_01A material and verification: docs/source-remediation-82-evidence.json.
-import { MeshStandardMaterial, SRGBColorSpace } from 'three';
+import { AdditiveBlending, MeshStandardMaterial, SRGBColorSpace } from 'three';
 import { configureGlass } from './glass-material.js';
 import { configureNativeShader } from './native-shader.js';
 import { nativeMaterialKey } from './native-material-key.js';
@@ -21,7 +21,8 @@ export async function glassAttachmentMaterial(record,resources,{viewer}={}) {
  Object.assign(uniforms,context.displayUniforms);
  const material=resources.own(new MeshStandardMaterial({map:loaded.AlbedoMap,normalMap:loaded.NormalMap,
   metalness:0,roughness:1,envMapIntensity:0}));
- configureGlass(material);
+ if(record.shader==='quadglassv5.fx')configureGlass(material);
+ if(record.blend==='additiveAreas'){material.transparent=true;material.depthWrite=false;material.blending=AdditiveBlending;}
  material.onBeforeCompile=shader=>{
   configureNativeShader(shader,{...context,native,loaded,dirtLevel:0,
    diffuseIntensity:context.reflection.source.shIntensity??context.reflection.settings.diffuseIntensity,

@@ -22,7 +22,9 @@ export function applySurfaceStages(shader, {
   shader.fragmentShader = shader.fragmentShader.replace(
     '#include <map_fragment>',
     composition,
-  );
+  ).replace('#include <color_fragment>', '');
+  // The native quad material computes its surface color from SOF materials and
+  // masks. GR2 DiffuseColor0 can be solid black even on a painted hull.
   if (clip) {
     applyCutoutShader(shader, clip, clipTexture);
     onCutoutCompiled();

@@ -1,6 +1,6 @@
 // Mesh supplements are drawn with their authored transforms and texture inputs.
 /*! Source-authored ubershader mesh effects and projected decals. See third-party-notices.txt. */
-import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, Quaternion, Vector3, Vector4, Color, PointLight } from 'three';
+import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, Quaternion, Vector3, Vector4, Color, SpotLight, PointLight } from 'three';
 import {setSourceLightRadii} from './source-light-contract.js';
 import {hangarLightIntensity} from './hangar-lighting.js';
 import { installKillMarks } from './kill-marks.js';
@@ -76,7 +76,14 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   for(const record of data.lights||[]){
     if(((record.flags??1)&1)===0 || record.display===false)continue;
     const object=new Object3D(),color=record.color??[1,1,1];
-    const light=new PointLight(new Color(...color.slice(0,3)),record.brightness??1);
+    const tint=new Color(...color.slice(0,3));
+    const light=record.spot?new SpotLight(tint,record.brightness??1,0,(record.outerAngle??45)*Math.PI/180,
+      1-Math.min(1,(record.innerAngle??0)/Math.max(.001,record.outerAngle??45))):new PointLight(tint,record.brightness??1);
+    if(light.isSpotLight){
+      light.target.position.fromArray(record.direction??[0,0,1]);
+      if(!record.direction && record.rotation)light.target.position.applyQuaternion(new Quaternion(...record.rotation));
+      light.add(light.target);
+    }
     light.name=record.name||'Tr2PointLight';
     light.position.fromArray(record.position??[0,0,0]);
     object.add(light);object.matrixAutoUpdate=false;root.add(object);

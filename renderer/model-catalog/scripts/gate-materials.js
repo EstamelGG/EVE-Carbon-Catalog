@@ -13,7 +13,7 @@ import {gateLayerFragment, gateLayerOptions} from './layered-mesh-material.js';
 import parameterMetadata from './gate-parameter-defaults.json' with {type:'json'};
 import {fourLayerInputs, fourLayerCoordinates, fourLayerFragment} from './four-layer-material.js';
 
-const isLayeredGate = shader => shader === 'ubershader.fx' || shader === 'ubershadertwosided.fx';
+const isLayeredGate = shader => shader === 'ubershader.fx' || shader === 'ubershadertwosided.fx' || shader === 'ubershaderquad.fx';
 
 const legacyDefaults={DiffuseColor:[1,1,1,1],FresnelFactors:[1,1,0,0],MaskTransform:[0,0,1,1],MaskScroll:[0,0,0,0],
   TextureTransform1:[0,0,1,1],TextureTransform2:[0,0,1,1],TextureTransform3:[0,0,1,1],
@@ -92,7 +92,7 @@ void main(){${body}}`;
 }
 
 export async function gateMaterial(record,resources,context) {
-  if(record.shader==='quadglassv5.fx')return glassAttachmentMaterial(record,resources,context);
+  if(['quadglassv5.fx','quadv5.fx'].includes(record.shader))return glassAttachmentMaterial(record,resources,context);
   const uniforms={time:{value:0}};
   for(const [k,v] of Object.entries(gateParameters(record)))
     uniforms[k]={value:new Vector4(...(Array.isArray(v)?v:[v,0,0,0]))};

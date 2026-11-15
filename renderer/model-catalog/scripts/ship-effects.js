@@ -1,3 +1,5 @@
+import {authoredLocal} from './ship-authored-spotlights.js';
+import {installHullFixtures} from './hull-fixtures.js';
 import { pageActivity, ambientAnimationLoop } from './page-activity.js';
 import {effectsEnabled} from '../src/display-settings.mjs';
 import { $scene } from '@google/model-viewer/lib/model-viewer-base.js';
@@ -14,7 +16,7 @@ import { resolveEffectGeometry } from './effect-geometry.mjs';
 import { loadJSON } from '../src/resource-activity.mjs';
 import { installLightBudget } from './effect-performance.js';
 import { installNavigationLights } from './navigation-lights.js';
-import { CubeTexture, DataTexture, Data3DTexture, Group, Matrix4, Vector3 } from 'three';
+import { CubeTexture, DataTexture, Data3DTexture, Group, Matrix4, Quaternion, Vector3 } from 'three';
 import { installBoosterLights, previewBoosterGain } from './booster-lights.js';
 import { createFlameBox, createBoosterFlame } from './booster-flame.js';
 
@@ -165,6 +167,20 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
       cleanup();
       return { dispose: cleanup, setMode() {} };
     }
+    const childSets=(data.supplements?.smartLights||[]).map(set=>{
+      const base=set.transforms.reduce((m,t)=>m.multiply(authoredLocal(t)),new Matrix4());
+      function palette(g){
+        const color=v=>v?.colorSlot!=null?data.fixtureColors[v.colorSlot]:v;
+        return {...g,activeColor:color(g.activeColor),activeBlendColor:color(g.activeBlendColor),
+          attributeModifiers:g.attributeModifiers?.map(palette),lightGroups:g.lightGroups?.map(palette)};
+      }
+      return {groups:set.groups.map(palette),placements:set.placements.map(([p,q,s,bone])=>{
+        const position=new Vector3(...p),rotation=new Quaternion(...q),scale=new Vector3(...s);
+        new Matrix4().compose(position,rotation,scale).premultiply(base).decompose(position,rotation,scale);
+        return [position.toArray(),rotation.toArray(),scale.toArray(),bone];
+      })};
+    });
+    if(childSets.length)data.lighting={...data.lighting,mode:'smart',sets:[...data.lighting.sets,...childSets]};
     disposeSpotlights = await installLighting(
       viewer,
       scene,
@@ -190,12 +206,14 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
       cleanup();
       return { dispose: cleanup, setMode() {} };
     }
+    const fixtures=await installHullFixtures(data,resources,group,viewer.assetSession?.bannerImages);
+    if(data.supplements)data.supplements={...data.supplements,lights:[...(data.supplements.lights||[]),...fixtures.lights],transparent:[...(data.supplements.transparent||[]),...fixtures.meshes]};
     disposeSupplements = await installSupplements(viewer, scene, group, data.supplements, resources, () => ({elapsed}), onCommit, attachmentOwner);
     const child=data.supplements;
-    if(child?.particles?.length || child?.transparent?.length){
+    if(child?.particles?.length || child?.transparent?.length || child?.softFlares?.length){
       const particles=(child.particles||[]).flatMap((g,i)=>g.draws.map(d=>({...d,particleNodeIndex:i})));
       childEffects=await installGateEffects(viewer,scene,group,{animation:{generic:true,targets:[],sets:[]},
-        particles,meshes:child.transparent||[],flares:[],unsupported:[]},resources,()=>elapsed,'childEffects',[],onCommit,attachmentOwner);
+        particles,meshes:child.transparent||[],flares:child.softFlares||[],unsupported:[]},resources,()=>elapsed,'childEffects',[],onCommit,attachmentOwner);
     }
     gate = await installGateEffects(viewer, scene, group, data.gate, resources, () => elapsed, null, [], onCommit);
     sceneEffects = await installGateEffects(viewer, scene, group, data.scene, resources, () => elapsed, null, hangarBodies, onCommit, attachmentOwner);
