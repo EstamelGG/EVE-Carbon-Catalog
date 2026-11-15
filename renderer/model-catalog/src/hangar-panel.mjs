@@ -58,7 +58,7 @@ export function createHangarPanel({
   }
   async function metadataReady() {
     const generation = resourceRevision;
-    pendingMetadata ||= loadResource('data/hangars.json')
+    pendingMetadata ||= loadResource('res/hangars.json')
       .then((value) => {
         if (value.version !== 1) throw Error('Unsupported hangars');
         if (generation === resourceRevision) metadata = value;
@@ -148,6 +148,7 @@ export function createHangarPanel({
       const choices = ships || (await catalog().search()).filter((i) => i.available && i.categoryID === 6);
       if (!valid(c) || token !== revision) return;
       ships = choices;
+      if (choices.length && !choices.some(ship => ship.id === state().ship)) state().ship = choices[0].id;
       render();
       status(currentViewer()?.hangar?.active ? 'hangarReady' : 'hangarHint');
     } catch (error) {

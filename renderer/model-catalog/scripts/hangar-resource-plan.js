@@ -19,7 +19,7 @@ export async function planHangarResources(session, room, ship) {
   const asset = async entry => {
     if (!entry) return;
     const source = add(hangarModelURL(entry, resolveURL));
-    const document = await session.json(source);
+    const document = entry.appearance || await session.json(source);
     for (const buffer of document.buffers || []) add(buffer.uri, source);
     // Hangar rendering deliberately omits portable glTF preview textures.
     for (const material of document.materials || []) {

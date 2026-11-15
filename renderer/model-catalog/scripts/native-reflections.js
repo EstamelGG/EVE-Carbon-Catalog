@@ -4,7 +4,7 @@ import { DDSLoader } from 'three/addons/loaders/DDSLoader.js';
 import { resourceURL } from '../src/resource-location.mjs';
 import { loadJSON, trackResource, readResourceBody } from '../src/resource-activity.mjs';
 import {parseNativeHDR} from './hdr-cube.js';
-import { SRGBColorSpace, Vector3, Matrix3, Matrix4, Quaternion } from 'three';
+import { CompressedCubeTexture, LinearFilter, SRGBColorSpace, LinearSRGBColorSpace, Vector3, Matrix3, Matrix4, Quaternion } from 'three';
 
 export {roughnessMip} from './carbon-environment-map.js';
 export {reflectionDeclarations} from './preview-reflection-shader.js';
@@ -25,24 +25,41 @@ export async function loadReflections(resources, race, json = url => loadJSON(re
   return loadReflectionSource(resources, settings, source);
 }
 
-function hdrPath(url) {
-  return /\.hdr\.dds$/i.test(String(url).split(/[?#]/, 1)[0]);
+function reflectionCube(bytes) {
+  const h=new DataView(bytes), word=i=>h.getUint32(i,true);
+  if(word(84)===113)return parseNativeHDR(bytes);
+  const dxgi=word(84)===0x30315844?word(128):null;
+  if(dxgi===77 || dxgi===78){
+    // DX10 BC3 has the same blocks as legacy DXT5 after its extra 20-byte header.
+    const legacy=new Uint8Array(bytes.byteLength-20);
+    legacy.set(new Uint8Array(bytes,0,128));legacy.set(new Uint8Array(bytes,148),128);
+    new DataView(legacy.buffer).setUint32(84,0x35545844,true);
+    bytes=legacy.buffer;
+  }else if(word(84)===0 && word(88)===32 && word(92)===255 && word(100)===0xff0000){
+    // DDSLoader accepts BGRA byte order for uncompressed RGBA cubes.
+    const pixels=new Uint8Array(bytes);
+    for(let i=128;i<pixels.length;i+=4){const r=pixels[i];pixels[i]=pixels[i+2];pixels[i+2]=r;}
+    h.setUint32(92,0xff0000,true);h.setUint32(100,255,true);
+  }
+  const d=new DDSLoader().parse(bytes,true);
+  if(!d.isCubemap||!d.mipmapCount||d.mipmaps.length!==6*d.mipmapCount)throw Error('Invalid reflection DDS cube');
+  const faces=Array.from({length:6},(_,i)=>({width:d.width,height:d.height,format:d.format,
+    mipmaps:d.mipmaps.slice(i*d.mipmapCount,(i+1)*d.mipmapCount)}));
+  const texture=new CompressedCubeTexture(faces,d.format);
+  texture.colorSpace=dxgi===95||dxgi===96?LinearSRGBColorSpace:SRGBColorSpace;
+  if(d.mipmapCount===1)texture.minFilter=LinearFilter;
+  texture.needsUpdate=true;
+  return texture;
 }
 
 export async function loadReflectionSource(resources, settings, source) {
   const load=async url=>{
-    const legacyHDR = hdrPath(url);
     url=(resources.resolveURL || resourceURL)(url);
     const sourceURL=resources.binaryURL?.(url)||url;
     return trackResource(url, async progress => {
-      if (legacyHDR || hdrPath(url)) {
-        const response = await fetch(sourceURL);
-        if (!response.ok) throw new Error('Missing HDR cube');
-        return resources.own(parseNativeHDR(await readResourceBody(response, progress)));
-      }
-      const texture=resources.own(await new DDSLoader().loadAsync(sourceURL, event => progress(event.loaded, event.lengthComputable ? event.total : 0)));
-      texture.colorSpace=SRGBColorSpace;texture.needsUpdate=true;
-      return texture;
+      const response=await fetch(sourceURL);
+      if(!response.ok)throw Error('Missing reflection cube: '+url);
+      return resources.own(reflectionCube(await readResourceBody(response,progress)));
     }, 'resourceTexture');
   };
   const [reflection,diffuse]=await Promise.all([load(source.reflection),load(source.diffuse)]);

@@ -1,6 +1,8 @@
 import {Box3,DoubleSide,Group} from 'three';
 import {hangarModelURL} from './hangar-resource-plan.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import {parseSharedHull} from './shared-hull.js';
 import {installNativePreview} from './native-viewer.js';
 import {installShipEffects} from './ship-effects.js';
 import {bindHangarVideoLights} from './hangar-video-lights.js';
@@ -37,7 +39,7 @@ export async function loadHangarAsset({viewer, scene, settings, resolveURL, stag
   const source=new URL(hangarModelURL(entry,resolveURL));
   const phaseKey=entry.key??String(entry.id);
   progress(phaseKey+':document');
-  const document=structuredClone(await viewer.assetSession.json(source.href));
+  let document=structuredClone(entry.appearance || await viewer.assetSession.json(source.href));
   result.sourceBounds=document.extras?.ccpdec||{};
   if(!alive())throw Error('Hangar superseded');
   document.materials?.forEach((m,i)=>m.name=`hangar_${entry.id}_${i}`);
@@ -52,7 +54,10 @@ export async function loadHangarAsset({viewer, scene, settings, resolveURL, stag
   result.root.userData.eveEnvironment=inside;
   const parsed=inside?await loadHangarGeometry(geometryDocument,source.href,result.root,{valid:alive,arrayBuffer:viewer.assetSession.arrayBuffer,onNode(node){
     prepareNode(node);if(alive()){reveal(result);scene.queueRender();}
-  }}):await new GLTFLoader().parseAsync(JSON.stringify(geometryDocument),new URL('.',source).href);
+  }}):entry.appearance
+    ?await parseSharedHull(new GLTFLoader().setMeshoptDecoder(MeshoptDecoder),viewer.assetSession,source.href,geometryDocument)
+    :await new GLTFLoader().parseAsync(JSON.stringify(geometryDocument),new URL('.',source).href);
+  if(entry.appearance)document={...parsed.parser.json,materials:document.materials};
   if(!inside){
    result.root=parsed.scene;prepareNode(parsed.scene);
    // Measure the detached hull before flares and other effect geometry are attached.
