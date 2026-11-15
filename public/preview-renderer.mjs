@@ -1,4 +1,4 @@
-import { savedResBase, defaultResBase } from './res-preference.mjs';
+import { savedModelIndex, defaultModelIndex } from './res-preference.mjs';
 
 export async function previewConfig() {
   let config = {};
@@ -6,15 +6,12 @@ export async function previewConfig() {
     const response = await fetch('./site-config.json', { cache: 'no-cache' });
     if (response.ok) config = await response.json();
   } catch {}
-  return { ...config, resBase: savedResBase() || defaultResBase(config) };
+  return { ...config, modelIndex: savedModelIndex() || defaultModelIndex(config) };
 }
 
 export async function loadPreviewRenderer(viewer, config) {
   config ??= await previewConfig();
-  if (viewer) {
-    viewer.setAttribute('res-base', config.resBase);
-    if (config.resourceBaseURL) viewer.setAttribute('resource-base', config.resourceBaseURL);
-  }
+  viewer?.setAttribute('model-index', config.modelIndex);
   await import(config.rendererModuleURL || './eve-model-viewer.js');
   return config;
 }

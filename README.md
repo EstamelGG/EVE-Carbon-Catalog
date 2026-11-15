@@ -9,10 +9,10 @@
 在 **Settings → Secrets and variables → Actions → Variables** 设置模型预览使用的发布地址：
 
 - `RESOURCE_BASE_URL` 指向 Builder 产出的资源站根目录，其下应能访问 `res/model-index.json`。
-- 用户可在图鉴右上角的「设置」中选择语言，并覆盖资源目录 URL。填写直接包含 `model-index.json` 的目录，留空恢复部署默认值。该设置保存在当前浏览器，组件指南和 demo 也使用它。
+- 用户可在图鉴右上角的「设置」中选择语言，并覆盖模型索引 URL。填写 `model-index.json` 的完整地址，留空恢复部署默认值。该设置保存在当前浏览器，组件指南和 demo 也使用它。
 - `RENDERER_MODULE_URL` 默认留空，图鉴使用本次构建的组件。需要外部组件时才填写其完整 URL。
 
-修改变量后重新运行工作流即可生效。省略变量时，页面从自身目录查找对应资源。使用独立域名时，资源和 ES 模块需允许来自 Pages 站点的跨域请求。
+修改变量后重新运行工作流即可生效。省略资源站变量时，图鉴默认读取 `https://carbon-models.vanquisher.online/res/model-index.json`。使用独立域名时，资源和 ES 模块需允许来自 Pages 站点的跨域请求。
 
 ## 本地构建和预览
 

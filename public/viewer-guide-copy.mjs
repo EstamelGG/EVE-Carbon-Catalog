@@ -33,16 +33,12 @@ export const guideCopy = {
   download: ['下载 HTML ↓', 'Download HTML ↓'],
   copy: ['复制代码', 'Copy code'],
   quickNote: [
-    '示例使用图鉴设置中的资源地址。将 <code>res-base</code> 指向包含 <code>model-index.json</code> 的目录。组件默认填满父容器宽度，高度跟随窗口（最小 240px），也可通过 CSS 指定高度。',
-    'Examples use the resource URL from Catalog settings. Set <code>res-base</code> to the directory containing <code>model-index.json</code>. Width fills the parent and height follows the viewport (minimum 240px). Set a CSS height for an embedded area.',
+    '示例使用图鉴设置中的资源地址。将 <code>model-index</code> 指向模型索引文件。组件默认填满父容器宽度，高度跟随窗口（最小 240px），也可通过 CSS 指定高度。',
+    'Examples use the resource URL from Catalog settings. Set <code>model-index</code> to the full model index URL. Width fills the parent and height follows the viewport (minimum 240px). Set a CSS height for an embedded area.',
   ],
-  resBaseHelp: [
-    '包含 model-index.json 的目录。JavaScript 用法为 <code>viewer.configure({ itemId: 587, resBase: "https://assets.example.org/res/" })</code>。跨域部署时，资源服务需允许页面的来源。',
-    'Directory containing model-index.json. In JavaScript, use <code>viewer.configure({ itemId: 587, resBase: "https://assets.example.org/res/" })</code>. For cross-origin hosting, enable CORS on the resource server.',
-  ],
-  resourceBaseHelp: [
-    '辅助资源（如 data/、assets/）的发布根地址。省略时相对于嵌入页面加载。',
-    'Publication root for supporting files such as data/ and assets/. Defaults to the embedding page’s directory.',
+  modelIndexHelp: [
+    '模型索引文件的完整地址。JavaScript 用法为 <code>viewer.configure({ itemId: 587, modelIndex: "https://carbon-models.vanquisher.online/res/model-index.json" })</code>。跨域部署时，资源服务需允许页面的来源。',
+    'Full model index URL. In JavaScript, use <code>viewer.configure({ itemId: 587, modelIndex: "https://carbon-models.vanquisher.online/res/model-index.json" })</code>. For cross-origin hosting, enable CORS on the resource server.',
   ],
   examplesIntro: [
     '点击运行，查看上方效果。每页只需 import 一次。',

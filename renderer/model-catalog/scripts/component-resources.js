@@ -1,17 +1,9 @@
 import {assembleDNA} from './dna-recipe.js';
-import { createResourceLocator } from '../src/resource-location.mjs';
+import { createResourceLocator, normalizeModelIndex } from '../src/resource-location.mjs';
 
 
-// Extracted from the first-generation component-controller.js. Catalog schema
-// and field meanings are inherited, not yet independently source-audited.
-// Empty resourceBase deliberately means files beside the hosting page.
 export function componentResourceKey(options) {
-  return JSON.stringify([
-    options.resourceBase || '',
-    options.backgroundBase || '',
-    options.backgroundFiles,
-    options.resBase,
-  ]);
+  return normalizeModelIndex(options.modelIndex);
 }
 
 function itemName(model, id, dna) {
@@ -20,9 +12,7 @@ function itemName(model, id, dna) {
 }
 
 export function createComponentResources(key, fetchJSON) {
-  const resolveURL = createResourceLocator(
-    ...JSON.parse(key).map((value) => (value === null ? undefined : value)),
-  );
+  const resolveURL = createResourceLocator(key);
   const load = (url) => fetchJSON(resolveURL(url));
   let index, catalog;
   const models = new Map();
@@ -61,7 +51,7 @@ export function createComponentResources(key, fetchJSON) {
   }
   let loading;
   function loadCatalog() {
-    loading ??= load('res/model-index.json').then(data => {
+    loading ??= fetchJSON(key).then(data => {
       if (data.version !== 2 || !data.models) throw Error('Unsupported model index');
       const items = new Map();
       for (const [dna, model] of Object.entries(data.models)) {

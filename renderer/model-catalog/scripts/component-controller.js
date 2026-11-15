@@ -592,6 +592,7 @@ export function createComponentController(root, emit) {
     $('status').textContent = '';
     const result = {
       itemId: item.id,
+      dna: item.dna,
       subsystems: item.subsystemSelection,
       dimensions: viewer.sourceDimensions,
       placements: placements(),

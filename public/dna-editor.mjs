@@ -1,4 +1,4 @@
-import {savedResBase,defaultResBase} from './res-preference.mjs';
+import {savedModelIndex,defaultModelIndex} from './res-preference.mjs';
 import {siteLocale} from './locale.mjs';
 
 const el=id=>document.getElementById(id);
@@ -7,7 +7,7 @@ document.documentElement.lang=siteLocale();
 const initial=new URL(location.href).searchParams.get('dna')||'';
 const [initialHull,initialFaction,initialRace,...initialArgs]=initial.toLowerCase().split(':');
 const initialParts=new Map(initialArgs.map(segment=>segment.split('?')));
-let recipes,palette,options,base,selection=0,revision=0,timer;
+let recipes,palette,options,modelIndex,selection=0,revision=0,timer;
 const reads=new Map();
 function read(url){
   if(!reads.has(url))reads.set(url,fetch(url).then(r=>{
@@ -51,7 +51,7 @@ function compose(){
   el('status').textContent=text('正在装配…','Assembling…');
   timer=setTimeout(async()=>{
     try{
-      await el('viewer').configure({dna:value,itemId:null,resBase:base,controlPanel:true,language:siteLocale()});
+      await el('viewer').configure({dna:value,itemId:null,modelIndex,controlPanel:true,language:siteLocale()});
       if(current===revision)el('status').textContent='';
     }catch(error){if(current===revision)el('status').textContent=error.message;}
   },180);
@@ -62,7 +62,7 @@ async function choose(first=false){
   try{
     const hull=el('hull').value;
     const entry=recipes[hull];
-    const url=key=>new URL(key.slice(4),base);
+    const url=key=>new URL(key.slice(4),modelIndex);
     const [next,opts]=await Promise.all([read(url(entry.recipe.palette).href),read(url(entry.recipe.options).href)]);
     if(seq!==selection)return;
     palette=next;options=opts;
@@ -101,8 +101,8 @@ async function init(){
       el(id).parentElement.firstChild.textContent=label;
     el('copy').textContent='Copy DNA';
   }
-  const config=await read('./site-config.json');base=savedResBase()||defaultResBase(config);
-  const [index]=await Promise.all([read(new URL('model-index.json',base).href),import(config.rendererModuleURL||'./eve-model-viewer.js')]);
+  const config=await read('./site-config.json');modelIndex=savedModelIndex()||defaultModelIndex(config);
+  const [index]=await Promise.all([read(modelIndex),import(config.rendererModuleURL||'./eve-model-viewer.js')]);
   recipes=index.dnaRecipes||{};
   if(!Object.keys(recipes).length)throw Error(text('当前资源站尚未发布 DNA 配方库。','This resource site has no published DNA recipes.'));
   const hulls=[...new Set(Object.keys(recipes))];

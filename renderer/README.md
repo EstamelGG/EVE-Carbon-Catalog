@@ -15,15 +15,13 @@ npm run build
 ## 按 DNA 使用
 
 ```html
-<script type="module" src="./eve-model-viewer.js"></script>
-<eve-model-viewer res-base="./res/" dna="af1_t1:sarum:amarr" style="display:block;height:60vh"></eve-model-viewer>
+<script type="module" src="https://eve.vanquisher.online/eve-model-viewer.js"></script>
+<eve-model-viewer model-index="https://carbon-models.vanquisher.online/res/model-index.json" dna="af1_t1:sarum:amarr" style="display:block;height:60vh"></eve-model-viewer>
 ```
 
-首次加载必须设置 `res-base`，或调用 `viewer.configure({ itemId: 587, resBase: "https://assets.example.org/res/" })`。该地址直接指向包含 `model-index.json` 的目录，相对地址以嵌入页面为基准。后续局部更新沿用该实例的地址。
+每页只需加载一次组件 JS。每个实例通过 `model-index` 指定索引，JavaScript 用法为 `viewer.configure({ itemId: 587, modelIndex: "https://carbon-models.vanquisher.online/res/model-index.json" })`。相对索引地址以嵌入页面为基准，索引内的 `res/` 路径以索引所在目录为基准。后续局部更新沿用该实例的地址。跨域部署时，组件和资源站均需允许嵌入页面的来源。
 
-传入 `item-id` 时，组件从物品记录取得 DNA，再通过 `POST api/dna-hulls` 加载模型。对已发布物品，请求同时携带物品 ID，用于在共用 DNA 的型号之间保留正确的物品信息和特效。直接传入 `dna` 使用同一接口。战略巡洋舰按所选子系统的 DNA 加载各部件，再组装船体。
-
-服务从发布目录建立物品 ID 和 DNA 索引。没有游戏 DNA 的已发布装备使用 `published:<renderKey>` 查询已有模型（旧记录缺少 renderKey 时用物品 ID）。这种标识只用于查找发布资源。对于游戏 DNA，服务优先复用已发布模型，再按 DNA 和修订检查生成缓存，缺失时由 Blender 读取 SharedCache 生成模型和特效。
+组件从发布索引查找物品 ID 和 DNA，加载已发布模型或 DNA 配方。战略巡洋舰按所选子系统加载部件并组装船体。
 
 Windows 本机启动示例（在 renderer/ 目录执行）：
 

@@ -11,8 +11,8 @@ import { createCatalogState } from './catalog-state.mjs?v=dna-route-v1';
 import { joinDirectory } from './build-directory.mjs';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
 import { createAffiliationResolver } from './affiliation.mjs';
-import { configureResourceBase, normalizeResBase, resourceURL } from './resource-location.mjs';
-import { defaultResBase, savedResBase, saveResBase } from './res-preference.mjs';
+import { configureResourceBase, normalizeModelIndex, resourceURL } from './resource-location.mjs';
+import { defaultModelIndex, savedModelIndex, saveModelIndex } from './res-preference.mjs';
 import { loadJSON } from './resource-activity.mjs?v=resource-plan-sky-fade-v1';
 import { prepareRenderImages } from './render-images.mjs?v=render-fallback-v1';
 const $ = (id) => document.getElementById(id);
@@ -168,8 +168,11 @@ let variantState = { hull: '', open: false, groups: null, status: '' };
 const viewer = $('catalog-viewer');
 let viewerConfig = {};
 const subsystemSelections = new Map();
+let loadedDNA = '';
 viewer.addEventListener('load', (event) => {
   if (event.detail.itemId !== currentItem?.id) return;
+  loadedDNA = event.detail.dna || '';
+  renderDetailDNA();
   if (event.detail.subsystems) subsystemSelections.set(currentItem.id, event.detail.subsystems);
 });
 viewer.addEventListener('settings-change', (event) => {
@@ -560,6 +563,7 @@ async function openItem(id, route = true, dna = '') {
   const preview = dna ? { dna, name: { en: dna, zh: dna } } : catalogLoader.peek(id);
   if (!$('model-dialog').open) lastFocus = document.activeElement;
   currentItem = { ...preview, id, detailPending: true };
+  loadedDNA = '';
   catalog.update({ item: id, dna });
   if (route) saveRoute();
   renderDetail();
@@ -573,6 +577,7 @@ async function openItem(id, route = true, dna = '') {
     if (dna) {
       const loaded = await showModel(currentItem, dna);
       if (!loaded || revision !== detailRevision || !Number.isSafeInteger(loaded.itemId)) return;
+      loadedDNA = loaded.dna || dna;
       item = await catalogLoader.item(loaded.itemId, catalog.state.group);
       if (!item) return;
     } else {
@@ -600,14 +605,41 @@ async function openItem(id, route = true, dna = '') {
   if (!dna) showModel(currentItem);
 }
 
+function renderDetailDNA() {
+  const dna = loadedDNA || catalog.state.dna || currentItem?.dna || '';
+  const label = $('detail-dna'), copy = $('copy-dna'), edit = $('edit-dna');
+  label.textContent = dna ? `DNA: ${dna}` : '';
+  label.title = dna;
+  label.hidden = copy.hidden = edit.hidden = !dna;
+  copy.textContent = t('copyDNA');
+  if (dna) edit.href = './dna-editor.html?' + new URLSearchParams({ dna });
+  else edit.removeAttribute('href');
+}
+
+$('copy-dna').onclick = async () => {
+  const label = $('detail-dna'), dna = label.title;
+  if (!dna) return;
+  try {
+    await navigator.clipboard.writeText(dna);
+    if (label.title === dna) $('copy-dna').textContent = t('nameCopied');
+  } catch {
+    if (label.title !== dna) return;
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    range.setStart(label.firstChild, label.textContent.length - dna.length);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    $('copy-dna').textContent = t('dnaSelected');
+  }
+};
+
 function renderDetail() {
   if (!currentItem) return;
   renderVariants();
   const item = currentItem;
   $('detail-title').textContent = localizedName(item.name) || `ID ${item.id}`;
-  $('detail-dna').textContent = item.dna ? `DNA: ${item.dna}` : '';
-  $('detail-dna').title = item.dna || '';
-  $('detail-dna').hidden = !item.dna;
+  renderDetailDNA();
   $('detail-group').textContent = localizedName(groupsByID.get(item.groupID)?.name);
   const factionVariant = [4, 52].includes(Number(item.metaGroupID));
   $('detail-tech').hidden = !factionVariant && !item.techLevel;
@@ -825,7 +857,7 @@ function resetResCheck() {
   resField.setCustomValidity('');
 }
 $('open-settings').onclick = () => {
-  resField.value = savedResBase();
+  resField.value = savedModelIndex();
   resetResCheck();
   $('settings-dialog').showModal();
 };
@@ -837,7 +869,7 @@ $('catalog-settings').onsubmit = async event => {
   if (resCheck) return;
   let value = resField.value.trim();
   try {
-    if (value) value = normalizeResBase(value);
+    if (value) value = normalizeModelIndex(value);
   } catch {
     resField.setCustomValidity(t('invalidResBase'));
     resField.reportValidity();
@@ -850,8 +882,8 @@ $('catalog-settings').onsubmit = async event => {
   resStatus.textContent = t('resIndexChecking');
   const signal = AbortSignal.any([check.signal, AbortSignal.timeout(15000)]);
   try {
-    const base = value || defaultResBase(await siteConfig);
-    await loadModelIndex(new URL('model-index.json', base), signal);
+    const base = value || defaultModelIndex(await siteConfig);
+    await loadModelIndex(base, signal);
   } catch (error) {
     if (check.signal.aborted) return;
     resField.setAttribute('aria-invalid', 'true');
@@ -867,9 +899,9 @@ $('catalog-settings').onsubmit = async event => {
   }
   if (check.signal.aborted || !$('settings-dialog').open) return;
   resStatus.textContent = '';
-  if (value === savedResBase()) return $('settings-dialog').close();
+  if (value === savedModelIndex()) return $('settings-dialog').close();
   try {
-    saveResBase(value);
+    saveModelIndex(value);
   } catch {
     resField.setCustomValidity(t('resSaveFailed'));
     resField.reportValidity();
@@ -904,14 +936,11 @@ async function init() {
     rendererModuleURL = config.rendererModuleURL || './eve-model-viewer.js?v=build-index-v1';
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
-    resField.placeholder = defaultResBase(config);
-    const resBase = savedResBase() || resField.placeholder;
-    configureResourceBase(config.resourceBaseURL, config.backgroundBaseURL, config.backgroundFiles, resBase);
+    resField.placeholder = defaultModelIndex(config);
+    const modelIndex = savedModelIndex() || resField.placeholder;
+    configureResourceBase(config.resourceBaseURL, config.backgroundBaseURL, config.backgroundFiles, new URL('./', modelIndex).href);
     viewerConfig = {
-      resBase,
-      resourceBase: config.resourceBaseURL,
-      backgroundBase: config.backgroundBaseURL,
-      backgroundFiles: config.backgroundFiles,
+      modelIndex,
     };
     try {
       viewerConfig.recentEquipment =
@@ -940,7 +969,7 @@ async function init() {
     setupEvents();
     await render();
     try {
-      const inventory = await loadModelIndex(resourceURL('res/model-index.json'));
+      const inventory = await loadModelIndex(modelIndex);
       applyInventory(inventory);
       buildTree();
       await render();

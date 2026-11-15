@@ -39,18 +39,20 @@ export function resourceURL(value) {
   return base ? new URL(path, base).href : value;
 }
 
-// An embed owns its URLs; it never writes the host application's configuration.
-export function createResourceLocator(value, backgrounds = '', files = undefined, resBase) {
-  const base = validatedBase(value), backgroundBase = validatedBase(backgrounds);
-  const res = normalizeResBase(resBase);
-  if (files !== undefined && (!Array.isArray(files) || files.some(p => typeof p !== 'string' || !/^assets\/backgrounds\/[A-Za-z0-9_-][A-Za-z0-9_.-]*$/.test(p))))
-    throw new Error('Invalid backgroundFiles allowlist');
-  const allowlist = files === undefined ? null : new Set(files);
+export function normalizeModelIndex(value) {
+  if (typeof value !== 'string' || !value.trim()) throw Error('model-index (modelIndex) is required');
+  const url = new URL(value.trim(), globalThis.document?.baseURI);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash || url.pathname.endsWith('/'))
+    throw Error('Invalid model-index URL');
+  return url.href;
+}
+
+export function createResourceLocator(modelIndex) {
+  const index = normalizeModelIndex(modelIndex);
+  const root = new URL('../', index);
   return value => {
     if (!value || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value)) return value;
     const path = value.replace(/^\.?\//, '');
-    if (path.startsWith('res/')) return new URL(path.slice(4), res).href;
-    const selected = backgroundBase && allowlist?.has(path.split(/[?#]/)[0]) ? backgroundBase : base;
-    return selected ? new URL(path, selected).href : value;
+    return path.startsWith('res/') ? new URL(path.slice(4), index).href : new URL(path, root).href;
   };
 }

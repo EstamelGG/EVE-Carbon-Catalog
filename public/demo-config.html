@@ -3,7 +3,7 @@
 <title>EVE component · Settings and equipment</title>
 <style>html,body{margin:0;height:100%;background:#10171e;color:#cbd5de;font:14px system-ui}body{display:flex;flex-direction:column}nav{padding:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}button,a{background:#213140;color:inherit;border:1px solid #405568;padding:6px 12px}eve-model-viewer{flex:1;min-height:0}</style>
 <nav><a href="./demo.html">Minimal example</a><button id="white">Toggle white model</button><button id="panel">Toggle controls</button><button id="fit">Fit Torpedo Launcher II</button><span id="message" role="status"></span></nav>
-<eve-model-viewer res-base="./res/" item-id="12038" background="none"></eve-model-viewer>
+<eve-model-viewer model-index="https://carbon-models.vanquisher.online/res/model-index.json" item-id="12038" background="none"></eve-model-viewer>
 <script type="module">
 import {demoText} from './demo-language.mjs';
 import {loadPreviewRenderer} from './preview-renderer.mjs';

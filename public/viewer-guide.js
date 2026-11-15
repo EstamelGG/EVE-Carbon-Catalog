@@ -22,13 +22,8 @@ const caseDescription = (example) => t(`case.${example.id}.description`);
 const codeSources = new Map();
 function localizedCode(value) {
   const escapeAttribute = text => text.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
-  const resourceBase = config?.resourceBaseURL || new URL('./', document.baseURI).href;
-  const attributes = [
-    `res-base="${escapeAttribute(config?.resBase || './res/')}"`,
-    `resource-base="${escapeAttribute(resourceBase)}"`,
-  ];
   return value.replaceAll('lang="en"', `lang="${locale}"`)
-    .replaceAll('res-base="./res/"', () => attributes.join('\n  '));
+    .replaceAll('model-index="https://carbon-models.vanquisher.online/res/model-index.json"', () => `model-index="${escapeAttribute(config?.modelIndex || 'https://carbon-models.vanquisher.online/res/model-index.json')}"`);
 }
 function updateStatus() {
   const { kind, phase, total, result, error } = previewState;
@@ -96,7 +91,7 @@ const cases = [
     id: 'hangar',
     options: { hangar: { room: 'amarr' }, controlPanel: true },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   hangar="amarr"
   control-panel
@@ -107,7 +102,7 @@ const cases = [
     id: 'minimal',
     options: {},
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   background="none"
   style="height:500px">
@@ -117,7 +112,7 @@ const cases = [
     id: 'controls',
     options: { controlPanel: true },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   background="none"
   control-panel
@@ -128,7 +123,7 @@ const cases = [
     id: 'background',
     options: { background: 'auto', autoRotate: true },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   background="auto"
   auto-rotate
@@ -139,7 +134,7 @@ const cases = [
     id: 'white',
     options: { whiteModel: true, controlPanel: true },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   background="none"
   white-model
@@ -151,7 +146,7 @@ const cases = [
     id: 'quality',
     options: { render: { reflection: 0.3 }, display: { antialiasMode: 'smaa' } },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   background="none"
   reflection="0.3"
@@ -163,7 +158,7 @@ const cases = [
     id: 'turrets',
     options: { equipment: [484, 484] },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   equipment="[484,484]"
   background="none"
@@ -174,7 +169,7 @@ const cases = [
     id: 'launchers',
     options: { itemId: 12032, equipment: [503, 503] },
     code: `<eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="12032"
   equipment="[503,503]"
   background="none"
@@ -255,8 +250,7 @@ async function runCase(id, scroll = false) {
   const options = {
     ...structuredClone(baseline),
     ...structuredClone(example.options),
-    resBase: config.resBase,
-    resourceBase: config.resourceBaseURL,
+    modelIndex: config.modelIndex,
     render: example.options.render ?? null,
     display: { ...baseline.display, ...example.options.display },
   };

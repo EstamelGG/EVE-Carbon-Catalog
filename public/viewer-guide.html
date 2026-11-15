@@ -136,14 +136,14 @@
   import 'https://eve.vanquisher.online/eve-model-viewer.js';
 &lt;/script&gt;
 &lt;eve-model-viewer
-  res-base="./res/"
+  model-index="https://carbon-models.vanquisher.online/res/model-index.json"
   item-id="587"
   background="none"&gt;
 &lt;/eve-model-viewer&gt;
 &lt;/html&gt;</code></pre>
           </div>
           <p class="note" data-guide-i18n="quickNote">
-            Set res-base to the directory containing model-index.json. Width
+            Set model-index to the full index URL. Width
             fills the parent by default; height follows the viewport (minimum 240px). Set a CSS
             height for an embedded area, or use height:100% inside a parent with a defined height.
           </p>
@@ -207,14 +207,9 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><code>res-base</code></td>
+                  <td><code>model-index</code></td>
                   <td data-guide-i18n="required">Required</td>
-                  <td data-guide-i18n="resBaseHelp">Directory containing model-index.json. In JavaScript, pass it as <code>resBase</code> to <code>configure()</code>.</td>
-                </tr>
-                <tr>
-                  <td><code>resource-base</code></td>
-                  <td><code>./</code></td>
-                  <td data-guide-i18n="resourceBaseHelp">Publication root for supporting files such as data/ and assets/.</td>
+                  <td data-guide-i18n="modelIndexHelp">Model index URL. In JavaScript, pass it as <code>modelIndex</code> to <code>configure()</code>.</td>
                 </tr>
                 <tr>
                   <td><code>item-id</code></td>

@@ -1095,8 +1095,13 @@ dialog::backdrop {
   min-width: 0;
 }
 .dialog-top [data-i18n='model'],
+.dialog-top .header-button,
 .dialog-top > button {
   flex-shrink: 0;
+}
+.dialog-top .header-button {
+  padding: 3px 5px;
+  border-color: var(--line);
 }
 #detail-dna {
   min-width: 0;
