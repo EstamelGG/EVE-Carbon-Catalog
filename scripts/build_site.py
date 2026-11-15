@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 from datetime import datetime, timezone
 
 from sde import ROOT, fetch_catalog
@@ -10,31 +11,47 @@ def write_json(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 
 
+def generate_catalog(destination):
+    public = ROOT / 'public'
+    identities = json.loads((public / 'icons/identities.json').read_bytes())
+    build, directory = fetch_catalog(identities)
+    write_json(destination / 'catalog.json', directory)
+    write_json(destination / 'icons/identities.json', identities)
+    config = json.loads((destination / 'site-config.json').read_bytes())
+    config['sdeBuild'] = build
+    write_json(destination / 'site-config.json', config)
+    print(f'Built {sum(len(g["items"]) for c in directory for g in c["groups"])} catalog entries from SDE {build}')
+
+
 def main():
     public = ROOT / 'public'
     renderer = ROOT / 'renderer/model-catalog/dist'
-    identities = json.loads((public / 'icons/identities.json').read_bytes())
-    build, directory = fetch_catalog(identities)
     dist = ROOT / 'dist'
     if dist.resolve() != dist:
         raise ValueError('dist must be inside the checkout')
     if dist.exists():
         shutil.rmtree(dist)
     shutil.copytree(public, dist)
-    write_json(dist / 'catalog.json', directory)
-    write_json(dist / 'icons/identities.json', identities)
+    if not os.environ.get('CF_PAGES'):
+        generate_catalog(dist)
     shutil.copy2(renderer / 'eve-model-viewer.js', dist)
     shutil.copytree(renderer / 'vendor', dist / 'vendor')
     shutil.copy2(renderer / 'third-party-notices.txt', dist / 'renderer-notices.txt')
     config = json.loads((dist / 'site-config.json').read_bytes())
     config['frontendPublishedAt'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    config['sdeBuild'] = build
     for env, field in [('RESOURCE_BASE_URL', 'resourceBaseURL'), ('RENDERER_MODULE_URL', 'rendererModuleURL')]:
         if os.environ.get(env):
             config[field] = os.environ[env]
     write_json(dist / 'site-config.json', config)
-    print(f'Built {sum(len(g["items"]) for c in directory for g in c["groups"])} catalog entries from SDE {build}')
 
 
 if __name__ == '__main__':
-    main()
+    if sys.argv[1:] == ['--cloudflare']:
+        generate_catalog(ROOT / 'public')
+        # Some Pages commands stage the static files before compiling the renderer.
+        staged = ROOT / 'dist'
+        if (staged / 'catalog.json').is_file():
+            for name in ('catalog.json', 'icons/identities.json'):
+                shutil.copy2(ROOT / 'public' / name, staged / name)
+    else:
+        main()

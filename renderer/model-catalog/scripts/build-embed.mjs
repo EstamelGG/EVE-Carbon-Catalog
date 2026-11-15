@@ -1,6 +1,13 @@
 import { build } from 'esbuild';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+// The Pages project also supports its existing renderer-first build command.
+if (process.env.CF_PAGES) {
+  const siteBuild = fileURLToPath(new URL('../../../scripts/build_site.py', import.meta.url));
+  execFileSync('python3', [siteBuild, '--cloudflare'], { stdio: 'inherit' });
+}
 // Normalize the app's cache-busting query suffixes to one module identity.
 // The page and old vendor bundle needed globals to communicate; one embed
 // bundle can keep resource activity and camera state private to its closure.
