@@ -218,7 +218,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     if(child?.particles?.length || child?.transparent?.length || child?.softFlares?.length || child?.lines?.length){
       const particles=(child.particles||[]).flatMap((g,i)=>g.draws.map(d=>({...d,particleNodeIndex:i})));
       childEffects=await installGateEffects(viewer,scene,group,{animation:{generic:true,targets:[],sets:[]},
-        particles,meshes:child.transparent||[],lines:child.lines||[],flares:child.softFlares||[],unsupported:[]},resources,()=>elapsed,'childEffects',[],onCommit,attachmentOwner);
+        particles,meshes:child.transparent||[],advanceStaticAtlases:true,lines:child.lines||[],flares:child.softFlares||[],unsupported:[]},resources,()=>elapsed,'childEffects',[],onCommit,attachmentOwner);
     }
     gate = await installGateEffects(viewer, scene, group, data.gate, resources, () => elapsed, null, [], onCommit);
     sceneEffects = await installGateEffects(viewer, scene, group, data.scene, resources, () => elapsed, null, hangarBodies, onCommit, attachmentOwner);

@@ -1,4 +1,5 @@
 import {volumeFieldFragment} from './gate-volume-field.js';
+import {attachmentAtlasTime} from './attachment-atlas-clock.js';
 // The remaining flare and distortion branches retain their historical source-audit findings.
 // The directional attachment uses the independently implemented overlay shader.
 // See docs/source-audit-summary-2026-11-11.md; this annotation does not change historical provenance.
@@ -198,5 +199,7 @@ export async function gateMaterial(record,resources,context) {
     if(record.shader==='motionvector.fx' && (record.options?.TIME_SOURCE==='TIME_SOURCE_TIME' ||
         (record.effectResource?.endsWith('/specialfx/motionvector.sm_depth') && !record.options?.TIME_SOURCE)))
       uniforms.CurrentTime.value.x=time;
+    const atlasTime=attachmentAtlasTime(record,time,context?.advanceStaticAtlases);
+    if(atlasTime!==null)uniforms.CurrentTime.value.x=atlasTime;
   }};
 }
