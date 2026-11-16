@@ -2,6 +2,9 @@ import {pageAnimationLoop} from './page-activity.js';
 import {$scene} from '@google/model-viewer/lib/model-viewer-base.js';
 import {Box3,Box3Helper,Group,Vector3} from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {ktx2Loader} from '@google/model-viewer/lib/three-components/CachingGLTFLoader.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {subsystemDocument} from './shared-hull.js';
 import {createAutomaticEquipmentMounts,groupHardpoints,singleEquipmentDocument,equipmentLocatorName} from './equipment-hardpoints.js';
 import {installNativePreview} from './native-viewer.js';
 import {beforeSceneRender} from './effect-resources.js';
@@ -37,12 +40,14 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
  }
  async function load(id){
   if(!cache.has(id))cache.set(id,(async()=>{
-   const item=equipment.find(e=>e.id===id);if(!item)throw Error('Unknown equipment');
-   const url=new URL((viewer.assetSession?.resolveURL || resourceURL)(item.model),location.href);url.searchParams.set('v',item.modelRevision||'');
-   const doc=applyFittingMaterial(singleEquipmentDocument(await viewer.assetSession.json(url.href)),materialProfile,item.authoredParameters);
+   const selection=equipment.find(e=>e.id===id);if(!selection)throw Error('Unknown equipment');
+   const item=selection;
+   const asset=await viewer.assetSession.json(item.asset);
+   const url=new URL((viewer.assetSession?.resolveURL || resourceURL)(asset.model),location.href);url.searchParams.set('v',asset.modelRevision||'');
+   const doc=applyFittingMaterial(singleEquipmentDocument(await subsystemDocument(viewer.assetSession,url.href,asset)),materialProfile,asset.authoredParameters);
    // Avoid matching hull materials when a later appearance update traverses the model.
    doc.materials?.forEach((m,i)=>m.name=`fitting_${id}_${i}`);
-   const loader=new GLTFLoader();
+   const loader=new GLTFLoader().setKTX2Loader(ktx2Loader).setMeshoptDecoder(MeshoptDecoder);
    loader.register(parser=>{
     const buffer=parser.loadBuffer.bind(parser),image=parser.loadTextureImage.bind(parser);
     parser.loadBuffer=index=>{

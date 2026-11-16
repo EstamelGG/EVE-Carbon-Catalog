@@ -1,5 +1,6 @@
 import { loadJSON } from './resource-activity.mjs';
 import { resourceURL } from './resource-location.mjs';
+import {loadFittingData} from './fitting-data.mjs';
 
 export function createFittingPanel({
   root,
@@ -23,7 +24,7 @@ export function createFittingPanel({
     context = null,
     generation = 0,
     pending = null,
-    dataPromise = null,
+    dataPromise = new Map(),
     data = null,
     limit = 40,
     selectedCategory = null,
@@ -52,23 +53,14 @@ export function createFittingPanel({
     return task;
   }
   async function mountData(viewer) {
-    const embedded = viewer.originalGltfJson?.extras?.ccpdec?.locators?.hardpoints;
-    try { return await loadData(); }
-    catch (error) {
-      if (!embedded?.length) throw error;
-      return {version:2, equipment:[], ships:{}};
-    }
+    return loadData();
   }
   function loadData() {
-    return (dataPromise ||= loadResource('data/fitting.json')
-      .then((value) => ({
-        ...value,
-        equipment: value.equipment?.filter((e) => e.supported !== false),
-      }))
-      .catch((error) => {
-        dataPromise = null;
-        throw error;
-      }));
+    const item=currentItem(), key=item?.fitting;
+    if(!dataPromise.has(key))dataPromise.set(key,loadFittingData(item,loadResource).catch(error=>{
+      dataPromise.delete(key);throw error;
+    }));
+    return dataPromise.get(key);
   }
   function totals() {
     const fitting = context?.viewer.fitting;
@@ -454,7 +446,7 @@ export function createFittingPanel({
       return;
     }
     if (pending) return pending;
-    if (c.item.categoryID !== 6 || c.item.subsystemParts || c.item.groupID === 963) {
+    if (!c.item.fitting || c.item.subsystemParts || c.item.groupID === 963) {
       status('fittingUnavailable');
       return;
     }
@@ -465,7 +457,7 @@ export function createFittingPanel({
       try {
         data = await mountData(c.viewer);
         if (!valid(c) || token !== generation) return;
-        const locators = c.viewer.originalGltfJson?.extras?.ccpdec?.locators?.hardpoints ?? data.ships?.[c.item.id];
+        const locators = (c.viewer.appearanceDocument || c.viewer.originalGltfJson)?.extras?.ccpdec?.locators?.hardpoints;
         if (data.version !== 2 || !locators?.length) {
           status('fittingUnavailable');
           return;
@@ -478,7 +470,7 @@ export function createFittingPanel({
           settings,
           appearance: data.appearance,
           dna: c.item.dna,
-          hullCategory: c.item.categoryID,
+          hullCategory: data.hullCategory ?? c.item.categoryID,
         });
         c.viewer.lifecycle.set('fitting', fitting);
         fitting.setEditing(active && showMounts);
@@ -566,7 +558,7 @@ export function createFittingPanel({
     },
     ensure,
     resetResources() {
-      dataPromise = null;
+      dataPromise.clear();
       data = null;
       saved.clear();
       lastEquipment = null;

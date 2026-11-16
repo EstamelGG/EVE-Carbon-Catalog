@@ -1,4 +1,5 @@
 import { equipmentChoices } from './equipment-list.js';
+import {loadFittingData} from '../src/fitting-data.mjs';
 
 // All programmatic fits use the same transactional allocator as the controls.
 export async function configureEquipment({
@@ -14,11 +15,8 @@ export async function configureEquipment({
   const checkCurrent = () => {
     if (!isCurrent()) throw new DOMException('Superseded', 'AbortError');
   };
-  const embedded = viewer.originalGltfJson?.extras?.ccpdec?.locators?.hardpoints;
-  const fittingData = await viewer.assetSession.json('data/fitting.json').catch(error => {
-    if (!embedded?.length || equipmentIds?.length || options.fitting?.equipment?.length) throw error;
-    return {version:2, equipment:[]};
-  });
+  const embedded = (viewer.appearanceDocument || viewer.originalGltfJson)?.extras?.ccpdec?.locators?.hardpoints;
+  const fittingData = await loadFittingData(item, url => viewer.assetSession.json(url));
   checkCurrent();
   if (fittingData.version !== 2) throw Error('Fitting metadata version 2 is required');
   const locators = embedded ?? fittingData.ships?.[item.id];
@@ -35,14 +33,14 @@ export async function configureEquipment({
         settings,
         appearance: fittingData.appearance,
         dna: item.dna,
-        hullCategory: item.categoryID,
+        hullCategory: fittingData.hullCategory ?? item.categoryID,
       }),
     );
   }
   let choices;
   if (equipmentIds !== undefined) {
     try {
-      choices = equipmentChoices(equipmentIds, locators, equipment, item.categoryID);
+      choices = equipmentChoices(equipmentIds, locators, equipment, fittingData.hullCategory ?? item.categoryID);
     } catch (error) {
       if (error.equipmentIndex !== undefined)
         error.message = t('equipmentCannotFit', {

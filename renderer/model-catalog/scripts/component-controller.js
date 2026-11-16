@@ -1,6 +1,7 @@
 import {locatorFire} from './locator-fire.js';
 import {frameIcon, renderIcon} from './icon-camera.js';
 import {selectIconScene} from './icon-scene.js';
+import {loadFittingData} from '../src/fitting-data.mjs';
 import { diagnosticsContext } from './component-diagnostics.js';
 import { createPerformancePanel } from './component-performance.js';
 import { configureEquipment } from './component-equipment.js';
@@ -696,7 +697,7 @@ export function createComponentController(root, emit) {
     },
     async getAvailableEquipment(slot) {
       await fittingPanel.ensure();
-      if (runtime.viewer) fittingData = await runtime.viewer.assetSession.json('data/fitting.json');
+      if (runtime.viewer) fittingData = await loadFittingData(currentItem, url => runtime.viewer.assetSession.json(url));
       return (fittingData?.equipment || [])
         .filter((item) => runtime.viewer?.fitting?.canFit(slot, item))
         .map(({ id, name }) => ({ id, name }));
