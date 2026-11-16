@@ -436,6 +436,7 @@ button.ship-annotation:focus-visible {
   font-size: 11px;
   line-height: 1.5;
 }
+#damage-row:has(input:disabled),
 .texture-settings .toggle-row:has(input:disabled) {
   opacity: 0.4;
   cursor: default;
