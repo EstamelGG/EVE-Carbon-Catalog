@@ -17,7 +17,7 @@ export function createViewerSession(resolveURL = resourceURL) {
       ?pageResourceCache.resources(()=>createEffectResources(undefined,url=>url)).texture({...record,url},options)
       :localTexture(record,options);
   };
-  return {
+  const session = {
     resources, reflections, resolveURL, bundles,
     binaryURL: bundles.objectURL,
     arrayBuffer(url, options, kind) {
@@ -40,7 +40,7 @@ export function createViewerSession(resolveURL = resourceURL) {
           if(value?.kind!=='sof-hull-effects')return value;
           const dna=new URL(key).searchParams.get('dna');
           if(!dna)throw Error('Hull effects require DNA');
-          return assembleEffects(value,dna,path=>this.json(path));
+          return assembleEffects(value,dna,path=>session.json(path));
         });
         documents.set(key, pending.catch(error => { documents.delete(key); throw error; }));
       }
@@ -49,4 +49,5 @@ export function createViewerSession(resolveURL = resourceURL) {
     remember(url, value) { documents.set(new URL(resolveURL(url), location.href).href, Promise.resolve(value)); },
     dispose() { this.skybox?.dispose(); resources.dispose(); bundles.dispose(); documents.clear(); reflections.clear(); buffers.clear(); },
   };
+  return session;
 }

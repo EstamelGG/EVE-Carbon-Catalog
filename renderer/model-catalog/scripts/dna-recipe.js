@@ -29,7 +29,7 @@ export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}
     commands.set(key,values);
   }
   const materials=commands.get('material')||[], pattern=commands.get('pattern')||[];
-  const layers=pattern.length?(pattern[0]==='none' || (officialSkin && !own(options.patterns,pattern[0]))?[]:
+  const layers=pattern.length?(pattern[0]==='none' || (!own(options.patterns,pattern[0]) && (officialSkin || palette.patternNames.includes(pattern[0])))?[]:
     option(options.patterns,pattern[0],'图案没有此舰体的投影')):options.modern?
     options.patterns[factionData.definition.defaultPatternName]??[]:legacyLayers(factionData.definition.defaultPattern,options.projection);
   const insert=commands.get('respathinsert')?.[0];

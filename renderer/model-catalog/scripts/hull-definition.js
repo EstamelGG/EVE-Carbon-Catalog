@@ -23,8 +23,6 @@ export function hullEffects(options,packet,faction,variants){
   const parts={sprites:[],planes:[],smart:[],children:[],decals:[],spotlights:[]};
   function resolve(node,logo){
     if(node===null || typeof node!=='object')return node;
-    if(node.packetGeometry)return node.packetGeometry.reduce((o,k)=>o[k],packet);
-    if(node.geometryIndex!==undefined)return options.geometry[node.geometryIndex];
     if(node.logoRole)return logo?.get(node.logoRole);
     if(node.colorSlot!==undefined || node.planeColor!==undefined)return lightColor(node,faction.colors,definition);
     if(Array.isArray(node))return node.map(v=>resolve(v,logo));

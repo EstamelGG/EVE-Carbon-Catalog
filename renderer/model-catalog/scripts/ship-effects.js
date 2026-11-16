@@ -134,6 +134,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
       cleanup();
       return { dispose: cleanup, setMode() {} };
     }
+    data={...data,typeID:typeID??viewer.originalGltfJson?.extras?.ccpdec?.typeID};
     const b = data.booster,
       p = b.parameters;
     const currentGain = () => previewBoosterGain(b, flightMode);

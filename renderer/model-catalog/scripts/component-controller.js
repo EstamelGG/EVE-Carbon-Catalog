@@ -424,6 +424,7 @@ export function createComponentController(root, emit) {
   });
   function renderPanel() {
     controls.sync();
+    $('official-skin').disabled = !runtime.viewer || !currentItem?.officialSkins?.[currentItem.id]?.length;
     $('tab-subsystems').disabled = !runtime.viewer || currentItem?.groupID !== 963;
     $('tab-fitting').disabled = !runtime.viewer?.fitting?.slots?.length;
     $('tab-hangar').disabled = !hangarPanel.available;
