@@ -223,6 +223,7 @@ function showModel(item, dna = '') {
     .configure({
       ...viewerConfig,
       itemIdentity: dna ? undefined : { id: item.id, name: item.name },
+      groupNames: Object.fromEntries([...groupsByID].map(([id, group]) => [id, group.name])),
       subsystems: subsystemSelections.get(item.id),
       language: locale,
       controlPanel: true,

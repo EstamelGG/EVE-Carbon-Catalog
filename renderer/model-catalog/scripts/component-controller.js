@@ -317,7 +317,7 @@ export function createComponentController(root, emit) {
     nativeSettings,
     loadResource,
     groupName: (id) =>
-      name(resources?.index?.categories?.flatMap((c) => c.groups).find((g) => g.id === id)?.name) || String(id),
+      name(options.groupNames?.[id] || resources?.index?.categories?.flatMap((c) => c.groups).find((g) => g.id === id)?.name) || String(id),
   });
   const hangarPanel = createHangarPanel({
     root,
