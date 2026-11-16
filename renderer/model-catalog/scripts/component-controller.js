@@ -1,5 +1,6 @@
 import {locatorFire} from './locator-fire.js';
 import {frameIcon, renderIcon} from './icon-camera.js';
+import {selectIconScene} from './icon-scene.js';
 import { diagnosticsContext } from './component-diagnostics.js';
 import { createPerformancePanel } from './component-performance.js';
 import { configureEquipment } from './component-equipment.js';
@@ -607,6 +608,27 @@ export function createComponentController(root, emit) {
     renderIcon: options => renderIcon(runtime.viewer, {
       backgroundProfile: currentItem.categoryID === 3 ? 'station' : 'ship', ...options,
     }),
+    async setIconScene(catalog) {
+      const profile = currentItem.categoryID === 3 ? 'station' : 'ship';
+      const {entry, provenance} = selectIconScene(catalog, currentItem.dna, profile);
+      await this.setIconBackground({scenes:catalog.scenes, defaults:{}}, entry.id, entry.lighting);
+      const viewer = runtime.viewer, context = viewer.nativeMaterialContext;
+      const actual = context?.reflection.source;
+      if (viewer.skybox.exportSource?.entry.id !== entry.id ||
+          actual?.reflection !== entry.lighting.environment.source.reflection ||
+          actual?.diffuse !== entry.lighting.environment.source.diffuse)
+        throw Error('Installed icon scene resources do not match selection');
+      const lights = context.lightRig.children.filter(light => light.isLight);
+      if (lights.length !== 1 || !lights[0].isDirectionalLight || lights[0].intensity !== 1)
+        throw Error('Unexpected icon light rig');
+      const direction = lights[0].position.clone().sub(lights[0].target.position).normalize().toArray();
+      const sourceDirection = entry.lighting.sunDirection;
+      if (direction.some((value, i) => Math.abs(value + sourceDirection[i]/Math.hypot(...sourceDirection)) > 1e-6))
+        throw Error('Installed icon sun direction does not match source scene');
+      return {...provenance, installed:{background:viewer.skybox.exportSource.entry.url,
+        reflection:actual.reflection, diffuse:actual.diffuse, sunDirection:direction,
+        sunColor:context.reflection.settings.sunColor, lightCount:lights.length}};
+    },
     async setIconBackground(catalog, id, lighting) {
       const viewer = runtime.viewer;
       if (backgroundTask) await backgroundTask;

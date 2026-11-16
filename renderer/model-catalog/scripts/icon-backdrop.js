@@ -2,21 +2,13 @@ import {WebGLRenderer, Scene, Mesh, PlaneGeometry, ShaderMaterial, OrthographicC
   Matrix3, Matrix4, Euler} from 'three';
 import {fileCubeRotation} from './skybox-orientation.js';
 
-// Empirical fits to the accepted icon-background study, not recovered client
-// constants. Shared by race/template; no per-TypeID background images.
-const views = {
-  ship_amarr_cube: [55.4375832312, -25.4393313607, 263.4479871399, 20.3943527107, 1],
-  ship_caldari_cube: [119.0363599819, -13.8428448811, 37.4501642589, 22.8046484913, -1],
-  ship_gallente_cube: [138.1509058628, -28.3816697835, 331.7254084452, 40.1852878742, -1],
-  ship_minmatar_cube: [192.2728397289, -17.8485887428, 5.6224045544, 30.5103054465, -1],
-};
-const amarrStation = [288.5769809445, 10.0047053837, 7.531543703, 49.379570027, -1];
-
-export async function renderIconBackdrop({entry, texture}, width, height, profile) {
-  const key = entry.url.split('/').pop().replace(/\.dds$/i, '');
-  const view = key === 'ship_amarr_cube' && profile === 'station' ? amarrStation : views[key];
+export async function renderIconBackdrop({entry, texture}, width, height, profile = 'ship') {
+  const sampling = entry.iconSampling?.[profile];
+  if (!sampling || sampling.version !== 1 || sampling.transfer !== 'linear-to-srgb' || sampling.gain !== 1)
+    throw Error('Missing or unsupported icon background sampling profile');
+  const view = sampling.view;
   const rotation = new Matrix3();
-  let fov = 30, mirror = -1;
+  let fov = sampling.fov ?? 30, mirror = sampling.mirror ?? -1;
   if (view) {
     const [yaw, pitch, roll] = view.map(value => value * Math.PI / 180);
     rotation.setFromMatrix4(new Matrix4().makeRotationFromEuler(new Euler(pitch, yaw, roll, 'YXZ')));
