@@ -67,7 +67,8 @@ export function createCatalogState({groups, races, language, name}) {
       compare = state.sort === 'name' ? byName : (a,b) =>
         (raceOrder.get(a.affiliationID) ?? 5)-(raceOrder.get(b.affiliationID) ?? 5) || byName(a,b);
     }
-    items.sort(exactMatches.size ? (a,b) => Number(exactMatches.has(b.id))-Number(exactMatches.has(a.id)) || compare(a,b) : compare);
+    items.sort((a,b) => Number(!!b.available)-Number(!!a.available) ||
+      Number(exactMatches.has(b.id))-Number(exactMatches.has(a.id)) || compare(a,b));
     return {items, raceCounts, readyCount,
       uncollected:state.scope === 'ready' && !state.query && state.group !== -1 && readyCount === 0};
   }
