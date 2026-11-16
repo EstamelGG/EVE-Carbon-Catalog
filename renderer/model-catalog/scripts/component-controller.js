@@ -230,6 +230,7 @@ export function createComponentController(root, emit) {
         return backgroundTask;
       },
       ready() {
+        controls.sync();
         loading.finish();
         actions.sync();
       },
@@ -651,6 +652,7 @@ export function createComponentController(root, emit) {
             : await renderer.installShipEffects(viewer, currentItem.effects, 'cruise', {typeID:currentItem.id});
           viewer.lifecycle.set('shipEffects', effects);
         }
+        controls.sync();
       }
     },
     showPerformance: () => performancePanel.open(),

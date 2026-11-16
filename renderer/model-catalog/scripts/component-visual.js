@@ -85,8 +85,6 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
     });
   $('gate-state').onchange = () =>
     runtime.viewer?.shipEffects?.gate?.setState($('gate-state').value);
-  $('gate-arrival').onclick = () => runtime.viewer?.shipEffects?.gate?.trigger('arrival');
-  $('gate-departure').onclick = () => runtime.viewer?.shipEffects?.gate?.trigger('departure');
   return {
     sync() {
       const { options, settings, backgroundCatalog, t } = state(),
@@ -147,9 +145,8 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
       }
       $('skybox-select').value = options.background;
       if(viewer?.shipEffects?.gate)$('gate-state').value=viewer.shipEffects.gate.state;
-      $('gate-state-row').hidden = $('gate-events').hidden = false;
+      $('gate-state-row').hidden = false;
       $('gate-state').disabled = !viewer?.shipEffects?.gate;
-      for (const button of $('gate-events').querySelectorAll('button')) button.disabled = !viewer?.shipEffects?.gate;
     },
   };
 }

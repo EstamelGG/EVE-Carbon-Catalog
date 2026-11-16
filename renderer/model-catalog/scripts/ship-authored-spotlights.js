@@ -27,6 +27,10 @@ const modifierScale=new Vector3(),modifierRotation=new Quaternion(),modifierBasi
 
 export function applyAuthoredModifier(world, modifier, eye, cameraRotation) {
   const type = modifier.type;
+  if (type.endsWith('TranslateWithCamera')) {
+    modifierPosition.setFromMatrixPosition(world);
+    return world.setPosition(modifier.attachedToCamera ? eye : modifierPosition.add(eye));
+  }
   if (type.endsWith('ModifierSRT')) return world.multiply(authoredLocal(modifier));
   if (type.endsWith('Billboard2D')) return applyBillboard2D(world, cameraRotation);
   if (type.endsWith('Billboard3D'))

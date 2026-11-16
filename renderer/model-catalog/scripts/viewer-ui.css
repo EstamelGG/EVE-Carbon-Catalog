@@ -864,8 +864,7 @@ button.ship-annotation:focus-visible {
   border-radius: 0;
   background: #bba06e;
 }
-.detail-info .reset-button,
-#gate-events button {
+.detail-info .reset-button {
   min-height: 28px;
   padding: 5px 8px;
   border: 1px solid #8399a440;
@@ -1336,4 +1335,18 @@ button.ship-annotation:focus-visible {
 .settings-tabs [role='tab']:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.viewer-settings .toggle-row:has(select:disabled),
+.viewer-settings .toggle-row:has(input:disabled) {
+  color: #727b80;
+}
+.viewer-settings select:disabled,
+.viewer-settings button:disabled {
+  color: #727b80;
+  border-color: #727b8040;
+  cursor: default;
+}
+.viewer-settings select:enabled {
+  color: var(--accent, #bba06e);
 }
