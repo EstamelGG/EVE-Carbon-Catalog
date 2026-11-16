@@ -1332,3 +1332,8 @@ button.ship-annotation:focus-visible {
   max-height: none;
   margin: 12px 0;
 }
+
+.settings-tabs [role='tab']:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

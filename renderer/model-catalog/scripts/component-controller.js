@@ -129,6 +129,8 @@ export function createComponentController(root, emit) {
       },
       begin(item) {
         lastError = null;
+        for (const id of ['tab-fitting', 'tab-subsystems', 'tab-hangar', 'official-skin', 'hull-animation', 'show-damage', 'skybox-select']) $(id).disabled = true;
+        selectTab('visual');
         fittingPanel.reset();
         hangarPanel.reset();
         if (!loading.batch) loading.begin();
@@ -364,7 +366,7 @@ export function createComponentController(root, emit) {
     name,
   });
   function selectTab(value) {
-    tab = $('tab-' + value)?.hidden ? 'visual' : value;
+    tab = $('tab-' + value)?.disabled ? 'visual' : value;
     for (const button of root.querySelectorAll('[data-settings-tab]')) {
       const selected = button.dataset.settingsTab === tab;
       button.setAttribute('aria-selected', String(selected));
@@ -379,7 +381,7 @@ export function createComponentController(root, emit) {
   for (const button of root.querySelectorAll('[data-settings-tab]')) {
     button.onclick = () => selectTab(button.dataset.settingsTab);
     button.onkeydown = (event) => {
-      const buttons = [...root.querySelectorAll('[data-settings-tab]')].filter((b) => !b.hidden),
+      const buttons = [...root.querySelectorAll('[data-settings-tab]')].filter((b) => !b.hidden && !b.disabled),
         i = buttons.indexOf(button);
       const next =
         event.key === 'ArrowRight'
@@ -421,9 +423,10 @@ export function createComponentController(root, emit) {
   });
   function renderPanel() {
     controls.sync();
-    $('tab-subsystems').hidden = currentItem?.groupID !== 963;
-    $('tab-hangar').hidden = !supportsHangar(currentItem);
-    $('skybox-select').closest('label').hidden = currentItem?.renderKind === 'equipment';
+    $('tab-subsystems').disabled = !runtime.viewer || currentItem?.groupID !== 963;
+    $('tab-fitting').disabled = !runtime.viewer;
+    $('tab-hangar').disabled = !runtime.viewer || !supportsHangar(currentItem);
+    $('skybox-select').disabled ||= currentItem?.renderKind === 'equipment';
     subsystems.render();
     selectTab(tab);
     actions.sync();
@@ -500,7 +503,7 @@ export function createComponentController(root, emit) {
       item = { ...item, name: options.itemIdentity.name };
     const skins=item.officialSkins?.[item.id]||[];
     const picker=$('official-skin');
-    $('official-skin-row').hidden=!skins.length;
+    picker.disabled=!skins.length;
     picker.replaceChildren(new Option(t('skin'),''),...skins.map(s=>new Option(name(s.name)||String(s.id),String(s.id))));
     const skin=skins.find(s=>String(s.id)===String(options.officialSkin));
     if(skin){

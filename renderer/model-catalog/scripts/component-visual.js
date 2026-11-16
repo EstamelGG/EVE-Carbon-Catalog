@@ -93,7 +93,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
         viewer = runtime.viewer;
       $('panel').hidden = !options.controlPanel;
       $('gpu-preference').value=options.powerPreference||'high-performance';
-      $('skybox-select').disabled = !!viewer?.hangarActive;
+      $('skybox-select').disabled = !viewer || !backgroundCatalog || !!viewer.hangarActive;
       const damageToggle = $('show-damage');
       damageToggle.disabled = !viewer?.locatorDamage && !viewer?.shipEffects?.hasDamage;
       damageToggle.checked = !damageToggle.disabled && options.damage === true;
@@ -112,7 +112,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
       for (const role of textureRoles) {
         const input = $('texture-' + role);
         input.checked = settings.display.textures[role];
-        input.disabled = !!roles && !roles.has(role);
+        input.disabled = !roles || !roles.has(role);
       }
       const enabled = textureRoles
         .map((role) => $('texture-' + role))
@@ -120,7 +120,8 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
       $('show-textures').checked = enabled.every((input) => input.checked);
       $('show-textures').indeterminate =
         enabled.some((input) => input.checked) && !$('show-textures').checked;
-      $('dirt').disabled = !!roles && !roles.has('DirtMap');
+      $('dirt').disabled = !roles || !roles.has('DirtMap');
+      $('show-textures').disabled = !roles;
       $('depthOfField').disabled = !settings.display.depthOfField;
       const hasKills = (viewer?.killMarkCount || 0) > 0;
       for (const id of ['kill-count', 'kill-count-input']) {
@@ -146,7 +147,9 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
       }
       $('skybox-select').value = options.background;
       if(viewer?.shipEffects?.gate)$('gate-state').value=viewer.shipEffects.gate.state;
-      $('gate-state-row').hidden = $('gate-events').hidden = !viewer?.shipEffects?.gate;
+      $('gate-state-row').hidden = $('gate-events').hidden = false;
+      $('gate-state').disabled = !viewer?.shipEffects?.gate;
+      for (const button of $('gate-events').querySelectorAll('button')) button.disabled = !viewer?.shipEffects?.gate;
     },
   };
 }

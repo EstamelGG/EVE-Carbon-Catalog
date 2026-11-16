@@ -25,7 +25,7 @@
     Visual
   </button>
   <button
-    id="tab-fitting"
+    id="tab-fitting" disabled
     role="tab"
     aria-controls="panel-fitting"
     aria-selected="false"
@@ -36,7 +36,7 @@
     Fitting
   </button>
   <button
-    id="tab-subsystems"
+    id="tab-subsystems" disabled
     role="tab"
     aria-controls="panel-subsystems"
     aria-selected="false"
@@ -47,14 +47,13 @@
     Subsystems
   </button>
   <button
-    id="tab-hangar"
+    id="tab-hangar" disabled
     role="tab"
     aria-controls="panel-hangar"
     aria-selected="false"
     tabindex="-1"
     data-settings-tab="hangar"
     data-i18n="tabHangar"
-    hidden
   >
     Hangar
   </button>
@@ -75,21 +74,21 @@
         <input type="checkbox" id="show-damage" disabled />
         <span class="toggle-visual" aria-hidden="true"></span>
       </label>
-      <label class="toggle-row" id="official-skin-row" for="official-skin" hidden>
-        <span data-i18n="officialSkin">Official SKIN</span><select id="official-skin"></select>
+      <label class="toggle-row" id="official-skin-row" for="official-skin">
+        <span data-i18n="officialSkin">Official SKIN</span><select id="official-skin" disabled></select>
       </label>
-      <label class="toggle-row" id="hull-animation-row" for="hull-animation" hidden
+      <label class="toggle-row" id="hull-animation-row" for="hull-animation"
         ><span data-i18n="animation">Hull animation</span
-        ><select id="hull-animation"></select></label
-      ><label class="toggle-row" id="gate-state-row" for="gate-state" hidden>
+        ><select id="hull-animation" disabled></select></label
+      ><label class="toggle-row" id="gate-state-row" for="gate-state">
         <span data-i18n="gateState">Gate state</span
-        ><select id="gate-state">
+        ><select id="gate-state" disabled>
           <option value="Inactive" data-i18n="gateInactive">Inactive</option>
           <option value="Active_Unlinked" data-i18n="gateUnlinked">Active</option>
           <option value="Active_Linked" data-i18n="gateLinked" selected>Linked</option>
         </select></label
       >
-      <div class="toggle-row" id="gate-events" hidden>
+      <div class="toggle-row" id="gate-events">
         <span data-i18n="gateTransit">Transit preview</span>
         <button id="gate-arrival" type="button" data-i18n="gateArrival">Arrival</button>
         <button id="gate-departure" type="button" data-i18n="gateDeparture">Departure</button>

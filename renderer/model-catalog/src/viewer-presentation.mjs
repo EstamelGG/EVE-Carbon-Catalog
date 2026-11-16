@@ -112,7 +112,8 @@ export function configureHullAnimations(
 ) {
   const sceneAnimations = viewer.shipEffects?.sceneEffects?.hullAnimations;
   const clips = sceneAnimations?.names || viewer.availableAnimations;
-  row.hidden = !clips.length;
+  row.hidden = false;
+  select.disabled = !clips.length;
   select.replaceChildren(
     ...clips.map((name) => {
       const option = document.createElement('option');
