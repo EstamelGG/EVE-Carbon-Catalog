@@ -14,7 +14,7 @@ import { createAffiliationResolver } from './affiliation.mjs';
 import { configureResourceBase, normalizeModelIndex, resourceURL } from './resource-location.mjs';
 import { defaultModelIndex, savedModelIndex, saveModelIndex } from './res-preference.mjs';
 import { loadJSON } from './resource-activity.mjs?v=resource-plan-sky-fade-v1';
-import { prepareRenderImages } from './render-images.mjs?v=render-fallback-v1';
+import { prepareRenderImages } from './render-images.mjs?v=equipment-icon-v1';
 const $ = (id) => document.getElementById(id);
 const icon = (name, cls = '') =>
   `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
@@ -135,8 +135,9 @@ $('about-dialog').addEventListener('click', (event) => {
 });
 function renderPreview(item, badge = '') {
   const imageURL = `https://images.evetech.net/types/${item.id}/icon?size=64`;
+  const equipment = item.categoryID === 7 || item.categoryID === 66;
   return `<div class="render-preview" data-image-state="loading" aria-busy="true">${badge}
-    <img data-render src="${esc(renderURL(item))}" data-icon="${imageURL}" alt="${esc(t('poster', { name: localizedName(item.name) }))}" loading="lazy" decoding="async" width="512" height="512">
+    <img data-render ${equipment ? 'data-equipment' : ''} src="${esc(renderURL(item))}" data-icon="${imageURL}" alt="${esc(t('poster', { name: localizedName(item.name) }))}" loading="lazy" decoding="async" width="512" height="512">
     <span class="loading-ring render-spinner" aria-hidden="true"></span>
     <span class="render-image-error" role="img" aria-label="${esc(t('renderUnavailable'))}">${icon('ship', 'placeholder-cube')}</span>
   </div>`;

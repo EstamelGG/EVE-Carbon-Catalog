@@ -975,6 +975,19 @@ h1 {
 .render-preview img {
   transition: opacity 0.18s ease;
 }
+.render-preview img.equipment-icon {
+  position: absolute;
+  inset: auto 4% 4% auto;
+  width: 28%;
+  max-width: 64px;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  object-fit: contain;
+  background: transparent;
+  mix-blend-mode: normal;
+  pointer-events: none;
+}
 .render-preview[data-image-state='loading'] img {
   opacity: 0;
 }

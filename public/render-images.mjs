@@ -24,9 +24,21 @@ export function prepareRenderImages(root) {
         image.hidden = true;
       }
     };
-    image.addEventListener('load', () => settle('ready'));
+    const ready = () => {
+      settle('ready');
+      if (image.hasAttribute('data-equipment') && image.dataset.icon && !preview.querySelector('.equipment-icon')) {
+        const icon = document.createElement('img');
+        icon.className = 'equipment-icon';
+        icon.alt = '';
+        icon.hidden = true;
+        icon.addEventListener('load', () => { icon.hidden = false; }, { once: true });
+        preview.append(icon);
+        icon.src = image.dataset.icon;
+      }
+    };
+    image.addEventListener('load', ready);
     image.addEventListener('error', failed);
     // Cached images can finish before the listeners were attached.
-    if (image.complete) image.naturalWidth ? settle('ready') : failed();
+    if (image.complete) image.naturalWidth ? ready() : failed();
   }
 }

@@ -602,6 +602,13 @@ export function createComponentController(root, emit) {
   }
 
   return {
+    async setIconBackground(catalog, id) {
+      const viewer = runtime.viewer;
+      if (backgroundTask) await backgroundTask;
+      viewer.lifecycle.release('skybox');
+      viewer.lifecycle.set('skybox', renderer.createSkybox(viewer, catalog, viewer.previewRace));
+      await viewer.skybox.select(id);
+    },
     showPerformance: () => performancePanel.open(),
     configure,
     get readyForHangar() { return !!loadedItem && supportsHangar(currentItem); },
