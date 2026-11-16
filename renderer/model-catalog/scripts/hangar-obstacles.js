@@ -114,7 +114,10 @@ export function createHangarObstacles(root){
     caster.far=nearest;hits.length=0;const {object,placement,query}=candidate.entry;
     world.copy(object.matrixWorld);if(placement)world.multiply(placement);
     if(stats)stats.meshes++;
-    if(query)nearest=Math.min(nearest,query(caster,world,nearest,stats));
+    if(query){
+     const distance=query(caster,world,nearest,stats);
+     if(Number.isFinite(distance)&&distance>=0)nearest=Math.min(nearest,distance);
+    }
     else {
      let collider=object;
      if(placement){proxy.geometry=object.geometry;proxy.material=object.material;proxy.matrixWorld.copy(world);collider=proxy;}

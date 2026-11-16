@@ -68,6 +68,7 @@ export function createHangarRaycast(){
    return (caster,placement,maximum,stats)=>{
     let nearest=maximum;
     for(const {bone,query,subset} of parts){
+    if (!(nearest > 0)) return 0;
     matrix.copy(placement);
     if(bone!==null&&bone!==-1)matrix.multiply(object.bindMatrixInverse).multiply(object.skeleton.bones[bone].matrixWorld)
      .multiply(object.skeleton.boneInverses[bone]).multiply(object.bindMatrix);
@@ -75,6 +76,7 @@ export function createHangarRaycast(){
     inverse.copy(matrix).invert();localRay.copy(caster.ray).applyMatrix4(inverse);
     end.copy(caster.ray.direction).multiplyScalar(nearest).add(caster.ray.origin).applyMatrix4(inverse);
     const localMaximum=end.distanceTo(localRay.origin);
+    if (!(localMaximum > 0) || !Number.isFinite(localMaximum)) continue;
     const distance=query?query(localRay,localMaximum,object.material,stats):mixedTriangles(object,subset,localRay,localMaximum,stats);
     nearest=Math.min(nearest,distance/localMaximum*nearest);
     }return nearest;

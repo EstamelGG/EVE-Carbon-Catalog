@@ -12,7 +12,7 @@ import {gpuEmitterInScene} from './gpu-particle-dynamics.js';
 import {atlasParticleMaterial} from './atlas-particle-material.js';
 import { layeredParticleMaterial } from './particle-material.js';
 import { cloudParticleMaterial } from './cloud-particle-material.js';
-import {particleAttributes, particleVertex, projectParticle, spriteScaleControls} from './particle-billboard.js';
+import {particleAttributes, particleVertex, projectParticle, spriteScaleControls,particleTransformScale} from './particle-billboard.js';
 
 // EveChildParticleSystem updates its emitters in order, then each system once.
 // Current packs retain the owning node even without animation IDs. Older packs
@@ -140,8 +140,8 @@ export async function gateParticles(record,resources,root,siblingRecords=[], sha
     local.copy(root.matrixWorld).invert().multiply(world);
     scaleVector.setFromMatrixScale(local);
     const emitter = gpu ? gpuEmitterInScene(sourceEmitter, local, scaleVector) : sourceEmitter;
-    const localX = scaleVector.x;
-    const worldX = scaleVector.setFromMatrixColumn(world, 0).length();
+    const localX = particleTransformScale(local);
+    const worldX = particleTransformScale(world);
     const useWorldScale = parameters.UseWorldScale ?? spriteDefaults?.UseWorldScale;
     const sprite = spriteScaleControls({
       UseWorldScale:useWorldScale,

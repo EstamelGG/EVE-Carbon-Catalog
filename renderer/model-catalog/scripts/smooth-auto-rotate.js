@@ -25,7 +25,7 @@ export function smoothAutoRotate(viewer, tick, duration = 2000) {
     return result;
   };
   const onCameraChange = event => {
-    if (event.detail.source === 'user-interaction') reset();
+    if (event.detail?.source === 'user-interaction') reset();
   };
   viewer[tick] = wrapped;
   viewer.addEventListener('camera-change', onCameraChange);

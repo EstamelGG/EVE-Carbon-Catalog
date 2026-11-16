@@ -81,8 +81,8 @@ export class ParticleDynamics {
       } else if (force.type.endsWith('DirectForce')) {
         total.add(this.direction.fromArray(force.force));
       } else if (force.type.endsWith('AttractorForce')) {
-        const direction = this.direction.fromArray(force.position).sub(position).normalize();
-        total.addScaledVector(direction, force.magnitude);
+        const direction = this.direction.fromArray(force.position??[0,0,0]).sub(position).normalize();
+        total.addScaledVector(direction, force.magnitude??1);
       } else if (force.type.endsWith('TurbulenceForce')) {
         addTurbulence(total, force, position, this.time);
       }

@@ -44,7 +44,7 @@ export function createHangarCamera(viewer,scene,controls){
  const stop=beforeSceneRender(scene,camera=>{
   if(!saved||!obstacles||!controls.spherical||!camera?.isPerspectiveCamera)return;
   desired.setFromSpherical(controls.spherical);
-  const radius=desired.length();if(radius<=0)return;
+  const radius=desired.length();if(!Number.isFinite(radius)||radius<=0)return;
   // Orbit is centered at the scene origin; panning translates the scene target.
   // Keep the requested orbit intact so turning away from a wall restores zoom.
   const lens=[camera.near,camera.fov,camera.aspect].join(':');
@@ -69,6 +69,8 @@ export function createHangarCamera(viewer,scene,controls){
     for(const offset of corners)limit=Math.min(limit,snapshot.distance(offset,direction,radius,clearance));
    }
   }
+  if(!Number.isFinite(limit))limit=radius;
+  if(safeRadius===null||!Number.isFinite(safeRadius))safeRadius=limit;
   if(lastFrame!==scene.renderCount){
    const now=performance.now(),elapsed=Math.max(0,now-lastTime);lastTime=now;lastFrame=scene.renderCount;
    // A newly reached wall takes effect immediately. On release follow the

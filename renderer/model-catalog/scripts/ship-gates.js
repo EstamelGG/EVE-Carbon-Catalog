@@ -1,5 +1,5 @@
 import {dockBodyDraws} from './hangar-dock-bodies.js';
-import { Mesh,Object3D,Vector3,Vector4,Quaternion,Matrix4,BoxGeometry,PointLight,SpotLight,Color } from 'three';
+import { Mesh,Object3D,Vector3,Vector4,Quaternion,Matrix4,BoxGeometry,PointLight,SpotLight } from 'three';
 import {setSourceLightRadii} from './source-light-contract.js';
 import {hangarLightIntensity} from './hangar-lighting.js';
 import { beforeSceneRender } from './effect-resources.js';
@@ -207,6 +207,7 @@ export async function installGateEffects(viewer,scene,root,data,resources,getTim
     setState(state){if(!animation.setState(state,getTime()))return;particles.forEach(p=>p.pool.reset());scene.queueRender();},
     trigger(kind){animation.trigger(kind,getTime());scene.queueRender();},
     dispose(){
+      for(const {object,light} of lights){light.dispose?.();object.removeFromParent();}
       for(const {object}of lights)object.removeFromParent();
       for(const volume of cloudVolumes){
         volume.object.removeFromParent();

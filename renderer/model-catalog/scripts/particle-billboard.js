@@ -61,17 +61,24 @@ void main() {
 #endif
 }`;
 
-// EffectInfo labels UseWorldScale as the emitter's X scale. A missing control
-// retains the historical default size in parent units. The ramp is our linear
-// interpretation of “Velocity Stretch Suppress” over normalized particle age.
+// Native 2layermask.sm_depth, PARTICLE_DYNAMIC vertex bytecode: transform
+// (1,1,1) and divide its length by sqrt(3). Velocity is normalized by this
+// scale before applying VelocityStretch / scale when UseWorldScale is set.
+// Our attributes already contain the emitter transform and the viewer adds
+// model normalization, so cancel both factors in the stretch coefficient.
 const firstChannel = (value, fallback) => Array.isArray(value) ? value[0] ?? fallback : value ?? fallback;
+
+export function particleTransformScale(matrix){
+  const e=matrix.elements;
+  return Math.hypot(e[0]+e[4]+e[8],e[1]+e[5]+e[9],e[2]+e[6]+e[10])/Math.sqrt(3);
+}
 
 export function spriteScaleControls(parameters, localX, worldX) {
   const useScale = firstChannel(parameters.UseWorldScale);
   const stretch = firstChannel(parameters.VelocityStretch, 0);
   return {
     sizeScale: useScale === 0 ? 1 : localX,
-    fullStretch: useScale > 0 ? (worldX > 0 ? stretch / worldX : 0) : stretch,
+    fullStretch: worldX>0&&localX>0 ? (useScale>0 ? stretch/(worldX*localX) : stretch*localX/worldX) : 0,
     suppression: firstChannel(parameters.SpriteFactors2, 1),
   };
 }
