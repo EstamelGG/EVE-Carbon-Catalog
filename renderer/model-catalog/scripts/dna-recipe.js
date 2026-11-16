@@ -1,3 +1,4 @@
+import { messages } from '../src/messages.mjs';
 import {hullEffects,factionParameter,legacyLayers} from './hull-definition.js';
 const own=(object,key)=>Object.hasOwn(object,key);
 function option(options,key,label){
@@ -88,7 +89,7 @@ export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}
   url.searchParams.set('insert',insert??factionData.insert);
   url.searchParams.set('palette',base.recipe.palette);
   url.searchParams.set('options',base.recipe.options);
-  return {...base,dna,available:true,name:{zh:(base.name?.zh||hull)+' · 自定义',en:(base.name?.en||hull)+' · Custom'},model:resolveURL(base.model),preview:style.preview.url,
+  return {...base,categoryID:base.categoryID ?? 6,dna,available:true,name:{zh:(base.name?.zh||hull)+' · '+messages.custom[0],en:(base.name?.en||hull)+' · '+messages.custom[1]},model:resolveURL(base.model),preview:style.preview.url,
     appearance,appearanceRevision:base.appearanceRevision+'-'+base.recipe.options+'-'+base.recipe.palette+'-'+dna,
     effects:url.href,recipeEffects:effects};
 }

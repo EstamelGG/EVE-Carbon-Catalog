@@ -1,7 +1,7 @@
 import { loadJSON } from './resource-activity.mjs';
 import { resourceURL } from './resource-location.mjs';
 
-export const supportsHangar = (item) => [3, 6, 65].includes(item?.categoryID);
+export const supportsHangar = (item) => [3, 6, 65].includes(Number(item?.categoryID));
 export function createHangarPanel({
   root,
   currentViewer,

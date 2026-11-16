@@ -3,6 +3,7 @@ import config from '../../../app-config.json' with { type: 'json' };
 const appTitle = `${config.appName} ${config.appVersion}`;
 
 export const messages = {
+  custom: ['自定义', 'Custom'],
   diagnosticActualAA: ['实际抗锯齿', 'Active anti-aliasing'],
   diagnosticPerformance: ['渲染指标', 'Rendering metrics'],
   diagnosticScene: ['当前模型与场景', 'Model & scene'],
