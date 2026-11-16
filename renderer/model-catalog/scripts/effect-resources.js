@@ -23,6 +23,7 @@ import { withEffectColor } from './effect-color.js';
 import { resourceURL } from '../src/resource-location.mjs';
 import { trackResource, readResourceBody } from '../src/resource-activity.mjs';
 import { createEffectVideo } from './effect-video.js';
+import {decodeVolumeKtx2} from './volume-ktx2.js';
 
 /** One viewer owns one scope. Pending loads are also disposed after teardown. */
 export function createEffectResources(loadTexture = loadSourceImage, resolveURL = resourceURL, binaryURL = url => url) {
@@ -58,13 +59,16 @@ export function createEffectResources(loadTexture = loadSourceImage, resolveURL 
     }
     record = { ...record, url: resolveURL(record.url) };
     const source = binaryURL(record.url);
-    const key = JSON.stringify([record.url, record.volume, record.cube, record.dds, record.float32, repeat, record.colorSpace]);
+    const key = JSON.stringify([record.url, record.volume, record.volumeKtx2, record.cube, record.dds, record.float32, repeat, record.colorSpace]);
     if (!textures.has(key)) {
       textures.set(
         key,
         trackResource(record.url, async progress => {
           let result;
-          if (record.cube || record.dds) {
+          if(record.volumeKtx2){
+            const response=await fetch(source);if(!response.ok)throw Error('Missing effect volume: '+record.url);
+            result=await decodeVolumeKtx2(await readResourceBody(response,progress));
+          } else if (record.cube || record.dds) {
             result = await new DDSLoader().loadAsync(source, event => progress(event.loaded, event.lengthComputable ? event.total : 0));
           } else if (record.float32) {
             // Earlier float textures carry four channels and omit the count.

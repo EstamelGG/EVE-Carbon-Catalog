@@ -17,6 +17,10 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
     'f0',
     'roughness',
     'dirt',
+    'saturation',
+    'contrast',
+    'occlusionStrength',
+    'occlusionRadius',
     'depthOfField',
   ];
   let catalog, lastTranslate;
@@ -98,7 +102,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
       if (!settings) return;
       for (const key of renderKeys) {
         $(key).value = settings.render[key];
-        $(key + '-value').value = settings.render[key].toFixed(1);
+        $(key + '-value').value = settings.render[key].toFixed(key === 'occlusionRadius' ? 3 : 1);
       }
       for (const [key, id] of Object.entries(performanceControls)) {
         if (key === 'antialias') $(id).value = settings.display.antialiasMode;

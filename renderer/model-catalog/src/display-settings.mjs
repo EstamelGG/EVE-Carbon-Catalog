@@ -43,6 +43,12 @@ export function applyPostprocessingSettings(viewer) {
   const settings = normalizeDisplaySettings(viewer.displaySettings);
   const composer = viewer.querySelector('effect-composer');
   if (!composer) return;
+  const render = viewer.renderSettings;
+  const grade = composer.querySelector('color-grade-effect');
+  grade?.setAttribute('saturation', String(render.saturation));
+  grade?.setAttribute('contrast', String(render.contrast));
+  composer.querySelector('ssao-effect')?.setAttribute('strength', String(render.occlusionStrength));
+  viewer.dispatchEvent(new Event('camera-change'));
   const aa=antialiasSettings(settings,viewer.postprocessingBudget);
   composer.setAttribute('msaa', String(aa.msaa));
   const ao=composer.querySelector('ssao-effect')?.effects?.[0];

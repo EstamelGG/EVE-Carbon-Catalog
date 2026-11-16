@@ -54,7 +54,7 @@ export function watchOcclusionRadius(viewer, { homeDistance, profile, ao, compos
     const zoom =
       ((homeDistance / viewer.getCameraOrbit().radius) * Math.tan(homeFov)) /
       Math.tan((viewer.getFieldOfView() * Math.PI) / 360);
-    const radius = occlusionRadius(profile.radius, zoom);
+    const radius = occlusionRadius(viewer.renderSettings.occlusionRadius + profile.radius - 0.16, zoom);
     clearTimeout(radiusUpdate);
     if (Math.abs(ao.ssaoMaterial.radius - radius) > 0.001) {
       // Radius is a shader define in postprocessing: changing it while
@@ -180,9 +180,9 @@ export async function initializeViewerCamera(
   await viewer.updateComplete;
   if (!isActive()) return false;
   viewer.jumpCameraToGoal();
-  occlusion.strength = profile.strength;
+  occlusion.strength = viewer.renderSettings.occlusionStrength;
   Object.assign(ao.ssaoMaterial, {
-    radius: profile.radius,
+    radius: viewer.renderSettings.occlusionRadius + profile.radius - 0.16,
     samples: profile.samples,
     bias: profile.bias,
     fade: profile.fade,

@@ -73,7 +73,7 @@ export function gateFragment(record) {
   const textures=record.textures||{},shader=record.shader;
   const params=gateParameters(record);
   const declarations=Object.keys(params).map(k=>`uniform vec4 ${k};`).join('\n');
-  const maps=Object.entries(textures).map(([k,v])=>`uniform ${v.volume?'highp sampler3D':'sampler2D'} ${k};`).join('\n');
+  const maps=Object.entries(textures).map(([k,v])=>`uniform ${v.volume||v.volumeKtx2?'highp sampler3D':'sampler2D'} ${k};`).join('\n');
   const sample=(name,uv='gateUV')=>name in textures?`texture(${name},${uv})`:'vec4(1)';
   if(shader==='fx3dv5.fx'&&textures.LayerAllMap)return volumeFieldFragment(record);
   let body;

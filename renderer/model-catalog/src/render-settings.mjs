@@ -7,6 +7,10 @@ export const renderDefaults = Object.freeze({
   f0: 1,
   roughness: 1,
   dirt: 1,
+  saturation: 0,
+  contrast: 0,
+  occlusionStrength: 4,
+  occlusionRadius: 0.16,
   depthOfField: 1,
 });
 
@@ -42,8 +46,8 @@ export function switchRenderDefaults(values, previousDNA, nextDNA) {
 export function normalizeRenderSettings(values = {}) {
   return Object.fromEntries(Object.entries(renderDefaults).map(([key, fallback]) => {
     const value = Number(values[key] ?? fallback);
-    const min = key === 'exposure' || key === 'roughness' ? 0.1 : 0;
-    const max = key === 'dirt' ? 5 : 3;
+    const min = ['saturation', 'contrast'].includes(key) ? -1 : key === 'occlusionRadius' ? 0.025 : key === 'exposure' || key === 'roughness' ? 0.1 : 0;
+    const max = ['saturation', 'contrast'].includes(key) ? 1 : key === 'occlusionRadius' ? 0.3 : key === 'occlusionStrength' ? 10 : key === 'dirt' ? 5 : 3;
     return [key, Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback];
   }));
 }
