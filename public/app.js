@@ -136,7 +136,7 @@ $('about-dialog').addEventListener('click', (event) => {
 function renderPreview(item, badge = '') {
   const imageURL = `https://images.evetech.net/types/${item.id}/icon?size=64`;
   return `<div class="render-preview" data-image-state="loading" aria-busy="true">${badge}
-    <img data-render src="${esc(renderFallbacks[item.id] ? resourceURL(renderFallbacks[item.id]) : renderURL(item))}" data-icon="${imageURL}" alt="${esc(t('poster', { name: localizedName(item.name) }))}" loading="lazy" decoding="async" width="512" height="512">
+    <img data-render src="${esc(renderURL(item))}" data-icon="${imageURL}" alt="${esc(t('poster', { name: localizedName(item.name) }))}" loading="lazy" decoding="async" width="512" height="512">
     <span class="loading-ring render-spinner" aria-hidden="true"></span>
     <span class="render-image-error" role="img" aria-label="${esc(t('renderUnavailable'))}">${icon('ship', 'placeholder-cube')}</span>
   </div>`;
@@ -150,8 +150,11 @@ const catalog = createCatalogState({
 });
 let revealedGroup = null;
 let renderFallbacks = {};
-// Official availability belongs to the actual item, including visual aliases.
-const renderURL = (item) => `https://images.evetech.net/types/${item.id}/render?size=256`;
+function renderURL(item) {
+  const source = renderFallbacks[item.id];
+  if (typeof source === 'string') return resourceURL(source);
+  return `https://images.evetech.net/types/${source ?? item.id}/render?size=256`;
+}
 let data,
   catalogLoader,
   groupsByID,
@@ -840,9 +843,14 @@ let resCheck;
 async function loadModelIndex(url, signal) {
   const response = await fetch(url, { cache: 'no-cache', signal });
   if (!response.ok) throw new Error(t('resIndexHttp', { status: response.status }));
-  const index = await response.json();
-  if (index?.version !== 2 || !index.models || typeof index.models !== 'object' ||
-      Array.isArray(index.models) || Object.values(index.models).some(model => !Array.isArray(model?.itemIds)))
+  const header = await response.json();
+  if (header?.version !== 3 || typeof header.directory !== 'string' || !header.directory.startsWith('res/'))
+    throw new Error(t('resIndexFormat'));
+  const directory = await fetch(new URL(header.directory.slice(4), url), { signal });
+  if (!directory.ok) throw new Error(t('resIndexHttp', { status: directory.status }));
+  const index = await directory.json();
+  if (!index?.models || typeof index.models !== 'object' || Array.isArray(index.models) ||
+      Object.values(index.models).some(model => !Array.isArray(model?.itemIds)))
     throw new Error(t('resIndexFormat'));
   return index;
 }
@@ -952,6 +960,7 @@ async function init() {
       viewerConfig.invertWheel = localStorage.getItem('viewer.invertWheel') === 'true';
       viewerConfig.killCount = Number(localStorage.getItem('viewer.killCount')) || 0;
     } catch {}
+    const pendingInventory = Promise.allSettled([loadModelIndex(modelIndex)]);
     const [identities, directory] = await Promise.all([
       loadJSON('./icons/identities.json?v=sde-factions-20261103'), loadJSON('./catalog.json'),
     ]);
@@ -969,8 +978,9 @@ async function init() {
     setupEvents();
     await render();
     try {
-      const inventory = await loadModelIndex(modelIndex);
-      applyInventory(inventory);
+      const [inventory] = await pendingInventory;
+      if (inventory.status === 'rejected') throw inventory.reason;
+      applyInventory(inventory.value);
       buildTree();
       await render();
     } catch (error) {

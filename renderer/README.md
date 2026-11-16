@@ -21,6 +21,8 @@ npm run build
 
 每页只需加载一次组件 JS。每个实例通过 `model-index` 指定索引，JavaScript 用法为 `viewer.configure({ itemId: 587, modelIndex: "https://carbon-models.vanquisher.online/res/model-index.json" })`。相对索引地址以嵌入页面为基准，索引内的 `res/` 路径以索引所在目录为基准。后续局部更新沿用该实例的地址。跨域部署时，组件和资源站均需允许嵌入页面的来源。
 
+组件使用 v3 索引， 按需读取物品目录、模型详情及选中舰体和阵营的配方。升级资源站前，先发布新版组件。
+
 组件从发布索引查找物品 ID 和 DNA，加载已发布模型或 DNA 配方。战略巡洋舰按所选子系统加载部件并组装船体。
 
 Windows 本机启动示例（在 renderer/ 目录执行）：

@@ -7,9 +7,15 @@ function option(options,key,label){
 
 export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}={}){
   const [hull,faction,race,...tokens]=dna.split(':');
-  const base=option(index.dnaRecipes||{},hull,'未发布舰体');
-  const [palette,options,packet]=await Promise.all([load(base.recipe.palette),load(base.recipe.options),load(base.effects)]);
-  const factionData=option(palette.factions,faction,'未发布阵营');
+  const entry=option(index.dnaRecipes||{},hull,'未发布舰体');
+  const {base,paletteIndex}=await load(entry);
+  const [[palette,factionData],options,packet]=await Promise.all([
+    load(paletteIndex).then(async palette=>{
+      const entry=option(palette.factions,faction,'未发布阵营');
+      return [palette,await load(entry)];
+    }),
+    load(base.recipe.options),load(base.effects),
+  ]);
   const style=option(palette.races,race,'缺少种族配置');
   const commands=new Map();
   for(const token of tokens){
