@@ -425,8 +425,8 @@ export function createComponentController(root, emit) {
   function renderPanel() {
     controls.sync();
     $('tab-subsystems').disabled = !runtime.viewer || currentItem?.groupID !== 963;
-    $('tab-fitting').disabled = !runtime.viewer;
-    $('tab-hangar').disabled = !runtime.viewer || !supportsHangar(currentItem);
+    $('tab-fitting').disabled = !runtime.viewer?.fitting?.slots?.length;
+    $('tab-hangar').disabled = !hangarPanel.available;
     $('skybox-select').disabled ||= currentItem?.renderKind === 'equipment';
     subsystems.render();
     selectTab(tab);

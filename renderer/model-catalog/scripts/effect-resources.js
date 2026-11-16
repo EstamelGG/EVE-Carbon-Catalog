@@ -24,6 +24,7 @@ import { resourceURL } from '../src/resource-location.mjs';
 import { trackResource, readResourceBody } from '../src/resource-activity.mjs';
 import { createEffectVideo } from './effect-video.js';
 import {decodeVolumeKtx2} from './volume-ktx2.js';
+import {pageResourceCache} from './page-resource-cache.js';
 
 /** One viewer owns one scope. Pending loads are also disposed after teardown. */
 export function createEffectResources(loadTexture = loadSourceImage, resolveURL = resourceURL, binaryURL = url => url) {
@@ -126,12 +127,15 @@ export function createEffectResources(loadTexture = loadSourceImage, resolveURL 
   function geometry(data) {
     const key = data.sharedGeometryURL || data.checksum || data;
     if (!geometries.has(key)) {
-      const result = own(new BufferGeometry());
+      const create=()=>{
+      const result = new BufferGeometry();
       result.setAttribute('position', new Float32BufferAttribute(data.position, 3));
       result.setAttribute('normal', new Float32BufferAttribute(data.normal, 3));
       result.setAttribute('uv', new Float32BufferAttribute(data.uv, 2));
       result.setIndex(data.indices);
-      geometries.set(key, result);
+      return result;};
+      const shared=data.sharedGeometryURL&&pageResourceCache.geometry(data.sharedGeometryURL,create);
+      geometries.set(key, shared || own(create()));
     }
     return geometries.get(key);
   }

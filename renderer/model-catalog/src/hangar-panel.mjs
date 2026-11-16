@@ -1,7 +1,7 @@
 import { loadJSON } from './resource-activity.mjs';
 import { resourceURL } from './resource-location.mjs';
 
-export const supportsHangar = (item) => !!item?.available && [3, 6, 65].includes(item.categoryID);
+export const supportsHangar = (item) => [3, 6, 65].includes(item?.categoryID);
 export function createHangarPanel({
   root,
   currentViewer,
@@ -221,14 +221,24 @@ export function createHangarPanel({
       render();
       return apply();
     },
+    get available() { return valid(context) && !!metadata?.hangars?.length; },
     connect(viewer, item, module) {
       revision++;
       context = supportsHangar(item) ? { viewer, item, module } : null;
+      $('tab-hangar').disabled = true;
+      const c = context;
+      if (c) void metadataReady().then(() => {
+        if (valid(c)) {
+          $('tab-hangar').disabled = !metadata?.hangars?.length;
+          render();
+        }
+      }).catch(error => console.warn('Hangar metadata failed', error));
       render();
     },
     reset() {
       revision++;
       context = null;
+      $('tab-hangar').disabled = true;
       $('hangar-room').disabled = true;
     },
   };

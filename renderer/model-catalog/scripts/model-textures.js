@@ -1,6 +1,7 @@
 import { NoColorSpace } from 'three';
 import {loadSourceImage} from './source-image.js';
 import {trackResource} from '../src/resource-activity.mjs';
+import {pageResourceCache} from './page-resource-cache.js';
 
 // Reuse GLTFLoader's decoded images, including ImageBitmaps. Each consumer owns
 // a texture clone so changing UVs/color space or disposing it cannot affect the
@@ -30,6 +31,10 @@ export function createModelTextureLoader(
   });
   return async (url) => {
     const href = absolute(url);
+    if(pageResourceCache.hot(href)&&!sources.has('page '+href)){
+      sources.set(href,load(href).then(own).catch(error=>{sources.delete(href);sources.delete('page '+href);throw error;}));
+      sources.set('page '+href,true);
+    }
     if (!sources.has(href)) sources.set(href, load(href).then(own).catch(error => { sources.delete(href); throw error; }));
     const texture = (await sources.get(href)).clone();
     // A glTF slot may have KHR_texture_transform or a different UV/color role.

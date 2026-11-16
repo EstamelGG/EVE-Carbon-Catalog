@@ -473,6 +473,7 @@ export function createFittingPanel({
           hullCategory: data.hullCategory ?? c.item.categoryID,
         });
         c.viewer.lifecycle.set('fitting', fitting);
+        $('tab-fitting').disabled = !fitting.slots.length;
         fitting.setEditing(active && showMounts);
         const s = state(c.item.id);
         fitting.setDeployed(s.deployed);
@@ -594,7 +595,8 @@ export function createFittingPanel({
       $('fitting-controls').hidden = true;
       $('fitting-slots').replaceChildren();
       status('fittingHint');
-      if (active || saved.get(item.id)?.choices.size) void ensure();
+      $('tab-fitting').disabled = true;
+      void ensure();
     },
     reset() {
       context?.viewer.fitting?.previewSlot?.(null);
@@ -605,6 +607,7 @@ export function createFittingPanel({
       focusButtons.clear();
       context?.viewer.fitting?.setEditing(false);
       context = null;
+      $('tab-fitting').disabled = true;
       $('fitting-controls').hidden = true;
       $('fitting-slots').replaceChildren();
       status(active ? 'fittingWaitingModel' : 'fittingHint');

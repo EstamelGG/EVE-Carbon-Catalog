@@ -1,3 +1,4 @@
+import {shareGltfTextures} from './page-resource-cache.js';
 // Keep the geometry bytes session-owned. Each GLTFLoader parser gets its own
 // document because it annotates materials, primitives and extension records.
 export function sharedGlb(session, geometryURL) {
@@ -83,6 +84,7 @@ export async function parseSharedHull(loader, session, geometryURL, appearance) 
   const shared=await sharedGlb(session, geometryURL);
   const doc=bindHull(shared,appearance);
   const embedded=parser=>{
+    shareGltfTextures(parser,session,geometryURL);
     const load=parser.loadBuffer.bind(parser);
     parser.loadBuffer=index=>index===0 ? Promise.resolve(shared.buffer) : load(index);
     return {name:'EVE_shared_geometry'};

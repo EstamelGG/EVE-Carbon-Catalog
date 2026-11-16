@@ -5,6 +5,7 @@ import { ModelViewerGLTFInstance } from '@google/model-viewer/lib/three-componen
 import {surfaceDDSPlugin} from './surface-dds.js';
 import { gltfDimensions } from './model-bounds.js';
 import { parseSharedHull } from './shared-hull.js';
+import {shareGltfTextures} from './page-resource-cache.js';
 import { resourceActivity, loadArrayBuffer, trackResource } from '../src/resource-activity.mjs';
 
 // Use the viewer's own cache: one download/parse, then configure scale BEFORE
@@ -33,6 +34,7 @@ export async function preloadModel(viewer, source, progress, item) {
       if (!CachingGLTFLoader.cache.has(url)) {
         const parserLoader = loader[$loader];
         const plugin = parser => {
+          shareGltfTextures(parser,session,url);
           const image = parser.loadTextureImage.bind(parser);
           parser.loadTextureImage = (texture, sourceIndex, textureLoader) => {
             const uri = parser.json.images[sourceIndex]?.uri;

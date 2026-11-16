@@ -1,5 +1,6 @@
 import {MeshoptDecoder} from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import {sharedGlb} from './shared-hull.js';
+import {pageResourceCache} from './page-resource-cache.js';
 
 const quad={indices:[0,1,2,0,2,3],position:[-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,.5,0],
   uv:[0,0,1,0,1,1,0,1],normal:[0,0,1,0,0,1,0,0,1,0,0,1]};
@@ -41,5 +42,5 @@ export async function effectGeometry(session,ref){
     }
   }
   if(ref.reversed)for(let i=0;i<indices.length;i+=3)[indices[i],indices[i+2]]=[indices[i+2],indices[i]];
-  return {position,normal,uv,indices};
+  return {position,normal,uv,indices,...(pageResourceCache.hot(url)?{sharedGeometryURL:url+'#'+JSON.stringify(ref)}:{})};
 }
