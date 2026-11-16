@@ -1,5 +1,6 @@
 import { $scene } from '@google/model-viewer/lib/model-viewer-base.js';
 import { Vector3 } from 'three';
+import {renderIconBackdrop} from './icon-backdrop.js';
 
 // Screenshot framing uses posed, drawn hull vertices. Ambient effects should
 // never shrink the hull merely because a flare or particle travels far away.
@@ -118,7 +119,11 @@ export async function renderIcon(viewer, options) {
   let backdrop, foreground;
   try {
     model.visible = false;
-    backdrop = await frame();
+    const source = viewer.skybox?.exportSource;
+    if (source) {
+      const size = viewer.getBoundingClientRect();
+      backdrop = await renderIconBackdrop(source, Math.round(size.width), Math.round(size.height), options?.backgroundProfile);
+    } else backdrop = await frame();
     model.visible = visible;
     const framing = await frameIcon(viewer, options);
     for (const [sky] of skies) sky.visible = false;

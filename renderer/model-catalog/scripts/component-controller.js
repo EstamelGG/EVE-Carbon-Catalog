@@ -604,7 +604,9 @@ export function createComponentController(root, emit) {
 
   return {
     frameIcon: options => frameIcon(runtime.viewer, options),
-    renderIcon: options => renderIcon(runtime.viewer, options),
+    renderIcon: options => renderIcon(runtime.viewer, {
+      backgroundProfile: currentItem.categoryID === 3 ? 'station' : 'ship', ...options,
+    }),
     async setIconBackground(catalog, id, lighting) {
       const viewer = runtime.viewer;
       if (backgroundTask) await backgroundTask;

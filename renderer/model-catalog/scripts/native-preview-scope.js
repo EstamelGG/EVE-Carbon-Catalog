@@ -151,7 +151,7 @@ class NativePreviewScope {
   async loadReflection() {
     if (this.inherited) return this.inherited.reflection;
     const { viewer, equipment, resources, dna } = this;
-    if (equipment)
+    if (equipment && this.settings.sunMode !== 'scene')
       return loadReflectionSource(
         resources,
         { sunColor: equipment.sunColor, diffuseIntensity: 1 },

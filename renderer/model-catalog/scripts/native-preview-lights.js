@@ -38,7 +38,7 @@ export function installPreviewLightRig(context) {
     };
     const sun = new DirectionalLight(new Color(...reflection.settings.sunColor), 1);
     group.add(sun, sun.target);
-    lights.push({ light: sun, kind: 'sun', base: equipment ? 4.5 : 1 });
+    lights.push({ light: sun, kind: 'sun', base: equipment && settings.sunMode !== 'scene' ? 4.5 : 1 });
 
     const extras = context.document?.extras?.ccpdec;
     const publishedRadius = extras?.sourceRadiusOrigin === 'sof-hull-boundingSphere' ? extras.sourceRadius : null;
