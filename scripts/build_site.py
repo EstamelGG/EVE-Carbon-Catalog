@@ -1,14 +1,31 @@
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime, timezone
+from html import escape
 
 from sde import ROOT, fetch_catalog
 
 
 def write_json(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+
+
+def render_branding(destination):
+    config = json.loads((ROOT / 'app-config.json').read_bytes())
+    name, version = config['appName'], config['appVersion']
+    labels = {'appName': name, 'appVersion': version, 'appNameUpper': name.upper()}
+    public = ROOT / 'public'
+    for filename in ('index.html', 'viewer-guide.html'):
+        template = (public / filename).read_text(encoding='utf-8')
+        html = re.sub(r'\{\{(appName|appVersion|appNameUpper)\}\}',
+                      lambda match: escape(labels[match[1]]), template)
+        (destination / filename).write_text(html, encoding='utf-8')
+    template = (public / 'messages.mjs').read_text(encoding='utf-8')
+    messages = template.replace('"{{appTitle}}"', json.dumps(f'{name} {version}'))
+    (destination / 'messages.mjs').write_text(messages, encoding='utf-8')
 
 
 def generate_catalog(destination):
@@ -32,6 +49,7 @@ def main():
     if dist.exists():
         shutil.rmtree(dist)
     shutil.copytree(public, dist)
+    render_branding(dist)
     if not os.environ.get('CF_PAGES'):
         generate_catalog(dist)
     shutil.copy2(renderer / 'eve-model-viewer.js', dist)
@@ -51,6 +69,7 @@ if __name__ == '__main__':
         # Some Pages commands stage the static files before compiling the renderer.
         staged = ROOT / 'dist'
         if (staged / 'catalog.json').is_file():
+            render_branding(staged)
             for name in ('catalog.json', 'icons/identities.json'):
                 shutil.copy2(ROOT / 'public' / name, staged / name)
     else:

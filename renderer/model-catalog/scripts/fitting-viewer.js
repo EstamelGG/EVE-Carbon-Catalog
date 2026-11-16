@@ -44,7 +44,7 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
    const item=selection;
    const asset=await viewer.assetSession.json(item.asset);
    const url=new URL((viewer.assetSession?.resolveURL || resourceURL)(asset.model),location.href);url.searchParams.set('v',asset.modelRevision||'');
-   const doc=applyFittingMaterial(singleEquipmentDocument(await subsystemDocument(viewer.assetSession,url.href,asset)),materialProfile,asset.authoredParameters);
+   const doc=applyFittingMaterial(singleEquipmentDocument(await subsystemDocument(viewer.assetSession,url.href,asset)),materialProfile,asset.fittingEquipment.authoredParameters);
    // Avoid matching hull materials when a later appearance update traverses the model.
    doc.materials?.forEach((m,i)=>m.name=`fitting_${id}_${i}`);
    const loader=new GLTFLoader().setKTX2Loader(ktx2Loader).setMeshoptDecoder(MeshoptDecoder);

@@ -56,7 +56,7 @@ export function createFittingPanel({
     return loadData();
   }
   function loadData() {
-    const item=currentItem(), key=item?.fitting;
+    const item=currentItem(), key=JSON.stringify([item?.fitting,item?.dna]);
     if(!dataPromise.has(key))dataPromise.set(key,loadFittingData(item,loadResource).catch(error=>{
       dataPromise.delete(key);throw error;
     }));

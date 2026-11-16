@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {loadFittingData} from './fitting-data.mjs';
 
 test('only requests the current hull and its equipment shards', async()=>{
-  const records={ship:{version:3,hullCategory:6,equipmentShards:['turrets'],appearance:{owner:'ship'}},
-    structure:{version:3,hullCategory:65,equipmentShards:['structureWeapons'],appearance:{owner:'structure'}},
+  const records={ship:{version:3,hullCategory:6,equipmentShards:['turrets'],materialRules:null},
+    structure:{version:3,hullCategory:65,equipmentShards:['structureWeapons'],materialRules:null},
     turrets:{version:1,equipment:[{id:461},{id:462,supported:false}]},
     structureWeapons:{version:1,equipment:[{id:900}]}};
   const calls=[], load=async key=>{calls.push(key);return records[key];};
@@ -13,7 +13,7 @@ test('only requests the current hull and its equipment shards', async()=>{
   calls.length=0;
   const structure=await loadFittingData({fitting:'structure'},load);
   assert.deepEqual(calls,['structure','structureWeapons']);
-  assert.equal(structure.hullCategory,65);assert.equal(structure.appearance.owner,'structure');
+  assert.equal(structure.hullCategory,65);assert.equal(structure.appearance,undefined);
 });
 
 test('missing hull data does not request a global fitting file', async()=>{

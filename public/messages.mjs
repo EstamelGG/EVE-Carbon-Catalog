@@ -1,3 +1,5 @@
+const appTitle = "{{appTitle}}";
+
 export const messages = {
   dnaRecipes: ['DNA 配方', 'DNA recipes'],
   catalogSettings: ['设置', 'Settings'],
@@ -121,8 +123,8 @@ export const messages = {
   fittingLoading: ['正在读取装配资源…', 'Loading fitting resources…'],
   fittingFailed: ['装配资源读取失败，请重新进入此标签页重试。', 'Could not load fitting resources. Reopen this tab to retry.'],
   fittingUnavailable: ['此模型暂无可用挂点数据。战略巡洋舰的动态挂点尚未接入。', 'No fitting data for this model. Dynamic strategic cruiser mounts are not yet supported.'],
-  app: ['EVE Model Viewer 2.0', 'EVE Model Viewer 2.0'],
-  home: ['EVE Model Viewer 2.0 首页', 'EVE Model Viewer 2.0 home'],
+  app: [appTitle, appTitle],
+  home: [`${appTitle} 首页`, `${appTitle} home`],
   language: ['语言', 'Language'],
   languageAuto: ['自动识别', 'Automatic'],
   developer: ['开发者', 'Developed by'],
