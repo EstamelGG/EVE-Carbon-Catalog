@@ -50,12 +50,40 @@ export function hullEffects(options,packet,faction,variants){
       parts[rule.field].push(value);
     }
   }
-  return {...packet,fixtureColors:faction.colors,fixtureVisibility:[...visible],sprites:parts.sprites,attachmentSpotlights:parts.spotlights,
+  const combined=mergeChildren(parts.children);
+  return {...packet,...(combined.gate?{gate:combined.gate}:{}),fixtureColors:faction.colors,fixtureVisibility:[...visible],sprites:parts.sprites,attachmentSpotlights:parts.spotlights,
     planeGlow:{...packet.planeGlow,sets:parts.planes},lighting:{...packet.lighting,mode:parts.smart.length?'smart':'none',sets:parts.smart},
-    supplements:{meshes:parts.children.flatMap(c=>c.meshes),flares:parts.children.flatMap(c=>c.flares),
-      lights:parts.children.flatMap(c=>c.lights||[]),particles:parts.children.flatMap(c=>c.particles||[]),
-      smartLights:parts.children.flatMap(c=>c.smartLights||[]),softFlares:parts.children.flatMap(c=>c.softFlares||[]),transparent:parts.children.flatMap(c=>c.transparent||[]),
-      unsupported:parts.children.flatMap(c=>c.unsupported||[]),decals:parts.decals}};
+    supplements:{...combined.supplements,decals:parts.decals}};
+}
+
+
+// Animation target and motion indices are local to each shared resource instance.
+export function mergeChildren(children){
+  const supplements={meshes:[],flares:[],lights:[],lines:[],particles:[],softFlares:[],smartLights:[],transparent:[],unsupported:[],motionTracks:[]};
+  const gate={version:1,animation:{targets:[],sets:[],completeStates:true},meshes:[],particles:[],flares:[],lines:[],lights:[],unsupported:[]};
+  let particleBase=0;
+  for(const input of children){
+    const child=structuredClone(input),motionBase=supplements.motionTracks.length,targetBase=gate.animation.targets.length;
+    function rebase(node){
+      if(!node || typeof node!=='object')return;
+      if(Number.isInteger(node.motionTrack))node.motionTrack+=motionBase;
+      if(Number.isInteger(node.fxID))node.fxID+=targetBase;
+      if(node.fxParameters)for(const key of Object.keys(node.fxParameters))node.fxParameters[key]+=targetBase;
+      if(Number.isInteger(node.particleNodeIndex))node.particleNodeIndex+=particleBase;
+      for(const value of Object.values(node))if(value && typeof value==='object')rebase(value);
+    }
+    rebase(child);
+    for(const key of Object.keys(supplements))supplements[key].push(...child[key]||[]);
+    if(child.gate){
+      const animation=child.gate.animation;
+      for(const set of animation.sets)for(const track of set.tracks)track.target+=targetBase;
+      gate.animation.targets.push(...animation.targets);gate.animation.sets.push(...animation.sets);
+      gate.animation.completeStates&&=animation.completeStates!==false;
+      for(const key of ['meshes','particles','flares','lines','lights','unsupported'])gate[key].push(...child.gate[key]||[]);
+      particleBase=1+Math.max(-1,...gate.particles.map(p=>p.particleNodeIndex??-1));
+    }
+  }
+  return {supplements,...(gate.animation.sets.length?{gate}:{})};
 }
 
 export function factionParameter(key,area,options,faction,palette){

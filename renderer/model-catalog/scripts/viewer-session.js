@@ -1,3 +1,4 @@
+import {assembleEffects} from './effects-template.js';
 import { createEffectResources } from './effect-resources.js';
 import { resourceURL } from '../src/resource-location.mjs';
 import { loadJSON, loadArrayBuffer } from '../src/resource-activity.mjs';
@@ -35,6 +36,12 @@ export function createViewerSession(resolveURL = resourceURL) {
           ?pageResourceCache.load('json',key,()=>loadJSON(key)).then(value=>structuredClone(value))
           :bundles.has(url) ? Promise.resolve(bundles.json(url)) : loadJSON(key); }
         catch (error) { pending = Promise.reject(error); }
+        pending=Promise.resolve(pending).then(value=>{
+          if(value?.kind!=='sof-hull-effects')return value;
+          const dna=new URL(key).searchParams.get('dna');
+          if(!dna)throw Error('Hull effects require DNA');
+          return assembleEffects(value,dna,path=>this.json(path));
+        });
         documents.set(key, pending.catch(error => { documents.delete(key); throw error; }));
       }
       return documents.get(key);

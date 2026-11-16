@@ -1,5 +1,6 @@
+import {assembleEffects,effectInstanceURL} from './effects-template.js';
 import { messages } from '../src/messages.mjs';
-import {hullEffects,factionParameter,legacyLayers} from './hull-definition.js';
+import {factionParameter,legacyLayers} from './hull-definition.js';
 const own=(object,key)=>Object.hasOwn(object,key);
 function option(options,key,label){
   if(!own(options,key))throw Error(label+' · '+key);
@@ -81,15 +82,9 @@ export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}
       }
     }
   }
-  const effects=hullEffects(options,packet,factionData,variants);
-  if(effects.booster.placements.length)effects.booster={...effects.booster,...style.style};
-  const url=new URL(resolveURL(base.effects),location.href);
-  url.searchParams.set('faction',faction);
-  url.searchParams.set('race',race);
-  url.searchParams.set('insert',insert??factionData.insert);
-  url.searchParams.set('palette',base.recipe.palette);
-  url.searchParams.set('options',base.recipe.options);
+  const effects=await assembleEffects(packet,dna,load);
+  const url=effectInstanceURL(resolveURL(base.effects),dna);
   return {...base,categoryID:base.categoryID ?? 6,dna,available:true,name:{zh:(base.name?.zh||hull)+' · '+messages.custom[0],en:(base.name?.en||hull)+' · '+messages.custom[1]},model:resolveURL(base.model),preview:style.preview.url,
     appearance,appearanceRevision:base.appearanceRevision+'-'+base.recipe.options+'-'+base.recipe.palette+'-'+dna,
-    effects:url.href,recipeEffects:effects};
+    effects:url,recipeEffects:effects};
 }

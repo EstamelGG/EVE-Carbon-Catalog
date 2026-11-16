@@ -1,3 +1,4 @@
+import {effectInstanceURL} from './effects-template.js';
 import {assembleDNA} from './dna-recipe.js';
 import {isStrategicCruiser, subsystemSlots, subsystemGroups} from '../src/subsystems.mjs';
 import { createResourceLocator, normalizeModelIndex } from '../src/resource-location.mjs';
@@ -64,7 +65,7 @@ export function createComponentResources(key, fetchJSON) {
     if (!item.model || (itemId != null && !item.itemIds.includes(itemId))) throw Error('Invalid model index entry: ' + expected);
     const result = {...item, dna:expected, available:true, id:itemId ?? item.id, categoryID:item.categoryID ?? 6,
       name:itemName(item, itemId, expected), model:resolveURL(item.model),
-      effects:item.effects && resolveURL(item.effects)};
+      effects:item.effects && (expected.startsWith('graphic:') || item.renderKind==='equipment' ? resolveURL(item.effects) : effectInstanceURL(resolveURL(item.effects),expected))};
     if (isStrategicCruiser(result) && !result.subsystems) await inferSubsystems(result, expected);
     return result;
   }
