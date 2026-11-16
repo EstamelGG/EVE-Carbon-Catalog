@@ -436,11 +436,6 @@ button.ship-annotation:focus-visible {
   font-size: 11px;
   line-height: 1.5;
 }
-#damage-row:has(input:disabled),
-.texture-settings .toggle-row:has(input:disabled) {
-  opacity: 0.4;
-  cursor: default;
-}
 .toggle-row input:indeterminate + .toggle-visual {
   background: #8c7957;
 }
@@ -1341,12 +1336,22 @@ button.ship-annotation:focus-visible {
 .viewer-settings .toggle-row:has(input:disabled) {
   color: #727b80;
 }
-.viewer-settings select:disabled,
-.viewer-settings button:disabled {
+.viewer-settings .settings-group select:disabled,
+.viewer-settings .settings-group button:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: #727b80;
   color: #727b80;
   border-color: #727b8040;
   cursor: default;
 }
-.viewer-settings select:enabled {
+.viewer-settings .settings-group select:enabled {
   color: var(--accent, #bba06e);
+}
+
+.viewer-settings .toggle-row:has(input:disabled) .toggle-visual {
+  border-color: #727b8040;
+  background: #1b252e;
+}
+.viewer-settings .toggle-row:has(input:disabled) .toggle-visual::after {
+  background: #727b80;
 }

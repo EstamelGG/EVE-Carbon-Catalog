@@ -1,5 +1,7 @@
 import {dockBodyDraws} from './hangar-dock-bodies.js';
-import { Mesh,Object3D,Vector3,Vector4,Quaternion,Matrix4,BoxGeometry } from 'three';
+import { Mesh,Object3D,Vector3,Vector4,Quaternion,Matrix4,BoxGeometry,PointLight,SpotLight,Color } from 'three';
+import {setSourceLightRadii} from './source-light-contract.js';
+import {hangarLightIntensity} from './hangar-lighting.js';
 import { beforeSceneRender } from './effect-resources.js';
 import { GateAnimation } from './gate-animation.js';
 import { gateBones,gateWorld } from './gate-transforms.js';
@@ -22,6 +24,12 @@ import {createGateTransformCache} from './gate-transform-cache.js';
 export async function installGateEffects(viewer,scene,root,data,resources,getTime,diagnosticKey=null,hangarBodies=[],onCommit=callback=>callback(),owner) {
   if(!data?.animation)return null;
   const animation=new GateAnimation(data.animation),meshes=[],particles=[],flares=[],lines=[];
+  const lights=(data.lights||[]).map(record=>{
+    const object=new Object3D(),light=record.spot?new SpotLight():new PointLight();
+    object.matrixAutoUpdate=false;light.position.fromArray(record.position??[0,0,0]);
+    if(light.isSpotLight){light.angle=(record.outerAngle??45)*Math.PI/180;light.penumbra=1-Math.min(1,(record.innerAngle??0)/Math.max(.001,record.outerAngle??45));light.target.position.fromArray(record.direction??[0,0,1]);if(!record.direction&&record.rotation)light.target.position.applyQuaternion(new Quaternion(...record.rotation));light.add(light.target);}
+    object.add(light);root.add(object);return {record,object,light};
+  });
   const boneAt=gateBones(owner?.document ?? viewer.originalGltfJson,owner?.model ?? scene.model),eye=new Vector3(),rotation=new Quaternion(),inverse=new Matrix4();
   const hazeBox=data.meshes.some(m=>m.haze)?resources.own(new BoxGeometry(1,1,1)):null;
   const colorAtlases=diffuseAtlases(data.meshes.map(mesh=>mesh.material));
@@ -72,7 +80,7 @@ export async function installGateEffects(viewer,scene,root,data,resources,getTim
   });
   const center=new Vector3(),visibility=flares.length?createFlareVisibility():null;
   const transforms=data.animation.hangar?createGateTransformCache([
-    ...cloudVolumes.map(v=>v.record.transforms),...meshes.map(e=>e.record.transforms),...flares.map(e=>e.parents),...hangarBodies.map(o=>o.userData.eveDockParent),
+    ...lights.map(e=>e.record.transforms),...cloudVolumes.map(v=>v.record.transforms),...meshes.map(e=>e.record.transforms),...flares.map(e=>e.parents),...hangarBodies.map(o=>o.userData.eveDockParent),
     ...particles.map(e=>e.record.transforms),...lines.map(e=>e.record.transforms),
   ],animation,root,eye,rotation,boneAt):null;
   const worldAt=chain=>transforms?transforms.world(chain):gateWorld(chain,animation,root,eye,rotation,boneAt);
@@ -104,6 +112,14 @@ export async function installGateEffects(viewer,scene,root,data,resources,getTim
     } : null);
     camera.getWorldPosition(eye);camera.getWorldQuaternion(rotation);
     transforms?.begin();
+    for(const {record,object,light} of lights){
+      const source=animation.node(record),{world,visible}=worldAt(record.transforms);
+      object.visible=visible&&source.display!==false&&((source.flags??1)&1)!==0;
+      object.matrix.copy(world).premultiply(inverse);object.updateMatrixWorld(true);
+      light.color.setRGB(...(source.color??[1,1,1]).slice(0,3));
+      light.intensity=hangarLightIntensity({brightness:1,...source},time);
+      setSourceLightRadii(light,source.radius??0,source.innerRadius,object.matrixWorld.getMaxScaleOnAxis());
+    }
     for(const volume of cloudVolumes){
       const {world,visible}=worldAt(volume.record.transforms);
       volume.object.visible=visible;volume.object.matrix.copy(world).premultiply(inverse);
@@ -191,6 +207,7 @@ export async function installGateEffects(viewer,scene,root,data,resources,getTim
     setState(state){if(!animation.setState(state,getTime()))return;particles.forEach(p=>p.pool.reset());scene.queueRender();},
     trigger(kind){animation.trigger(kind,getTime());scene.queueRender();},
     dispose(){
+      for(const {object}of lights)object.removeFromParent();
       for(const volume of cloudVolumes){
         volume.object.removeFromParent();
         const installed=scene.userData.eveParticleFogVolumes,index=installed?.indexOf(volume)??-1;

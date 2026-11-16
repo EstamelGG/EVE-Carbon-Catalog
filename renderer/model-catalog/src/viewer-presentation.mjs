@@ -8,13 +8,12 @@ export function createViewerPostprocessing(viewer, { triangles, nativePreview })
   composer.setAttribute('render-mode', 'quality');
   composer.setAttribute('msaa', String(budget.msaa));
   const occlusion = document.createElement('ssao-effect');
-  occlusion.setAttribute('strength', '3');
+  occlusion.setAttribute('strength', '4');
   // The addon's small default radius only darkens hairline contacts.
   // Sample across adjacent hull panels and supports, with enough samples
   // to keep the wider occlusion smooth rather than grainy.
   const ao = occlusion.effects[0];
-  // Keep hull shading/textures at full resolution; only the occlusion
-  // buffer uses fewer pixels on large meshes.
+  // Resolve narrow hull seams at full resolution, including large meshes.
   ao.resolution.scale = budget.aoScale;
   ao.luminanceInfluence = 0.15;
   occlusion.setAttribute('blend-mode', 'default');

@@ -52,7 +52,7 @@ export function createGateTransformCache(paths,animation,root,eye,rotation,boneA
           animation.animatedFields?.get(n.fxID)?.has('display') || n.type?.endsWith('AttachToBone'));
         parent.children.set(key,{parent,timeDependent,viewRevision:-1,source,modifiers,local:staticLocals.get(source),children:new Map(),world:new Matrix4(),revision:0,frame:-1,
           parentRevision:-1,cameraRevision:-1,watched,visible:false,
-          animated:nodes.some(n=>animated.has(n.fxID)),camera:modifiers.some(m=>/Billboard|Halo|CameraOriented|TranslateWithCamera/.test(m.type)),
+          animated:nodes.some(n=>animated.has(n.fxID)),camera:modifiers.some(m=>/Billboard|Halo|CameraOriented/.test(m.type)),
           bone:modifiers.some(m=>m.type.endsWith('AttachToBone'))});stats.nodes++;
       }
       parent=parent.children.get(key);

@@ -1,7 +1,7 @@
 // Local preview quality presets, including the triangle threshold and SSAO tuning.
 export function postprocessingBudget(triangles) {
   const large = Number(triangles) > 50000;
-  return { msaa: large ? 2 : 4, aoScale: large ? 0.5 : 1, smaa: large ? 'high' : 'ultra' };
+  return { msaa: large ? 2 : 4, aoScale: 1, smaa: large ? 'high' : 'ultra' };
 }
 
 // SSAO radius is a shader define. Reuse a small set of programs instead of
@@ -20,8 +20,8 @@ export function viewerProfile({x, y, z}) {
   const slenderness = 1 - sorted[1] / sorted[2];
   return {
     scale: 4 / diagonal,
-    radius: 0.12 + 0.06 * slenderness,
-    strength: 3,
+    radius: 0.16 + 0.06 * slenderness,
+    strength: 4,
     bias: 0.015,
     fade: 0.025,
     samples: 32,
