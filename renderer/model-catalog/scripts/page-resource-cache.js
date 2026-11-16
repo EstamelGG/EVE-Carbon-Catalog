@@ -1,11 +1,11 @@
 import manifest from './page-cache-resources.json' with {type:'json'};
 
-// Only the measured common files are pinned. Keys retain the full origin,
+// Pin resources matching the configured path keywords. Keys retain the full origin,
 // resource root and query version, rather than merging equal basenames.
-export function createPageResourceCache(files=manifest.files){
-  const paths=new Set(files),pending=new Map(),geometry=new Map();
+export function createPageResourceCache(keywords=manifest.pathKeywords){
+  const paths=[...new Set(keywords.map(value=>value.trim().toLowerCase()).filter(Boolean))],pending=new Map(),geometry=new Map();
   let resources,closed=false;
-  const hot=url=>{try{return [...paths].some(path=>new URL(url,globalThis.location?.href||'http://localhost/').pathname.endsWith('/'+path));}catch{return false;}};
+  const hot=url=>{try{const path=decodeURIComponent(new URL(url,globalThis.location?.href||'http://localhost/').pathname).toLowerCase();return paths.some(keyword=>path.includes(keyword));}catch{return false;}};
   return {
     hot,
     resources(create){if(closed)throw Error('Page cache closed');return resources??=create();},

@@ -1144,7 +1144,7 @@
       "viewer-implementation",
       "reference"
     ],
-    "sha256": "04575526400f32122727e9bb69d9c4edd790368bc1714c60b318c862fbfd630f",
+    "sha256": "bd11e335c258469da3be608565f62225c38826b9ada40382e9c65f8328b3290c",
     "sourceCommentLines": [
       89
     ],
@@ -1180,7 +1180,7 @@
       "previousLines": 175,
       "currentLines": 189
     },
-    "reviewedChange": "Viewer implementation for view-dependent hangar visibility, pose bounds or auxiliary buffer reuse.",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing.",
     "preMigrationSha256": "fa735489fb7ae20ea15b8a5ab228f3a6976f2b198fb6947d2d61ce7619ddd3bd"
   },
   "scripts/effect-video.js": {
@@ -2899,7 +2899,7 @@
     "classes": [
       "viewer-implementation"
     ],
-    "sha256": "fc2c04ba5ceb8fc7d7569a2885bba8aaf9a20218283a6529f53c0caa0ce67af6",
+    "sha256": "a46da373c1e978036d1b7a4dd11a9bf6c1dcc4434372cc974d4b76b92768ad22",
     "libraryImports": [
       "@google/model-viewer/lib/model-viewer-base.js",
       "@google/model-viewer/lib/three-components/CachingGLTFLoader.js",
@@ -2915,13 +2915,14 @@
       "previousLines": 57,
       "currentLines": 65
     },
-    "preMigrationSha256": "ec7cb33562b138230820c2ef5fe537a5112cd75e521c27740f062ead06e71977"
+    "preMigrationSha256": "ec7cb33562b138230820c2ef5fe537a5112cd75e521c27740f062ead06e71977",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing."
   },
   "scripts/model-textures.js": {
     "classes": [
       "viewer-implementation"
     ],
-    "sha256": "2fbe384ea907dccad03bd9f3d775d92e4aa794e14fa2f4ef0d433ecaad56499d",
+    "sha256": "85a5c37bd055e8bf2066302953cbc421c27c4a20f8bc1c921a17644529b038a6",
     "libraryImports": [
       "three"
     ],
@@ -2937,7 +2938,8 @@
       "previousLines": 46,
       "currentLines": 47
     },
-    "preMigrationSha256": "d629078f833aa850592d38e3c66c624007db515074889c03e3b0dccc175ff81b"
+    "preMigrationSha256": "d629078f833aa850592d38e3c66c624007db515074889c03e3b0dccc175ff81b",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing."
   },
   "scripts/motion-vector-material.js": {
     "classes": [
@@ -5058,7 +5060,7 @@
     "classes": [
       "viewer-implementation"
     ],
-    "sha256": "d6246726ea839e974c01f68010f463d3cc3ea7c0397895fcd1c5d21fceecad04",
+    "sha256": "1c12bb748006d3171fd8ed0849ad586ce8e57fdb1af2043a567d22e843731123",
     "reviewStages": [
       83,
       92,
@@ -5071,7 +5073,8 @@
       "previousLines": 34,
       "currentLines": 34
     },
-    "preMigrationSha256": "d85738e231e0f2a4b2b8cf2f9e378db1f1f45b7b60012d506f39a077d49b666c"
+    "preMigrationSha256": "d85738e231e0f2a4b2b8cf2f9e378db1f1f45b7b60012d506f39a077d49b666c",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing."
   },
   "scripts/volume-sphere-material.js": {
     "classes": [
@@ -5100,5 +5103,26 @@
       "previousLines": 47,
       "currentLines": 73
     }
+  },
+  "scripts/page-resource-cache.js": {
+    "classes": [
+      "viewer-implementation"
+    ],
+    "sha256": "d2a2c2d0a08d35f856a0284da0f78aa451d25a4ec87f3a44a7bb9197a5f39914",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing."
+  },
+  "scripts/shared-hull.js": {
+    "classes": [
+      "viewer-implementation"
+    ],
+    "sha256": "bbef11afb444037789aec6e91ac7a4820a687d0081b76396bb0cafb1184e0065",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing."
+  },
+  "scripts/effect-glb.js": {
+    "classes": [
+      "viewer-implementation"
+    ],
+    "sha256": "f351e42a92dfec9f844be753deba26e277e7e1091baa28fc30d498143c6f1648",
+    "reviewedChange": "Page-lifetime pinning of measured common resources; independent scene teardown, source URL isolation and glTF texture-source borrowing."
   }
 }

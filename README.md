@@ -24,6 +24,8 @@ GitHub 的 **Check Tranquility SDE** 工作流每天北京时间 21:00 检查版
 
 默认光照、材质参数和按 DNA 匹配的预设定义在 `renderer/model-catalog/src/render-settings.mjs`。修改后重新构建并发布渲染器即可生效。
 
+高频共享资源按 `renderer/model-catalog/scripts/page-cache-resources.json` 中的 `pathKeywords` 路径关键词规则按需常驻页面缓存。切换物品或关闭模型窗口会保留这些资源的纹理、数据和共享特效几何；刷新或关闭网页后释放。其他资源仍随模型会话清理。匹配忽略路径大小写，仅检查 URL 路径，不匹配域名或查询参数。缓存区分完整 URL、版本查询参数及纹理采样选项，不预加载命中目录；只在首次使用时缓存。
+
 安装 Node.js 22、npm 和 PowerShell 7 后运行 `./build.ps1`。脚本按锁文件安装 Renderer 依赖并构建完整站点。指定模型资源地址的示例为 `./build.ps1 -ResourceBaseURL https://assets.example.org/`。
 
 单独发布 Renderer 时，在 Actions 中手动运行 **Release Renderer** 并输入新标签。Release 包含组件 JS 和可独立部署的完整 ZIP。[组件构建和使用说明](renderer/README.md)
