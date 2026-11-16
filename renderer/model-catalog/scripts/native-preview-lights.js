@@ -70,8 +70,12 @@ export function installPreviewLightRig(context) {
     const updateLights = camera => {
       model.updateWorldMatrix(true, false);
       group.updateWorldMatrix(true, false);
-      sun.position.copy(group.worldToLocal(camera.getWorldPosition(world)));
       sun.target.position.copy(scene.target.position);
+      if (settings.sunMode === 'scene') {
+        sun.position.copy(sun.target.position).add(new Vector3(...settings.sunDirection).negate().normalize());
+      } else {
+        sun.position.copy(group.worldToLocal(camera.getWorldPosition(world)));
+      }
       if (!equipment) {
         // Keep the authored fill lights in the hull frame as the camera orbits.
         group.getWorldQuaternion(rotation).invert().multiply(model.getWorldQuaternion(modelRotation));

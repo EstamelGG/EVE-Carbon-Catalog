@@ -1,4 +1,5 @@
 import {locatorFire} from './locator-fire.js';
+import {frameIcon, renderIcon} from './icon-camera.js';
 import { diagnosticsContext } from './component-diagnostics.js';
 import { createPerformancePanel } from './component-performance.js';
 import { configureEquipment } from './component-equipment.js';
@@ -602,12 +603,27 @@ export function createComponentController(root, emit) {
   }
 
   return {
-    async setIconBackground(catalog, id) {
+    frameIcon: options => frameIcon(runtime.viewer, options),
+    renderIcon: options => renderIcon(runtime.viewer, options),
+    async setIconBackground(catalog, id, lighting) {
       const viewer = runtime.viewer;
       if (backgroundTask) await backgroundTask;
       viewer.lifecycle.release('skybox');
       viewer.lifecycle.set('skybox', renderer.createSkybox(viewer, catalog, viewer.previewRace));
       await viewer.skybox.select(id);
+      if (lighting) {
+        viewer.lifecycle.release('shipEffects');
+        viewer.lifecycle.release('disposeNative');
+        const dispose = await renderer.installNativePreview(viewer, lighting, currentItem.model,
+          currentItem.nativeTypeID || currentItem.id, currentItem.dna);
+        viewer.lifecycle.set('disposeNative', dispose);
+        if (currentItem.effects && !viewer.equipmentPreview) {
+          const effects = currentItem.subsystemParts
+            ? await renderer.installSubsystemParts(viewer, currentItem, lighting)
+            : await renderer.installShipEffects(viewer, currentItem.effects, 'cruise', {typeID:currentItem.id});
+          viewer.lifecycle.set('shipEffects', effects);
+        }
+      }
     },
     showPerformance: () => performancePanel.open(),
     configure,
