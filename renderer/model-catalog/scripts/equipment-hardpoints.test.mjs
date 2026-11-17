@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {Bone,BufferGeometry,Group,Matrix4,MeshBasicMaterial,Skeleton,SkinnedMesh,Vector3} from 'three';
 import {
+  bindHardpointBones,
   canFitEquipment,
   groupHardpoints,
   planEquipmentPlacements,
@@ -112,4 +114,28 @@ test('atomic and doomsday equipment require their exact families', () => {
     }, 65),
     true,
   );
+});
+
+test('equipment mounts follow named hull bones without moving their bind pose', () => {
+  const scene=new Group(),model=new Group(),effects=new Group();
+  model.position.set(2,3,4);model.rotation.y=.3;scene.add(model);model.add(effects);
+  const bone=new Bone();bone.name='locator_xl_2a';bone.position.set(1,2,3);model.add(bone);
+  const mesh=new SkinnedMesh(new BufferGeometry(),new MeshBasicMaterial());
+  mesh.position.set(-1,.5,2);model.add(mesh);
+  scene.updateMatrixWorld(true);
+  mesh.bind(new Skeleton([bone],[bone.matrixWorld.clone().invert()]));
+  const base=new Matrix4().makeRotationY(.7);base.setPosition(8,9,10);
+  const holder=new Group();holder.matrix.copy(base);holder.matrixAutoUpdate=false;effects.add(holder);
+  const document={nodes:[{name:'locator_xl_2a'}],extras:{ccpdec:{bonePalette:['locator_xl_2a']}}};
+  const pose=bindHardpointBones(effects,model,document,[
+    {holder,mount:{name:'locator_xl_2a'},base:base.clone()},
+  ]);
+  pose();
+  const mounted=new Vector3().setFromMatrixPosition(holder.matrixWorld);
+  const expected=effects.localToWorld(new Vector3().setFromMatrixPosition(base));
+  assert.ok(mounted.distanceTo(expected)<1e-9);
+  bone.position.x+=5;scene.updateMatrixWorld(true);pose();
+  const origin=model.localToWorld(new Vector3()),displaced=model.localToWorld(new Vector3(5,0,0));
+  const delta=new Vector3().setFromMatrixPosition(holder.matrixWorld).sub(mounted);
+  assert.ok(delta.distanceTo(displaced.sub(origin))<1e-9);
 });

@@ -1,6 +1,7 @@
 import { Group, Matrix4 } from 'three';
 import { equipmentAnimation } from './equipment-animation.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
+import { bindAttachmentBones } from './source-bones.js';
 import {
   equipmentLocatorCandidates,
   equipmentLocatorName,
@@ -121,8 +122,34 @@ export function singleEquipmentDocument(document) {
  return doc;
 }
 
-export function createEquipmentMounts(root,slots,loadEquipment) {
+export function bindHardpointBones(root, model, document, instances) {
+ const palette=document?.extras?.ccpdec?.bonePalette;
+ if(!palette?.length)return ()=>{};
+ const targets=new Map();
+ for(const instance of instances){
+  const name=instance.mount.name.toLowerCase();
+  const index=palette.findIndex(value=>String(value).toLowerCase()===name);
+  if(index<0)continue;
+  const entries=targets.get(index)||[];
+  entries.push({holder:instance.holder,base:instance.base});
+  targets.set(index,entries);
+ }
+ const update=bindAttachmentBones(root,model,document,targets);
+ if(!update)return ()=>{};
+ return ()=>update((bindings,transform)=>{
+  for(const binding of bindings){
+   binding.holder.matrix.copy(transform).multiply(binding.base);
+   // Scene matrices are already updated before scene.onBeforeRender runs.
+   binding.holder.updateMatrixWorld(true);
+  }
+ });
+}
+
+export function createEquipmentMounts(root,slots,loadEquipment,binding=null) {
  const entries=new Map(),revisions=new Map();let disposed=false,deployed=true;
+ function pose(entry){
+  entry.pose?.();
+ }
  function release(entry){
   if(!entry)return;
   for(const instance of entry.instances){
@@ -149,13 +176,15 @@ export function createEquipmentMounts(root,slots,loadEquipment) {
      for(const offset of [0,4,8])if(Math.hypot(...mount.matrix.slice(offset,offset+3))===0)throw Error('Degenerate hardpoint axes: '+mount.name);
      const holder=new Group();holder.name=mount.name;
      holder.matrix.extractRotation(source).copyPosition(source);holder.matrixAutoUpdate=false;
-     const model=clone(asset.scene);holder.add(model);group.add(holder);
-     const instance={model,animation:null};
+     const base=holder.matrix.clone(),model=clone(asset.scene);holder.add(model);group.add(holder);
+     const instance={holder,base,model,animation:null,mount};
      entry.instances.push(instance);
      instance.animation=equipmentAnimation(model,asset.animations);
      instance.animation.pose(deployed,false);
     }
-    release(entries.get(slot));root.add(group);entries.set(slot,entry);return true;
+    release(entries.get(slot));root.add(group);
+    if(binding)entry.pose=bindHardpointBones(root,binding.model,binding.document,entry.instances);
+    pose(entry);entries.set(slot,entry);return true;
    }catch(error){release(entry);throw error;}
   },
   setDeployed(value,transition=true){
@@ -168,14 +197,15 @@ export function createEquipmentMounts(root,slots,loadEquipment) {
    for(const entry of entries.values())for(const instance of entry.instances)if(instance.animation.update(delta))moving=true;
    return moving;
   },
+  pose(){for(const entry of entries.values())pose(entry);},
   get(slot){return entries.get(slot);},
   get count(){return [...entries.values()].reduce((sum,e)=>sum+e.instances.length,0);},
   dispose(){disposed=true;for(const e of entries.values())release(e);entries.clear();},
  };
 }
 
-export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEquipment,hullCategory=6) {
- let container=new Group(),mounts=createEquipmentMounts(container,nativeSlots,loadEquipment),choices=new Map(),placements=new Map();
+export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEquipment,hullCategory=6,binding=null) {
+ let container=new Group(),mounts=createEquipmentMounts(container,nativeSlots,loadEquipment,binding),choices=new Map(),placements=new Map();
  let disposed=false,deployed=true,queue=Promise.resolve();const fitCache=new Map();root.add(container);
  const supports=item=>nativeSlots.some(s=>canFitEquipment(nativeSlots,s.slot,item,hullCategory));
  const available=equipment.some(supports);
@@ -191,7 +221,7 @@ export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEq
   const planned=planEquipmentPlacements(nativeSlots,next,equipment,hullCategory,placements);
   // Prepare the entire new layout off-scene. Failed loads cannot remove or
   // relocate any currently fitted equipment, including other logical rows.
-  const stagedContainer=new Group(),staged=createEquipmentMounts(stagedContainer,nativeSlots,loadEquipment);
+  const stagedContainer=new Group(),staged=createEquipmentMounts(stagedContainer,nativeSlots,loadEquipment,binding);
   const startingDeployed=deployed;staged.setDeployed(deployed);
   const results=await Promise.allSettled([...planned].map(([row,p])=>staged.set(row,p.id,{nativeSlot:p.nativeSlot})));
   const failed=results.find(r=>r.status==='rejected');
@@ -217,6 +247,7 @@ export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEq
   get:row=>mounts.get(row),get count(){return mounts.count;},
   setDeployed(value){deployed=Boolean(value);mounts.setDeployed(deployed);},
   update:delta=>mounts.update(delta),
+  pose:()=>mounts.pose(),
   dispose(){disposed=true;mounts.dispose();container.removeFromParent();},
  };
 }

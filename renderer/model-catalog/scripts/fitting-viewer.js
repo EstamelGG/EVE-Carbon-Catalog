@@ -78,7 +78,8 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
   })().catch(error=>{cache.delete(id);throw error;}));
   return cache.get(id);
  }
- const mounts=createAutomaticEquipmentMounts(root,nativeSlots,equipment,load,hullCategory),slots=mounts.slots;
+ const mounts=createAutomaticEquipmentMounts(root,nativeSlots,equipment,load,hullCategory,
+  {model:scene.model,document:viewer.originalGltfJson}),slots=mounts.slots;
  const canFit=(slot,item)=>mounts.canFit(slot,item);
  function activeMounts(slot){return mounts.get(slot)?.mounts||[];}
  function updateVisibility(){
@@ -104,22 +105,25 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
   layer.replaceChildren(leaders);leaders.replaceChildren();labels.length=0;
   for(const native of nativeSlots)for(const mount of native.mounts){
    const bubble=viewer.ownerDocument.createElement('button');bubble.type='button';bubble.className='ship-annotation fitting-label';
-   let displayMount=mount,model,row;
+   let displayMount=mount,model,row,instance;
    for(const logical of slots){
     const entry=mounts.get(logical.slot),index=entry?.mounts.findIndex(m=>m.name===mount.name||JSON.stringify(m.matrix)===JSON.stringify(mount.matrix));
-    if(index>=0){displayMount=entry.mounts[index];model=entry.instances[index].model;row=logical.slot;break;}
+    if(index>=0){displayMount=entry.mounts[index];instance=entry.instances[index];model=instance.model;
+     row=logical.slot;break;}
    }
    const family=/^locator_(.+)_\d/i.exec(displayMount.name)?.[1].toUpperCase();
    bubble.textContent=family+' '+String(native.slot).padStart(2,'0')+(displayMount.name.match(/[a-z]+$/i)?.[0]||'a').toUpperCase();
    bubble.dataset.mount=displayMount.name;bubble.hidden=true;
    const line=viewer.ownerDocument.createElementNS('http://www.w3.org/2000/svg','polyline');line.style.display='none';leaders.append(line);layer.append(bubble);
    bubble.setAttribute('aria-pressed',String(selected===mount.name));
-   labels.push({bubble,line,mount,model,row,anchor:new Vector3().fromArray(mount.matrix,12)});
+   labels.push({bubble,line,mount,model,row,instance,
+    anchor:new Vector3().fromArray(mount.matrix,12)});
   }
  }
  refreshLabels();
  const point=new Vector3();
  const unsubscribe=beforeSceneRender(scene,camera=>{
+  mounts.pose();
   if(layer.hidden||disposed)return;
   const models=preview==null?[labels.find(label=>label.mount.name===selected)?.model].filter(Boolean)
    :(mounts.get(preview)?.instances||[]).map(instance=>instance.model);
@@ -136,8 +140,9 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
   // Bounds are in world space; cancel the scene transform for this overlay.
   overlay.matrix.copy(scene.matrixWorld).invert();overlay.updateMatrixWorld(true);
   const width=layer.clientWidth,height=layer.clientHeight,points=[];
-  for(const [index,{bubble,line,anchor,row}] of labels.entries()){
-   point.copy(anchor);root.localToWorld(point);point.project(camera);
+  for(const [index,{bubble,line,anchor,row,instance}] of labels.entries()){
+   if(instance)point.setFromMatrixPosition(instance.holder.matrix);else point.copy(anchor);
+   root.localToWorld(point);point.project(camera);
    const visible=(preview==null||row===preview)&&point.z>=-1&&point.z<=1&&Math.abs(point.x)<=1&&Math.abs(point.y)<=1;
    bubble.hidden=!visible;line.style.display='none';
    if(visible)points.push({index,x:(point.x+1)*width/2,y:(1-point.y)*height/2,width:bubble.offsetWidth||100,height:bubble.offsetHeight||22});
