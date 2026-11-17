@@ -1,22 +1,6 @@
 const HARDPOINT_PATTERN = /^locator_(.+)_(\d+)([a-z]*)$/i;
 const EQUIPMENT_LOCATOR_PATTERN = /^locator_(.+)_$/i;
 
-// Equipment families are matched against physical hull locator families.
-// Unknown families use an exact-only fallback, so new locator formats work
-// without changing the parser. Add aliases here only when they are intentional.
-export const EQUIPMENT_MOUNT_FAMILIES = Object.freeze({
-  turret: ['turret'],
-  launcher: ['launcher', 'turret'],
-  chain: ['chain', 'turret'],
-  atomic: ['atomic', 'turret'],
-  turretm: ['turretm', 'turret'],
-  bomb: ['bomb'],
-  xl: ['xl'],
-  doomsday: ['doomsday', 'xl'],
-  moonharvester: ['moonharvester'],
-  clonebay: ['clonebay'],
-});
-
 function prefixFor(family) {
   return family ? `locator_${family}_` : '';
 }
@@ -51,8 +35,7 @@ export function equipmentLocatorCandidates(item = {}) {
   const prefix = equipmentLocatorName(item),
     parsed = parseEquipmentLocator(prefix);
   if (!parsed) return [];
-  const families = EQUIPMENT_MOUNT_FAMILIES[parsed.family] || [parsed.family];
-  return [...new Set(families.map(prefixFor))];
+  return [parsed.prefix];
 }
 
 export function hardpointFamilies(locators = []) {
@@ -67,13 +50,5 @@ export function hardpointFamilies(locators = []) {
 }
 
 export function equipmentPrefixesForMountFamilies(families = []) {
-  const mounts = new Set(families),
-    prefixes = new Set([...mounts].map(prefixFor));
-  for (const [equipmentFamily, compatibleMounts] of Object.entries(
-    EQUIPMENT_MOUNT_FAMILIES,
-  )) {
-    if (compatibleMounts.some((family) => mounts.has(family)))
-      prefixes.add(prefixFor(equipmentFamily));
-  }
-  return [...prefixes];
+  return [...new Set(families.map(prefixFor))];
 }

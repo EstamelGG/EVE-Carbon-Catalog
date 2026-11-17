@@ -14,35 +14,38 @@ const slots = groupHardpoints([
   { name: 'locator_launcher_1a', transform: shifted },
 ]);
 
-test('launcher and chain equipment can use turret-only hull mounts', () => {
+test('launcher and chain equipment cannot use turret-only hull mounts', () => {
   const turretOnly = groupHardpoints([
     { name: 'locator_turret_1a', transform: identity },
   ]);
   for (const locatorName of ['locator_launcher_', 'locator_chain_']) {
     assert.equal(
       canFitEquipment(turretOnly, 1, { categoryID: 7, locatorName }),
-      true,
+      false,
     );
   }
 });
 
-test('an exact launcher mount is preferred over the turret fallback', () => {
+test('an exact launcher equipment only uses an exact launcher mount', () => {
   const mounts = selectHardpoints(slots, 1, 'locator_launcher_');
   assert.deepEqual(mounts.map(({ name }) => name), ['locator_launcher_1a']);
 });
 
-test('fallback mounts can be planned onto turret slots', () => {
+test('launcher equipment cannot be planned onto a turret-only slot', () => {
   const turretOnly = groupHardpoints([
     { name: 'locator_turret_1a', transform: identity },
   ]);
   const equipment = [{ id: 1875, categoryID: 7, locatorName: 'locator_launcher_' }];
-  const plan = planEquipmentPlacements(
-    turretOnly,
-    new Map([[1, 1875]]),
-    equipment,
-    6,
+  assert.throws(
+    () =>
+      planEquipmentPlacements(
+        turretOnly,
+        new Map([[1, 1875]]),
+        equipment,
+        6,
+      ),
+    /No free compatible equipment mounts/,
   );
-  assert.deepEqual(plan.get(1).mounts.map(({ name }) => name), ['locator_turret_1a']);
 });
 
 test('unrelated equipment families stay incompatible', () => {
@@ -68,22 +71,42 @@ test('new locator families match exactly without code changes', () => {
   );
 });
 
-test('declared aliases cover atomic and doomsday equipment families', () => {
+test('atomic and doomsday equipment require their exact families', () => {
   const turret = groupHardpoints([
     { name: 'locator_turret_1a', transform: identity },
   ]);
   const xl = groupHardpoints([
     { name: 'locator_xl_1a', transform: identity },
   ]);
+  const atomic = groupHardpoints([
+    { name: 'locator_atomic_1a', transform: identity },
+  ]);
+  const doomsday = groupHardpoints([
+    { name: 'locator_doomsday_1a', transform: identity },
+  ]);
   assert.equal(
     canFitEquipment(turret, 1, {
+      categoryID: 7,
+      locatorName: 'locator_atomic_',
+    }),
+    false,
+  );
+  assert.equal(
+    canFitEquipment(xl, 1, {
+      categoryID: 66,
+      locatorName: 'locator_doomsday_',
+    }, 65),
+    false,
+  );
+  assert.equal(
+    canFitEquipment(atomic, 1, {
       categoryID: 7,
       locatorName: 'locator_atomic_',
     }),
     true,
   );
   assert.equal(
-    canFitEquipment(xl, 1, {
+    canFitEquipment(doomsday, 1, {
       categoryID: 66,
       locatorName: 'locator_doomsday_',
     }, 65),

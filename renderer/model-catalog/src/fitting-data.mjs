@@ -5,56 +5,8 @@ import {
   hardpointFamilies,
 } from './hardpoint-locators.mjs';
 
-const LEGACY_CHAIN_MODELS = ['graphic:24572', 'graphic:24573', 'graphic:24574'];
-const legacyChainCache = new WeakMap();
-
 function shardPath(categoryID, prefix) {
   return `res/fitting/lists/${categoryID}-${prefix}.json`;
-}
-
-function objectFilename(value) {
-  return String(value).replace(/[^a-zA-Z0-9_.-]/g, (match) =>
-    `~${match.codePointAt(0).toString(16)}~`,
-  );
-}
-
-function assetPath(dna) {
-  return `res/index/models/${objectFilename(dna)}.json`;
-}
-
-function legacyChainEquipment(load) {
-  if (!legacyChainCache.has(load))
-    legacyChainCache.set(
-      load,
-      Promise.all(
-        LEGACY_CHAIN_MODELS.map(async (dna) => {
-          const asset = assetPath(dna);
-          try {
-            const model = await load(asset);
-            const locatorName = model?.fittingEquipment?.locatorName;
-            if (
-              model?.renderKind !== 'equipment' ||
-              !Array.isArray(model.itemIds) ||
-              typeof locatorName !== 'string' ||
-              !locatorName.startsWith('locator_chain_')
-            )
-              return [];
-            return model.itemIds.map((id) => ({
-              id: Number(id),
-              name: model.itemNames?.[id] || model.name || {},
-              categoryID: model.categoryID ?? 7,
-              groupID: model.groupID,
-              locatorName,
-              model: model.model,
-              asset,
-            }));
-          } catch {
-            return [];
-          }
-        }),
-      ).then((rows) => rows.flat()),
-    );
-  return legacyChainCache.get(load);
 }
 
 async function optionalShard(load, path) {
@@ -85,9 +37,7 @@ export async function loadFittingData(item, load, hardpoints = []) {
   const loadedShards = await Promise.all(
     [...shardURLs].map(async (url) => {
       if (!optionalURLs.has(url)) return load(url);
-      const shard = await optionalShard(load, url);
-      if (shard || optionalURLs.get(url) !== 'locator_chain_') return shard;
-      return {version: 1, equipment: await legacyChainEquipment(load)};
+      return optionalShard(load, url);
     }),
   );
   const shards = loadedShards.filter(Boolean);
