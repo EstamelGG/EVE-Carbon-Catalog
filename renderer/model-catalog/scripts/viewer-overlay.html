@@ -1,21 +1,21 @@
 <div class="viewer-overlay">
   <div class="viewer-heading">
-    <div class="viewer-title-line">
-      <h2 id="stage-title"></h2>
-      <span id="stage-faction" hidden
-        ><img id="stage-faction-icon" alt="" aria-hidden="true" hidden /><span
-          id="stage-faction-name"
-        ></span
-      ></span>
+    <span id="stage-faction" role="img" hidden
+      ><img id="stage-faction-icon" alt="" /></span
+    >
+    <div class="viewer-heading-copy">
+      <div class="viewer-title-line">
+        <h2 id="stage-title"></h2>
+      </div>
+      <p id="stage-subtitle" hidden></p>
+      <p
+        id="viewer-update-status"
+        role="status"
+        aria-live="polite"
+        data-i18n="appearanceUpdateFailed"
+        hidden
+      ></p>
     </div>
-    <p id="stage-subtitle" hidden></p>
-    <p
-      id="viewer-update-status"
-      role="status"
-      aria-live="polite"
-      data-i18n="appearanceUpdateFailed"
-      hidden
-    ></p>
   </div>
   <div class="viewer-dimensions">
     <canvas id="dimension-frame" width="76" height="66" aria-hidden="true"></canvas>

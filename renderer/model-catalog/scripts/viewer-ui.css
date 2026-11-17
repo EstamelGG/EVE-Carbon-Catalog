@@ -655,8 +655,18 @@ button.ship-annotation:focus-visible {
   background: #18232d;
 }
 .viewer-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-width: 0;
   margin-top: 8px;
+}
+.viewer-heading-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
 }
 .viewer-title-line {
   display: flex;
@@ -679,28 +689,23 @@ button.ship-annotation:focus-visible {
   overflow: hidden;
 }
 #stage-faction {
-  display: flex;
-  align-items: center;
-  flex: none;
-  gap: 7px;
-  padding: 2px 9px;
-  border: 1px solid #a6b9c755;
-  color: #c8dbe4;
-  font-size: 13px;
-  line-height: 1.4;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
 }
 #stage-faction-icon {
   display: block;
-  flex: none;
-  width: 20px;
-  height: 20px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
-#stage-faction[hidden],
-#stage-faction-icon[hidden] {
+#stage-faction[hidden] {
   display: none;
+}
+.viewer-heading h2,
+.viewer-heading p {
+  text-shadow: 0 1px 8px #000c;
 }
 .viewer-heading p {
   margin: 8px 0 0;
@@ -719,13 +724,9 @@ button.ship-annotation:focus-visible {
     font-size: 21px;
   }
   #stage-faction {
-    gap: 6px;
-    padding: 2px 8px;
-    font-size: 12px;
-  }
-  #stage-faction-icon {
-    width: 18px;
-    height: 18px;
+    flex-basis: 64px;
+    width: 64px;
+    height: 64px;
   }
 }
 @media (max-width: 680px) {
@@ -736,10 +737,16 @@ button.ship-annotation:focus-visible {
     gap: 12px;
   }
   .viewer-heading {
+    gap: 10px;
     margin-top: 0;
   }
   .viewer-heading h2 {
     font-size: 21px;
+  }
+  #stage-faction {
+    flex-basis: 56px;
+    width: 56px;
+    height: 56px;
   }
   .viewer-heading p {
     margin-top: 5px;
@@ -1015,8 +1022,18 @@ button.ship-annotation:focus-visible {
   margin: 0;
   gap: 8px;
 }
+#panel-fitting .fitting-status {
+  font-size: 10px;
+  line-height: 1.35;
+  margin: 0 0 3px;
+}
 .fitting-selection-help {
-  margin: 4px 0 6px;
+  margin: 2px 0 4px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .fitting-actions button:disabled {
   opacity: 0.4;
@@ -1118,7 +1135,7 @@ button.ship-annotation:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .fitting-actions {
   display: flex;
@@ -1135,10 +1152,10 @@ button.ship-annotation:focus-visible {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
-  max-width: 260px;
-  gap: 4px;
-  margin: 4px 0 7px;
-  padding: 1px 0 2px;
+  max-width: 232px;
+  gap: 3px;
+  margin: 2px 0 5px;
+  padding: 0;
 }
 .fitting-slot-shell {
   position: relative;
@@ -1149,9 +1166,9 @@ button.ship-annotation:focus-visible {
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 44px;
-  aspect-ratio: 1;
-  padding: 3px;
+  min-height: 40px;
+  aspect-ratio: 1.15;
+  padding: 2px;
   border: 1px solid #8399a440;
   border-radius: 0;
   background: linear-gradient(135deg, #17232c, #0d161d);
@@ -1177,6 +1194,10 @@ button.ship-annotation:focus-visible {
   opacity: 0.42;
   cursor: default;
 }
+.fitting-slot-target.is-installed {
+  overflow: hidden;
+  padding: 0;
+}
 .fitting-slot-number {
   position: absolute;
   top: 3px;
@@ -1193,8 +1214,13 @@ button.ship-annotation:focus-visible {
   font: 9px/1.2 var(--font-ui);
 }
 .fitting-slot-target .fitting-equipment-icon {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
+}
+.fitting-slot-target.is-installed .fitting-equipment-icon {
+  width: 100%;
+  height: 100%;
+  background: transparent;
 }
 .fitting-slot-target .fitting-equipment-icon img {
   width: 100%;
@@ -1204,13 +1230,13 @@ button.ship-annotation:focus-visible {
 .fitting-slot-target.is-empty .fitting-equipment-icon,
 .fitting-slot-target .fitting-equipment-icon:not(:has(img)) {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   border: 1px dashed #71879366;
   background: transparent;
   color: #8da4b0;
-  font-size: 22px;
+  font-size: 19px;
 }
 .fitting-slot-remove {
   position: absolute;
@@ -1297,8 +1323,8 @@ button.ship-annotation:focus-visible {
   min-width: 0;
   align-items: center;
   gap: 7px;
-  min-height: 36px;
-  padding: 5px 8px;
+  min-height: 44px;
+  padding: 7px 8px;
   border: 0;
   border-bottom: 1px solid #8399a426;
   background: #0d171e;
@@ -1380,10 +1406,11 @@ button.ship-annotation:focus-visible {
   display: none;
 }
 .fitting-category-items button {
-  min-height: 42px;
+  min-height: 36px;
 }
 .fitting-browser .fitting-results button {
-  min-height: 44px;
+  min-height: 36px;
+  padding: 2px 5px;
   border-bottom: 1px solid #8399a420;
 }
 .fitting-browser .fitting-results button[aria-pressed='true'] {
@@ -1400,10 +1427,10 @@ button.ship-annotation:focus-visible {
     font-size: 12px;
   }
   .fitting-slot-target {
-    min-height: 46px;
+    min-height: 40px;
   }
   .fitting-slots {
-    max-width: 272px;
+    max-width: 240px;
     margin: 2px 0 4px;
   }
   .fitting-selection-help {
@@ -1413,13 +1440,13 @@ button.ship-annotation:focus-visible {
     gap: 4px;
   }
   .fitting-browser .fitting-results button {
-    min-height: 44px;
-    padding: 4px 6px;
+    min-height: 38px;
+    padding: 3px 6px;
     font-size: 12px;
   }
   .fitting-category-chip {
-    min-height: 40px;
-    padding: 6px 8px;
+    min-height: 46px;
+    padding: 8px;
     font-size: 12px;
   }
   .fitting-category-items {

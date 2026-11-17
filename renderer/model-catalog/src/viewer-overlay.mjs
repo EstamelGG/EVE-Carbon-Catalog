@@ -14,11 +14,11 @@ export function renderViewerHeading(
   root.getElementById('stage-title').textContent = title;
   const factionNode = root.getElementById('stage-faction');
   const factionIconNode = root.getElementById('stage-faction-icon');
-  root.getElementById('stage-faction-name').textContent = faction;
   if (factionIcon) factionIconNode.src = factionIcon;
   else factionIconNode.removeAttribute('src');
-  factionIconNode.hidden = !factionIcon;
-  factionNode.hidden = !faction;
+  if (faction) factionNode.setAttribute('aria-label', faction);
+  else factionNode.removeAttribute('aria-label');
+  factionNode.hidden = !factionIcon;
   const subtitle = root.getElementById('stage-subtitle');
   const details = [item.name?.en !== title ? item.name?.en : '', type, skin].filter(Boolean);
   subtitle.textContent = details.join(' / ');
