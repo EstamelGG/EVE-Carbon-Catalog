@@ -1,8 +1,9 @@
 import {Box3, Sphere, Vector3} from 'three';
 import {beforeSceneRender} from './effect-resources.js';
 import {layoutSubsystemLabels} from './subsystem-label-layout.mjs';
-import {installSubsystemOutlines, subsystemColors} from './subsystem-outlines.js';
+import {installSubsystemOutlines} from './subsystem-outlines.js';
 import {annotationFocusPose, bindAnnotationButton, focusAnnotation} from './annotation-focus.js';
+import {subsystemColors} from '../src/subsystems.mjs';
 
 export function installSubsystemLabels(viewer, scene, describe, composer) {
   const document = viewer.ownerDocument, mount = viewer.parentElement;
@@ -77,6 +78,10 @@ export function installSubsystemLabels(viewer, scene, describe, composer) {
     element.addEventListener(event, handler);
     listeners.push(() => element.removeEventListener(event, handler));
   };
+  const options = controls.getElementById?.('subsystem-options');
+  const highlightSelector = (slot, highlighted) =>
+    options?.querySelector(`[data-subsystem-slot="${slot}"]`)
+      ?.classList.toggle('subsystem-select-highlight', highlighted);
   for (const {slot, root, anchor, radius, label} of entries) {
     listeners.push(bindAnnotationButton(label, {
       activate:() => {
@@ -85,11 +90,16 @@ export function installSubsystemLabels(viewer, scene, describe, composer) {
           radius:Math.max(scene.boundingSphere.radius*.18, radius*3), orbit:viewer.getCameraOrbit()}));
         show();
       },
-      enter:() => highlight(slot, true),
-      leave:clearHighlight,
+      enter:() => {
+        highlight(slot, true);
+        highlightSelector(slot, true);
+      },
+      leave:() => {
+        highlightSelector(slot, false);
+        clearHighlight();
+      },
     }));
   }
-  const options = controls.getElementById?.('subsystem-options');
   if (options) {
     listen(options, 'pointerover', event => {
       const select = event.target.closest('[data-subsystem-slot]');

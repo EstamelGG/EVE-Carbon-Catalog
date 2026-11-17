@@ -137,10 +137,11 @@ export function createComponentController(root, emit) {
         loading.progress(phase, detailKey);
         emit('progress', { phase, total: 5 });
       },
-      begin(item) {
+      begin(item, kind) {
         lastError = null;
+        const retainSubsystemsTab = kind === 'subsystems' && tab === 'subsystems';
         for (const id of ['tab-fitting', 'tab-subsystems', 'tab-hangar', 'official-skin', 'hull-animation', 'show-damage', 'skybox-select']) $(id).disabled = true;
-        selectTab('visual');
+        if (!retainSubsystemsTab) selectTab('visual');
         fittingPanel.reset();
         hangarPanel.reset();
         if (!loading.batch) loading.begin();

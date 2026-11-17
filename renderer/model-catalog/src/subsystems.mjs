@@ -1,5 +1,6 @@
 export const subsystemSlots = ['core', 'defensive', 'offensive', 'propulsion'];
 export const subsystemGroups = [958, 954, 956, 957];
+export const subsystemColors = ['#79d9f2', '#edc573', '#ba9bf3', '#87d4a4'];
 export function isStrategicCruiser(item) {
   return item?.groupID === 963;
 }

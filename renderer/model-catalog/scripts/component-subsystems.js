@@ -1,4 +1,5 @@
 import {
+  subsystemColors,
   subsystemConfiguration,
   subsystemOptionAvailable,
   subsystemOptionName,
@@ -21,6 +22,7 @@ export function createSubsystemPanel(root, { state, configure, runtime, translat
           caption = document.createElement('span'),
           select = document.createElement('select');
         label.className = 'subsystem-field';
+        label.style.setProperty('--subsystem-color', subsystemColors[index]);
         caption.textContent = t('subsystem' + slot.key);
         select.dataset.subsystemSlot = index;
         select.setAttribute('aria-label', caption.textContent);

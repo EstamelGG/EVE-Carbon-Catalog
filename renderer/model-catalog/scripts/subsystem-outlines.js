@@ -1,8 +1,7 @@
 import {createMaterialPass} from './material-pass.js';
 import {Color, MeshBasicMaterial, NearestFilter, Uniform, Vector2, WebGLRenderTarget} from 'three';
 import {BlendFunction, Effect, EffectPass} from 'postprocessing';
-
-export const subsystemColors = ['#79d9f2', '#edc573', '#ba9bf3', '#87d4a4'];
+import {subsystemColors} from '../src/subsystems.mjs';
 
 // A single depth-tested ID buffer distinguishes all four parts, including their
 // shared boundaries. Nothing is added to the model or its exported geometry.

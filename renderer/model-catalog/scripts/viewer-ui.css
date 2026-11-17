@@ -655,11 +655,48 @@ button.ship-annotation:focus-visible {
   background: #18232d;
 }
 .viewer-heading {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 12px;
+  justify-self: start;
+  width: fit-content;
+  max-width: min(100%, 760px);
   min-width: 0;
   margin-top: 8px;
+  padding: 12px 22px 12px 14px;
+  border: 1px solid #c7d9e524;
+  background: linear-gradient(100deg, #070d14e0 0%, #09131bb8 58%, #0b172036 100%);
+  box-shadow:
+    0 14px 34px #00000045,
+    inset 0 1px 0 #ffffff0d,
+    inset 1px 0 0 #d9bd8338;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 15px) 0,
+    100% 15px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.15);
+}
+.viewer-heading::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 2px;
+  background: linear-gradient(transparent, #d9bd8066 28%, #d9bd8066 72%, transparent);
+  pointer-events: none;
+}
+.viewer-heading:has(#stage-title:empty):has(#stage-subtitle[hidden]):has(
+    #viewer-update-status[hidden]
+  ):has(#stage-faction[hidden]) {
+  display: none;
 }
 .viewer-heading-copy {
   display: flex;
@@ -739,6 +776,7 @@ button.ship-annotation:focus-visible {
   .viewer-heading {
     gap: 10px;
     margin-top: 0;
+    padding: 9px 14px 9px 10px;
   }
   .viewer-heading h2 {
     font-size: 21px;
@@ -751,6 +789,13 @@ button.ship-annotation:focus-visible {
   .viewer-heading p {
     margin-top: 5px;
     font-size: 11px;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .viewer-heading {
+    background: #09131be8;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 .detail-info {
@@ -954,11 +999,15 @@ button.ship-annotation:focus-visible {
 }
 .subsystem-field > span {
   font-size: 12px;
-  color: #a5acb7;
+  color: var(--subsystem-color, #a5acb7);
 }
 .viewer-settings .settings-group .subsystem-field select {
   width: 100%;
   max-width: 100%;
+}
+.viewer-settings .settings-group .subsystem-field select.subsystem-select-highlight {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px #fff;
 }
 .subsystem-status {
   margin: 0 0 10px;
