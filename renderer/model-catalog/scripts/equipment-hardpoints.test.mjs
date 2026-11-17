@@ -16,38 +16,37 @@ const slots = groupHardpoints([
   { name: 'locator_launcher_1a', transform: shifted },
 ]);
 
-test('launcher and chain equipment cannot use turret-only hull mounts', () => {
+test('launcher equipment can use turret mounts but chain equipment cannot', () => {
   const turretOnly = groupHardpoints([
     { name: 'locator_turret_1a', transform: identity },
   ]);
-  for (const locatorName of ['locator_launcher_', 'locator_chain_']) {
-    assert.equal(
-      canFitEquipment(turretOnly, 1, { categoryID: 7, locatorName }),
-      false,
-    );
-  }
+  assert.equal(
+    canFitEquipment(turretOnly, 1, { categoryID: 7, locatorName: 'locator_launcher_' }),
+    true,
+  );
+  assert.equal(
+    canFitEquipment(turretOnly, 1, { categoryID: 7, locatorName: 'locator_chain_' }),
+    false,
+  );
 });
 
-test('an exact launcher equipment only uses an exact launcher mount', () => {
+test('launcher equipment prefers an exact launcher mount', () => {
   const mounts = selectHardpoints(slots, 1, 'locator_launcher_');
   assert.deepEqual(mounts.map(({ name }) => name), ['locator_launcher_1a']);
 });
 
-test('launcher equipment cannot be planned onto a turret-only slot', () => {
+test('launcher equipment can be planned onto a turret-only slot', () => {
   const turretOnly = groupHardpoints([
     { name: 'locator_turret_1a', transform: identity },
   ]);
   const equipment = [{ id: 1875, categoryID: 7, locatorName: 'locator_launcher_' }];
-  assert.throws(
-    () =>
-      planEquipmentPlacements(
-        turretOnly,
-        new Map([[1, 1875]]),
-        equipment,
-        6,
-      ),
-    /No free compatible equipment mounts/,
+  const plan = planEquipmentPlacements(
+    turretOnly,
+    new Map([[1, 1875]]),
+    equipment,
+    6,
   );
+  assert.deepEqual(plan.get(1).mounts.map(({ name }) => name), ['locator_turret_1a']);
 });
 
 test('unrelated equipment families stay incompatible', () => {

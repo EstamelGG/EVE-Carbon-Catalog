@@ -1,5 +1,7 @@
 const HARDPOINT_PATTERN = /^locator_(.+)_(\d+)([a-z]*)$/i;
 const EQUIPMENT_LOCATOR_PATTERN = /^locator_(.+)_$/i;
+const TURRET_LOCATOR = 'locator_turret_';
+const LAUNCHER_LOCATOR = 'locator_launcher_';
 
 function prefixFor(family) {
   return family ? `locator_${family}_` : '';
@@ -35,6 +37,9 @@ export function equipmentLocatorCandidates(item = {}) {
   const prefix = equipmentLocatorName(item),
     parsed = parseEquipmentLocator(prefix);
   if (!parsed) return [];
+  // Missile launchers use generic weapon locators on hulls such as Caracal.
+  // Prefer an authored launcher mount, then fall back to a turret mount.
+  if (parsed.prefix === LAUNCHER_LOCATOR) return [LAUNCHER_LOCATOR, TURRET_LOCATOR];
   return [parsed.prefix];
 }
 
@@ -50,5 +55,7 @@ export function hardpointFamilies(locators = []) {
 }
 
 export function equipmentPrefixesForMountFamilies(families = []) {
-  return [...new Set(families.map(prefixFor))];
+  const prefixes = new Set(families.map(prefixFor));
+  if (prefixes.has(TURRET_LOCATOR)) prefixes.add(LAUNCHER_LOCATOR);
+  return [...prefixes];
 }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadFittingData} from './fitting-data.mjs';
 
-test('requests the current hull and only equipment shards for exact mount families', async()=>{
+test('requests the current hull, exact equipment shards, and launcher fallbacks', async()=>{
   const records={ship:{version:3,hullCategory:6,equipmentShards:['turrets'],materialRules:null},
     structure:{version:3,hullCategory:65,equipmentShards:['structureWeapons'],materialRules:null},
     turrets:{version:1,equipment:[{id:461},{id:462,supported:false}]},
@@ -14,8 +14,9 @@ test('requests the current hull and only equipment shards for exact mount famili
   assert.deepEqual(calls,[
     'ship','turrets',
     'res/fitting/lists/7-locator_turret_.json',
+    'res/fitting/lists/7-locator_launcher_.json',
   ]);
-  assert.deepEqual(ship.equipment,[{id:461}]);
+  assert.deepEqual(ship.equipment,[{id:461},{id:501}]);
   calls.length=0;
   records['res/fitting/lists/66-locator_turretm_.json']={version:1,equipment:[{id:35939}]};
   const structure=await loadFittingData({fitting:'structure'},load,[{name:'locator_turretm_1a'}]);
@@ -41,7 +42,7 @@ test('legacy chain assets are not synthesized without exact chain locators', asy
     throw Error('Not found');
   };
   const ship=await loadFittingData({fitting:'ship'},load,[{name:'locator_turret_1a'}]);
-  assert.deepEqual(ship.equipment.map(({id})=>id),[461]);
+  assert.deepEqual(ship.equipment.map(({id})=>id),[461,501]);
 });
 
 test('missing hull data does not request a global fitting file', async()=>{

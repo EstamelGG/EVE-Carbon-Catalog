@@ -26,7 +26,7 @@ test('normalizes authored equipment locators with or without a slot suffix', () 
   );
 });
 
-test('matches only the exact equipment family', () => {
+test('matches the exact equipment family and falls launchers back to turrets', () => {
   assert.deepEqual(
     equipmentLocatorCandidates({ locatorName: 'locator_atomic_1a' }),
     ['locator_atomic_'],
@@ -34,6 +34,10 @@ test('matches only the exact equipment family', () => {
   assert.deepEqual(
     equipmentLocatorCandidates({ locatorName: 'locator_custom_weapon_' }),
     ['locator_custom_weapon_'],
+  );
+  assert.deepEqual(
+    equipmentLocatorCandidates({ locatorName: 'locator_launcher_' }),
+    ['locator_launcher_', 'locator_turret_'],
   );
 });
 
@@ -51,4 +55,11 @@ test('derives all equipment shards needed by the current hull families', () => {
   assert.ok(!prefixes.includes('locator_chain_'));
   assert.ok(!prefixes.includes('locator_atomic_'));
   assert.ok(!prefixes.includes('locator_bomb_'));
+});
+
+test('turret-mounted hulls request launcher equipment shards', () => {
+  assert.deepEqual(equipmentPrefixesForMountFamilies(['turret']), [
+    'locator_turret_',
+    'locator_launcher_',
+  ]);
 });
