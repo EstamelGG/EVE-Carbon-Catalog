@@ -2,6 +2,11 @@ import {assembleDNA} from './dna-recipe.js';
 import {isStrategicCruiser, subsystemSlots, subsystemGroups} from '../src/subsystems.mjs';
 import { createResourceLocator, normalizeModelIndex } from '../src/resource-location.mjs';
 
+// Standalone graphic shards mirror the published name, so no lookup table is
+// downloaded: the DNA alone addresses the record.
+function graphicShard(dna) {
+  return 'res/index/models/' + dna.replace(/[^a-zA-Z0-9_.-]/g, c => '~' + c.codePointAt(0).toString(16) + '~') + '.json';
+}
 
 export function componentResourceKey(options) {
   return normalizeModelIndex(options.modelIndex);
@@ -10,9 +15,16 @@ export function componentResourceKey(options) {
 export function createComponentResources(key, fetchJSON) {
   const resolveURL = createResourceLocator(key);
   const load = (url) => fetchJSON(resolveURL(url));
-  let index, catalog, directory, headerRequest;
-  const models = new Map();
-  const recipes = new Map();
+  let header, headerRequest;
+  const shards = new Map(), items = new Map(), skins = new Map();
+  const models = new Map(), recipes = new Map();
+  const memo = (cache, id, create) => {
+    if (!cache.has(id)) cache.set(id, Promise.resolve().then(create).catch(error => {
+      cache.delete(id);
+      throw error;
+    }));
+    return cache.get(id);
+  };
   function loadRecipe(url) {
     if (!recipes.has(url)) recipes.set(url, load(url).catch(error => {
       recipes.delete(url);
@@ -20,20 +32,59 @@ export function createComponentResources(key, fetchJSON) {
     }));
     return recipes.get(url);
   }
-  function loadIndex() {
+  function loadHeader() {
     headerRequest ??= fetchJSON(key).then(data => {
-      if (data?.version !== 4 || typeof data.directory !== 'string')
+      const path = value => typeof value === 'string' && value.startsWith('res/');
+      if (data?.version !== 4 || !path(data.items) || !path(data.skins) ||
+          !path(data.ships) || !path(data.subsystems))
         throw Error('Unsupported model index');
-      return index = data;
+      return header = data;
     }).catch(error => { headerRequest = null; throw error; });
     return headerRequest;
   }
+  // One file per item; a missing file means the item has no published model.
+  async function identity(itemId) {
+    const index = await loadHeader();
+    const id = Number(itemId);
+    if (!Number.isSafeInteger(id) || id <= 0) return null;
+    const record = await memo(items, id, () => load(index.items + '/' + id + '.json')).catch(() => null);
+    return record ? {...record, id} : null;
+  }
+  // One request per skin, so an item's picker needs its own ids only. The file
+  // stores the bilingual label at the top level next to the DNA body.
+  async function skin(skinId) {
+    const index = await loadHeader();
+    const id = Number(skinId);
+    if (!Number.isSafeInteger(id) || id <= 0) return null;
+    const entry = await memo(skins, id, () => load(index.skins + '/' + id + '.json'));
+    const record = {id, name: {en: entry.en, zh: entry.zh}};
+    if (entry.b) record.b = entry.b;
+    if (entry.v) record.v = entry.v;
+    return record;
+  }
+  async function skinsFor(itemId) {
+    const record = await identity(itemId);
+    if (!record?.skins?.length) return [];
+    const entries = await Promise.all(record.skins.map(id => skin(id).catch(() => null)));
+    return entries.filter(Boolean);
+  }
+  async function shipList() {
+    const index = await loadHeader();
+    const rows = await memo(shards, index.ships, () => load(index.ships));
+    return Object.entries(rows || {}).map(([id, row]) => ({...row, id:Number(id), available:true}));
+  }
+  async function subsystemParts() {
+    const index = await loadHeader();
+    const rows = await memo(shards, index.subsystems, () => load(index.subsystems));
+    return Object.entries(rows || {}).map(([id, row]) => ({...row, id:Number(id), available:true}));
+  }
   async function inferSubsystems(item, dna) {
-    const groups = await Promise.all(subsystemGroups.map(id => catalog.group(id)));
+    const parts = await subsystemParts();
     const slots = subsystemSlots.map((key, slot) => {
       const options = [];
       const prefix = dna.split(':')[0] + '_s' + (slot + 1) + 'v';
-      for (const part of groups[slot]) {
+      for (const part of parts) {
+        if (part.groupID !== subsystemGroups[slot]) continue;
         const hull = part.dna.split(':')[0];
         if (!hull.startsWith(prefix) || !/^[1-3]$/.test(hull.slice(prefix.length))) continue;
         const variant = Number(hull.slice(prefix.length));
@@ -45,25 +96,21 @@ export function createComponentResources(key, fetchJSON) {
     if (slots.every(slot => slot.options.length)) item.subsystems = {default:'1111', slots};
   }
   async function resolveModel(value, itemId) {
-    await loadIndex();
+    const index = await loadHeader();
     const expected = value.trim().toLowerCase();
     if(itemId==null && Object.hasOwn(index.dnaRecipes||{},expected.split(':')[0]))
       return assembleDNA(expected,index,loadRecipe,resolveURL);
-    await loadCatalog();
-    const identity = itemId == null ? null : directory.items[itemId];
-    if (itemId != null && (!identity || identity.dna !== expected))
+    const record = itemId == null ? null : await identity(itemId);
+    if (itemId != null && (!record || record.dna !== expected))
       throw Error('Item is absent from the component index');
     let composed;
     if (expected.startsWith('graphic:')) {
-      const asset = directory.assets[expected];
-      if (!asset) throw Error('Unpublished graphic: '+expected);
-      composed = await loadRecipe(asset);
+      composed = await loadRecipe(graphicShard(expected));
       composed = {...composed, model:resolveURL(composed.model),
         effects:composed.effects && resolveURL(composed.effects)};
     } else composed = await assembleDNA(expected,index,loadRecipe,resolveURL);
-    const result = {...composed,...identity,dna:expected,available:true,
-      id:itemId ?? composed.id, name:identity?.name || composed.name,
-      officialSkins:identity?.officialSkins ? {[identity.id]:identity.officialSkins} : composed.officialSkins};
+    const result = {...composed,...record,dna:expected,available:true,
+      id:itemId ?? composed.id, name:record?.name || composed.name};
     if (isStrategicCruiser(result) && !result.subsystems) await inferSubsystems(result, expected);
     return result;
   }
@@ -75,35 +122,22 @@ export function createComponentResources(key, fetchJSON) {
     }));
     return models.get(key);
   }
-  let loading;
-  function loadCatalog() {
-    loading ??= loadIndex().then(async data => {
-      directory = await loadRecipe(data.directory);
-      const items = new Map();
-      const groups = new Map();
-      for (const row of Object.values(directory.items))
-        items.set(row.id,{...row,available:true});
-      for (const item of items.values()) {
-        if (!groups.has(item.groupID)) groups.set(item.groupID, []);
-        groups.get(item.groupID).push(item);
-      }
-      async function group(id) { return groups.get(id) || []; }
-      catalog = {
-        item: async id => items.has(id) ? dna(items.get(id).dna, id) : null,
-        search: async () => (await Promise.all([...groups.keys()].map(group))).flat(),
-        group,
-      };
-    }).catch(error => { loading = undefined; throw error; });
-    return loading;
-  }
   return {
-    key, resolveURL, load, dna, loadCatalog,
-    officialSkin:skin=>assembleDNA(skin.dna,index,loadRecipe,resolveURL,{officialSkin:true}),
-    get index() { return index; },
-    get catalog() { return catalog; },
-    async publishedItem(item) {
-      if (!item) throw Error('Item is absent from the build index');
-      return dna(item.dna, item.id);
+    key, resolveURL, load, dna, identity, skins: skinsFor, skin, ships: shipList, subsystemParts,
+    // A skin whose authored material set carries no race publishes one body per
+    // race; the item's own DNA race selects it.
+    officialSkin: async (item, skin) => {
+      const variants = skin.v || [];
+      const body = skin.b || (variants.find(entry => entry.r === item.dna.split(':')[2]) || variants[0])?.b;
+      if (!body) throw Error(`Skin ${skin.id} has no DNA body`);
+      return assembleDNA(`${item.dna.split(':')[0]}:${body}`, await loadHeader(), loadRecipe, resolveURL,
+        {officialSkin:true});
+    },
+    get index() { return header; },
+    async item(itemId) {
+      const record = await identity(itemId);
+      if (!record) throw Error('Item is absent from the component index');
+      return dna(record.dna, record.id);
     },
   };
 }

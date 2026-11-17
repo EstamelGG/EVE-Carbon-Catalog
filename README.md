@@ -2,11 +2,11 @@
 
 `public/` 保存图鉴网页、字体和图标。[renderer/](renderer/) 保存渲染组件的源码、资源和工具。组件构建输出到 `renderer/model-catalog/dist/`，完整站点输出到根目录 `dist/`。两个输出目录都由 Git 忽略。
 
-## Cloudflare Pages 与 SDE 更新
+## 构建与数据来源
 
-在 Cloudflare Pages 使用仓库根目录、构建命令 `npm run build` 和输出目录 `dist`。构建需要 Node.js 22、npm 和 Python 3（命令 `python3`）。每次构建读取 CCP Tranquility 的 `latest.jsonl`，下载对应版本的 JSONL 压缩包，核对包内版本，按 Builder 的图形资源条件生成中英文目录。构建使用的版本写在 `dist/site-config.json` 的 `sdeBuild` 中。下载或解析失败时构建会失败。
+在 Cloudflare Pages 使用仓库根目录、构建命令 `npm run build` 和输出目录 `dist`。构建需要 Node.js 22、npm 和 Python 3（命令 `python3`）。构建只做静态组装：打包渲染组件、替换站点品牌文案、写入发布时间。仓库不再下载 SDE，也不再生成物品清单。
 
-GitHub 的 **Check Tranquility SDE** 工作流每天北京时间 21:00 检查版本，也支持手动运行。只有官方版本号增大时才向 `main` 提交 `sde-version.txt`，由 Cloudflare Pages 的 Git 集成触发构建。如果项目配置了构建监听路径，需包含此文件。
+图鉴的物品目录、可用性、缩略图归属全部来自 Builder 发布在资源站上的 `res/index/catalog.json`（`categories`、`items`、`renderFallbacks`）。因此更新物品数据只需重新构建并上传资源，不必重新发布站点。`public/icons/identities.json` 只保留种族与阵营的名称和图标，供筛选和归属显示使用；物品的 `metaGroupID`、`factionID` 随目录分片一起下发。
 
 ## GitHub Pages 发布
 
@@ -30,4 +30,4 @@ GitHub 的 **Check Tranquility SDE** 工作流每天北京时间 21:00 检查版
 
 单独发布 Renderer 时，在 Actions 中手动运行 **Release Renderer** 并输入新标签。Release 包含组件 JS 和可独立部署的完整 ZIP。[组件构建和使用说明](renderer/README.md)
 
-本地预览可用 `./start.ps1`，支持同样的 URL 参数以及 `-Port`。目录和搜索读取构建时从 SDE 生成的 `dist/catalog.json`。预览状态读取资源站的 `res/model-index.json`，打开模型时才加载渲染组件。
+本地预览可用 `./start.ps1`，支持同样的 URL 参数以及 `-Port`。目录、搜索与可用性都来自资源站 `res/model-index.json` 指向的 `catalog` 分片（必填，索引缺此字段即视为格式不兼容）：`categories` 给出分类 → 组 → 物品 `[TypeID, en, zh, metaGroupID?, factionID?]`，中英文名与 ID 检索都用这份数据；`items` 列出可用物品，`renderFallbacks` 记录 TypeID → 缩略图归属 TypeID，缩略图地址由 `res/renders/<id>.png` 拼接；没有记录的物品回退到 `images.evetech.net`。渲染组件在首屏渲染后后台预加载，打开模型时只请求该物品自己的 `res/index/items/<TypeID>.json`。

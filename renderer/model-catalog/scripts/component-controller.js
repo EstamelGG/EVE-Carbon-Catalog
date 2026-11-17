@@ -27,7 +27,7 @@ import { installOrbitTurns } from './orbit-turns.js';
 import panelMarkup from './viewer-panels.html';
 import { messages } from '../src/messages.mjs';
 import { bindNativeVisualPanel } from './component-visual.js';
-import { withSubsystems, subsystemItem, subsystemGroups } from '../src/subsystems.mjs';
+import { withSubsystems, subsystemItem } from '../src/subsystems.mjs';
 
 export function createComponentController(root, emit) {
   const $ = (id) => root.getElementById(id);
@@ -89,7 +89,7 @@ export function createComponentController(root, emit) {
     revision = 0,
     currentItem,
     backgroundTask;
-  let fittingData, loadedItem, backgroundCatalog, baseItem;
+  let fittingData, loadedItem, backgroundCatalog, baseItem, currentSkins = [];
   let panelRender = {};
   let panelDNA;
   function resolvedRender(dna) {
@@ -316,8 +316,7 @@ export function createComponentController(root, emit) {
     loading,
     nativeSettings,
     loadResource,
-    groupName: (id) =>
-      name(options.groupNames?.[id] || resources?.index?.categories?.flatMap((c) => c.groups).find((g) => g.id === id)?.name) || String(id),
+    groupName: (id) => name(options.groupNames?.[id]) || String(id),
   });
   const hangarPanel = createHangarPanel({
     root,
@@ -325,7 +324,7 @@ export function createComponentController(root, emit) {
     currentItem: () => currentItem,
     translate: t,
     name,
-    catalog: () => resources?.catalog,
+    catalog: () => resources,
     loading,
     nativeSettings,
     loadResource,
@@ -422,9 +421,27 @@ export function createComponentController(root, emit) {
       task?.catch((error) => emit('error', { message: error.message }));
     },
   });
+  // Deferred until the model is visible: one small file per skin id, fetched in
+  // parallel, never part of the model loading.
+  async function populateSkins(item, token) {
+    const picker = $('official-skin');
+    try {
+      const skins = await resources.skins(item.id);
+      if (token !== revision || currentItem?.id !== item.id) return;
+      currentSkins = skins;
+      picker.replaceChildren(new Option(t('skin'), ''),
+        ...skins.map(s => new Option(name(s.name) || String(s.id), String(s.id))));
+      const selected = String(options.officialSkin);
+      picker.value = skins.some(s => String(s.id) === selected) ? selected : '';
+    } catch (error) {
+      if (token === revision) console.warn('Skins unavailable', error);
+    } finally {
+      if (token === revision) renderPanel();
+    }
+  }
   function renderPanel() {
     controls.sync();
-    $('official-skin').disabled = !runtime.viewer || !currentItem?.officialSkins?.[currentItem.id]?.length;
+    $('official-skin').disabled = !runtime.viewer || !currentSkins.length;
     $('tab-subsystems').disabled = !runtime.viewer || currentItem?.groupID !== 963;
     $('tab-fitting').disabled = !runtime.viewer?.fitting?.slots?.length;
     $('tab-hangar').disabled = !hangarPanel.available;
@@ -494,37 +511,35 @@ export function createComponentController(root, emit) {
     }
     const useDNA = options.itemId == null && !!options.dna;
     const source = resources;
-    if (!useDNA) await source.loadCatalog();
-    const { index, catalog: loader } = source;
     const itemId = Number(options.itemId);
     if (!useDNA && (!Number.isSafeInteger(itemId) || itemId <= 0))
       throw Error('item-id must be a positive integer');
-    let item = useDNA ? await source.dna(options.dna) : await source.publishedItem(await loader.item(itemId));
+    let item = useDNA ? await source.dna(options.dna) : await source.item(itemId);
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
+    // Skins stay off the open path: a requested skin costs one small file, and
+    // the picker is filled once the model is already usable.
+    currentSkins = [];
     if (options.itemIdentity?.id === item.id && options.itemIdentity.name)
       item = { ...item, name: options.itemIdentity.name };
-    const skins=item.officialSkins?.[item.id]||[];
-    const picker=$('official-skin');
-    picker.disabled=!skins.length;
-    picker.replaceChildren(new Option(t('skin'),''),...skins.map(s=>new Option(name(s.name)||String(s.id),String(s.id))));
-    const skin=skins.find(s=>String(s.id)===String(options.officialSkin));
-    if(skin){
-      picker.value=String(skin.id);
-      const styled=await source.officialSkin(skin);
-      if(token!==revision)throw new DOMException('Superseded','AbortError');
-      item={...styled,name:item.name,id:item.id,officialSkins:item.officialSkins};
+    if (options.officialSkin != null && item.skins?.length) {
+      const skin = (await Promise.all(item.skins.map(id => source.skin(id).catch(() => null))))
+        .find(entry => entry && String(entry.id) === String(options.officialSkin));
+      if (skin) {
+        const styled = await source.officialSkin(item, skin);
+        if (token !== revision) throw new DOMException('Superseded', 'AbortError');
+        item = {...styled, name: item.name, id: item.id};
+      }
     }
     baseItem = item;
     if (item?.groupID === 963 && item.subsystems) {
-      await source.loadCatalog();
-      const parts = (await Promise.all(subsystemGroups.map((group) => source.catalog.group(group)))).flat();
+      const parts = await source.subsystemParts();
       if (token !== revision) throw new DOMException('Superseded', 'AbortError');
       baseItem = withSubsystems(item, parts);
       const assemblyBase = new URL(source.resolveURL('index.html'), document.baseURI);
       item = subsystemItem(baseItem, options.subsystems, assemblyBase);
       if (item.subsystemParts) {
         item.subsystemParts = await Promise.all(item.subsystemParts.map(async part => ({
-          ...part, ...await source.publishedItem(part),
+          ...part, ...await source.item(part.id),
         })));
       }
     }
@@ -534,7 +549,7 @@ export function createComponentController(root, emit) {
     panelDNA = item.dna;
     currentItem = item;
     settings = {
-      nativePreview: item.preview || index?.nativePreview,
+      nativePreview: item.preview || source.index?.nativePreview,
       background: options.background,
       render: resolvedRender(item.dna),
       display: normalizeDisplaySettings({
@@ -580,7 +595,7 @@ export function createComponentController(root, emit) {
         options:restoreFit?{...options,fitting:{equipment:restored.fit}}:options,
         equipmentIds:restoreFit?undefined:equipmentIds,
         renderer,
-        nativePreview: item.preview || index?.nativePreview,
+        nativePreview: item.preview || source.index?.nativePreview,
         translate: t,
         isCurrent: () => token === revision,
       });
@@ -596,6 +611,7 @@ export function createComponentController(root, emit) {
     }
     loading.finish(true);
     runtime.applyDisplaySettings(settings.display);
+    if (item.skins?.length) void populateSkins(item, token);
     renderPanel();
     $('status').textContent = '';
     const result = {

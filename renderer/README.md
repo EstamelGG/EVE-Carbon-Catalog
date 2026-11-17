@@ -21,4 +21,4 @@ npm run build
 
 每页只需加载一次组件 JS。每个实例通过 `model-index` 指定索引，JavaScript 用法为 `viewer.configure({ itemId: 587, modelIndex: "https://carbon-models.vanquisher.online/res/model-index.json" })`。相对索引地址以嵌入页面为基准，索引内的 `res/` 路径以索引所在目录为基准。后续局部更新沿用该实例的地址。跨域部署时，组件和资源站均需允许嵌入页面的来源。
 
-组件使用 v4 索引，按 TypeID 读取默认 DNA，并按需读取舰体、阵营、种族、材质、图案和布局组成数据。外观参数与布局实例由组件在运行时计算。升级资源站前，先发布新版组件。
+组件使用 v4 索引。索引头给出各分片入口：`items`（一个物品一个文件，如 `res/index/items/640.json`）、`skins`（每个皮肤 ID 一个文件，含名称与 DNA 正文）、`ships`、`subsystems`、`catalog`、`dnaRecipes` 与 `layouts`。按 TypeID 打开物品时只读取该物品自己的文件（中位 148 字节），记录里的 `skins` 数组列出可用皮肤 ID；机库选船和子系统只在对应界面打开时读取；皮肤文件在模型加载完成后才按需读取，选中皮肤时直接用已取到的正文拼上物品舰体前缀。独立 `graphic:` 模型的详情分片由 DNA 直接推出路径（`res/index/models/<转义后的 DNA>.json`）。舰体、阵营、种族、材质、图案和布局组成数据按需读取，外观参数与布局实例由组件在运行时计算。升级资源站前，先发布新版组件。

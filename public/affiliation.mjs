@@ -33,7 +33,7 @@ export function createAffiliationResolver(identities) {
     affiliationSource: source,
   });
   return item => {
-    const explicit = identities.typeFactions?.[item.id];
+    const explicit = item.factionID;
     if (factions.has(explicit)) return factionResult(explicit, 'sde-faction');
     const parts = typeof item.dna === 'string' ? item.dna.split(':') : [];
     const token = parts.length >= 3 && parts.slice(0, 3).every(Boolean) ? parts[1] : undefined;

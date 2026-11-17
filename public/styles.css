@@ -494,10 +494,17 @@ svg {
 .group-ready {
   align-self: center;
   flex-shrink: 0;
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--accent);
+  background: #4a5057;
+}
+/* Green: the whole group is built, orange: partly, grey: nothing yet. */
+.group-ready.complete {
+  background: #6ec27b;
+}
+.group-ready.partial {
+  background: #e0a052;
 }
 .tree-loading {
   color: var(--muted);

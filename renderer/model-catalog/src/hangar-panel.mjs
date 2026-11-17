@@ -145,7 +145,7 @@ export function createHangarPanel({
     try {
       await metadataReady();
       if (!valid(c) || token !== revision) return;
-      const choices = ships || (await catalog().search()).filter((i) => i.available && i.categoryID === 6);
+      const choices = ships || (await catalog().ships());
       if (!valid(c) || token !== revision) return;
       ships = choices;
       if (choices.length && !choices.some(ship => ship.id === state().ship)) state().ship = choices[0].id;

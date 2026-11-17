@@ -21,38 +21,90 @@ test('layout instances inherit DNA and combine nested transforms at runtime',asy
   assert.equal(result.appearance,undefined);
 });
 
-test('TypeID directory resolves shared graphic components with distinct identities',async()=>{
+test('TypeID shards resolve shared graphic components with distinct identities',async()=>{
   globalThis.location={href:'https://site.test/'};
   const index='https://assets.test/res/model-index.json';
   const records=new Map([
-    [index,{version:4,directory:'res/index/directory.json'}],
-    ['https://assets.test/res/index/directory.json',{items:{
-      8:{id:8,dna:'graphic:1',name:{en:'First',zh:'一'},categoryID:7,groupID:53,officialSkins:[{id:44}]},
-      9:{id:9,dna:'graphic:1',name:{en:'Second',zh:'二'},categoryID:7,groupID:53}},
-      assets:{'graphic:1':'res/index/models/graphic1.json'}}],
-    ['https://assets.test/res/index/models/graphic1.json',{model:'res/model/graphic1.glb',effects:'res/model/graphic1.effects.json'}],
+    [index,{version:4,items:'res/index/items',skins:'res/index/skins',
+      ships:'res/index/ships.json',subsystems:'res/index/subsystems.json',dnaRecipes:{}}],
+    ['https://assets.test/res/index/items/8.json',{dna:'graphic:1',name:{en:'First',zh:'一'},categoryID:7,groupID:53,skins:[44,45]}],
+    ['https://assets.test/res/index/items/9.json',{dna:'graphic:1',name:{en:'Second',zh:'二'},categoryID:7,groupID:53}],
+    ['https://assets.test/res/index/skins/44.json',{en:'Skin',zh:'涂装',b:'1:faction'}],
+    ['https://assets.test/res/index/skins/45.json',{en:'Other',zh:'另一个',b:'1:race:material?gold'}],
+    ['https://assets.test/res/index/models/graphic~3a~1.json',{model:'res/model/graphic1.glb',effects:'res/model/graphic1.effects.json'}],
   ]);
+  const fetched=[];
   const resources=createComponentResources(index,async url=>{
-    assert.ok(records.has(url),'Unexpected resource '+url);
+    fetched.push(url);
+    if(!records.has(url)) throw Error('Resource unavailable (404): '+url);
     return structuredClone(records.get(url));
   });
-  await resources.loadCatalog();
-  const items=await Promise.all([resources.catalog.item(8),resources.catalog.item(9)]);
+  const items=await Promise.all([resources.item(8),resources.item(9)]);
   assert.deepEqual(items.map(item=>item.name.en),['First','Second']);
   assert.equal(items[0].model,items[1].model);
-  assert.deepEqual(items[0].officialSkins,{8:[{id:44}]});
   assert.equal(items[1].model,'https://assets.test/res/model/graphic1.glb');
+  assert.deepEqual(items[0].skins,[44,45]);
+  assert.equal(items[1].skins,undefined);
+  // Opening a model never reads a skin file; the picker loads them on demand.
+  assert.equal(fetched.filter(url=>url.includes('/skins/')).length,0);
+  assert.deepEqual(await resources.skins(8),
+    [{id:44,name:{en:'Skin',zh:'涂装'},b:'1:faction'},{id:45,name:{en:'Other',zh:'另一个'},b:'1:race:material?gold'}]);
+  assert.deepEqual(await resources.skins(9),[]);
+  assert.equal(fetched.filter(url=>url.endsWith('/items/8.json')).length,1);
+  assert.equal(fetched.filter(url=>url.endsWith('graphic~3a~1.json')).length,1);
+  await assert.rejects(()=>resources.item(700),/absent from the component index/);
+});
+
+test('a skin published with one body per race selects the item race',async()=>{
+  globalThis.location={href:'https://site.test/'};
+  const index='https://assets.test/res/model-index.json';
+  const records=new Map([
+    [index,{version:4,items:'res/index/items',skins:'res/index/skins',
+      ships:'res/index/ships.json',subsystems:'res/index/subsystems.json',
+      dnaRecipes:{cap1_t1:'res/index/hulls/cap1_t1.json'},layouts:'res/index/layouts.json'}],
+    ['https://assets.test/res/index/items/670.json',
+      {dna:'cap1_t1:upwell:jove',name:{en:'Hull',zh:'舰'},categoryID:6,groupID:1,skins:[2968]}],
+    ['https://assets.test/res/index/skins/2968.json',{en:'Upwell',zh:'昇威',v:[
+      {r:'amarr',b:'upwell:amarr:material?none'},
+      {r:'jove',b:'upwell:jove:material?none'}]}],
+    ['https://assets.test/res/index/hulls/cap1_t1.json',{base:{model:'res/cap1.glb',
+      recipe:{options:'res/options.json',palette:'res/palette.json',areas:[]},
+      appearance:{extras:{}},effects:'res/effects.json',name:{en:'Hull'}},paletteIndex:'res/palette.json'}],
+    ['https://assets.test/res/palette.json',{races:{jove:{preview:{url:'res/preview.json'}}},
+      factions:{upwell:'res/faction.json'},materials:{},materialPrefixes:[],patternPrefixes:[],patternNames:[]}],
+    ['https://assets.test/res/faction.json',{definition:{},colors:[]}],
+    ['https://assets.test/res/effects.json',{version:4,kind:'sof-hull-effects',hull:'cap1_t1',
+      library:{url:'res/library.json'},rules:[],fixed:{booster:{placements:[]}}}],
+    ['https://assets.test/res/library.json',{version:4,
+      factions:{upwell:{url:'res/effect-faction.json'}},races:{jove:{url:'res/effect-race.json'}}}],
+    ['https://assets.test/res/effect-faction.json',{definition:{},colors:[]}],
+    ['https://assets.test/res/effect-race.json',{parameters:{},textures:{},lights:{}}],
+    ['https://assets.test/res/options.json',{modern:true,patterns:{},inserts:{},layout:{images:[],slotMaterials:[],materials:[]}}],
+  ]);
+  const resources=createComponentResources(index,async url=>{
+    if(!records.has(url)) throw Error('Resource unavailable (404): '+url);
+    return structuredClone(records.get(url));
+  });
+  const item=await resources.item(670);
+  const [skin]=await resources.skins(670);
+  const styled=await resources.officialSkin(item,skin);
+  assert.equal(styled.dna,'cap1_t1:upwell:jove:material?none');
 });
 
 
 test('Catalog availability comes from TypeID defaults', async()=>{
   const {joinDirectory}=await import('../../../public/build-directory.mjs');
-  const data=joinDirectory([{id:6,groups:[{id:25,name:{en:'Ships'},items:[{id:8,name:{en:'Ship'}},{id:9}]}]}],
-    {items:{8:{id:8,dna:'hull:faction:race',raceID:4}}},
-    {races:[],factions:[]},()=>({}));
+  const data=joinDirectory({categories:[{id:6,name:{en:'Ship',zh:'舰船'},groups:[{id:25,name:{en:'Ships',zh:'舰船'},
+      items:[[8,'Ship','舰船',52,500003],[9,'Other','另一']]}]}],
+    items:{8:{id:8,dna:'hull:faction:race',raceID:4}},renderFallbacks:{8:8}},
+    {races:[],factions:[{id:500003,name:{en:'Amarr'}}]},()=>({}));
   assert.equal(data.loader.item(8).available,true);
   assert.equal(data.loader.item(8).dna,'hull:faction:race');
+  assert.equal(data.loader.item(8).metaGroupID,52);
+  assert.equal(data.loader.item(8).factionID,500003);
+  assert.deepEqual(data.loader.item(9).name,{en:'Other',zh:'另一'});
   assert.equal(data.loader.item(9).available,false);
+  assert.equal(data.loader.item(9).factionID,undefined);
 });
 
 

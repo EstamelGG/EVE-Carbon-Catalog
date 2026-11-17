@@ -152,9 +152,10 @@ const catalog = createCatalogState({
 let revealedGroup = null;
 let renderFallbacks = {};
 function renderURL(item) {
-  const source = renderFallbacks[item.id];
-  if (typeof source === 'string') return resourceURL(source);
-  return `https://images.evetech.net/types/${source ?? item.id}/render?size=256`;
+  const owner = renderFallbacks[item.id];
+  if (Number.isSafeInteger(owner)) return resourceURL(`res/renders/${owner}.png`);
+  // Items without a published local render keep the official image.
+  return `https://images.evetech.net/types/${item.id}/render?size=256`;
 }
 let data,
   catalogLoader,
@@ -409,6 +410,10 @@ function updateTreeIcons() {
     image.src = url;
   }
 }
+function readyDot(ready, total) {
+  const state = !ready ? 'empty' : ready >= total ? 'complete' : 'partial';
+  return `<span class="group-ready ${state}" title="${t(state === 'complete' ? 'readyAll' : state === 'partial' ? 'readySome' : 'readyNone')}"></span>`;
+}
 function buildTree() {
   const openCategories = new Set(
     [...document.querySelectorAll('.tree-category[open]')].map((el) => Number(el.dataset.category)),
@@ -426,20 +431,19 @@ function buildTree() {
   $('catalog-tree').innerHTML =
     `<button class="group-link all-models-link" data-group="-1">${treeIcon(data.iconTypeID)}<span class="tree-label">${esc(t('allModels'))}</span><span class="tree-count">${fmt(ready)}/${fmt(total)}</span></button>` +
     visibleCategories
-      .map(
-        (
-          cat,
-        ) => `<details class="tree-category" data-category="${cat.id}" ${openCategories.has(cat.id) ? 'open' : ''}>
-    <summary>${icon('chevron')}${treeIcon(cat.iconTypeID)}<span class="tree-label">${esc(localizedName(cat.name))}</span><span class="tree-count">${fmt(cat.groups.reduce((sum, g) => sum + (readyByGroup.get(g.id) || 0), 0))}/${fmt(cat.count)}</span></summary>
+      .map((cat) => {
+        const catReady = cat.groups.reduce((sum, g) => sum + (readyByGroup.get(g.id) || 0), 0);
+        return `<details class="tree-category" data-category="${cat.id}" ${openCategories.has(cat.id) ? 'open' : ''}>
+    <summary>${icon('chevron')}${treeIcon(cat.iconTypeID)}<span class="tree-label">${esc(localizedName(cat.name))}</span>${readyDot(catReady, cat.count)}<span class="tree-count">${fmt(catReady)}/${fmt(cat.count)}</span></summary>
     <div class="tree-groups">${[...cat.groups]
       .sort((a, b) => (readyByGroup.get(b.id) || 0) - (readyByGroup.get(a.id) || 0))
       .map(
         (g) =>
-          `<button class="group-link" data-group="${g.id}" title="${esc(localizedName(g.name))} · ${esc(t('items', { count: fmt(g.count) }))}">${treeIcon(g.iconTypeID)}<span class="tree-label">${esc(localizedName(g.name))}</span>${readyByGroup.has(g.id) ? `<span class="group-ready" title="${t('ready')}"></span>` : ''}<span class="tree-count">${fmt(readyByGroup.get(g.id) || 0)}/${fmt(g.count)}</span></button>`,
+          `<button class="group-link" data-group="${g.id}" title="${esc(localizedName(g.name))} · ${esc(t('items', { count: fmt(g.count) }))}">${treeIcon(g.iconTypeID)}<span class="tree-label">${esc(localizedName(g.name))}</span>${readyDot(readyByGroup.get(g.id) || 0, g.count)}<span class="tree-count">${fmt(readyByGroup.get(g.id) || 0)}/${fmt(g.count)}</span></button>`,
       )
       .join('')}</div>
-  </details>`,
-      )
+  </details>`;
+      })
       .join('');
   $('catalog-tree').scrollTop = treeScroll;
   updateTreeIcons();
@@ -550,11 +554,18 @@ function detailList() {
     : data.items.filter((i) => i.available);
 }
 
+function loadRendererModule() {
+  rendererModule ??= import(rendererModuleURL).catch((error) => {
+    rendererModule = undefined;
+    throw error;
+  });
+  return rendererModule;
+}
+
 async function openItem(id, route = true, dna = '') {
   const revision = ++detailRevision;
   try {
-    rendererModule ??= import(rendererModuleURL).catch(error => { rendererModule = undefined; throw error; });
-    await rendererModule;
+    await loadRendererModule();
   } catch (error) {
     console.error(error);
     $('model-index-status').textContent = t('rendererUnavailable');
@@ -846,13 +857,16 @@ async function loadModelIndex(url, signal) {
   const response = await fetch(url, { cache: 'no-cache', signal });
   if (!response.ok) throw new Error(t('resIndexHttp', { status: response.status }));
   const header = await response.json();
-  if (header?.version !== 4 || typeof header.directory !== 'string' || !header.directory.startsWith('res/'))
+  if (header?.version !== 4 || typeof header.catalog !== 'string' || !header.catalog.startsWith('res/'))
     throw new Error(t('resIndexFormat'));
-  const directory = await fetch(new URL(header.directory.slice(4), url), { signal });
-  if (!directory.ok) throw new Error(t('resIndexHttp', { status: directory.status }));
-  const index = await directory.json();
-  if (!index?.items || typeof index.items !== 'object' || Array.isArray(index.items) ||
-      Object.values(index.items).some(item => !Number.isSafeInteger(item?.id) || typeof item.dna !== 'string'))
+  const catalogResponse = await fetch(new URL(header.catalog.slice(4), url), { signal });
+  if (!catalogResponse.ok)
+    throw new Error(t('resIndexHttp', { status: catalogResponse.status }));
+  const index = await catalogResponse.json();
+  if (!Array.isArray(index?.categories) || !index.items || typeof index.items !== 'object' ||
+      Array.isArray(index.items) ||
+      Object.entries(index.items).some(([key, item]) =>
+        !item || typeof item.dna !== 'string' || !Number.isSafeInteger(Number(key))))
     throw new Error(t('resIndexFormat'));
   return index;
 }
@@ -963,13 +977,11 @@ async function init() {
       viewerConfig.killCount = Number(localStorage.getItem('viewer.killCount')) || 0;
     } catch {}
     const pendingInventory = Promise.allSettled([loadModelIndex(modelIndex)]);
-    const [identities, directory] = await Promise.all([
-      loadJSON('./icons/identities.json?v=sde-factions-20261103'), loadJSON('./catalog.json'),
-    ]);
+    const identities = await loadJSON('./icons/identities.json?v=races-factions-1');
     const affiliation = createAffiliationResolver(identities);
     const applyInventory = inventory => {
       renderFallbacks = inventory?.renderFallbacks || {};
-      data = joinDirectory(directory, inventory, identities, affiliation);
+      data = joinDirectory(inventory, identities, affiliation);
       catalogLoader = data.loader;
       groupsByID = new Map(data.categories.flatMap(c => c.groups.map(g => [g.id, {...g,category:c}])));
     };
@@ -979,6 +991,7 @@ async function init() {
     buildTree();
     setupEvents();
     await render();
+    loadRendererModule().catch(() => {});
     try {
       const [inventory] = await pendingInventory;
       if (inventory.status === 'rejected') throw inventory.reason;
