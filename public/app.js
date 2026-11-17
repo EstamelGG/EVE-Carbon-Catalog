@@ -173,6 +173,10 @@ const viewer = $('catalog-viewer');
 let viewerConfig = {};
 const subsystemSelections = new Map();
 let loadedDNA = '';
+let dnaRecipes;
+const dnaPalettes = new Map();
+let dnaEditorRequest = 0,
+  dnaEditorDNA = '';
 viewer.addEventListener('load', (event) => {
   if (event.detail.itemId !== currentItem?.id) return;
   loadedDNA = event.detail.dna || '';
@@ -620,15 +624,79 @@ async function openItem(id, route = true, dna = '') {
   if (!dna) showModel(currentItem);
 }
 
+// Only hulls with a published recipe can be rebuilt from an edited DNA.
+// Assembled subsystem hulls need their parts, so their DNA is read-only.
+function dnaRecipeKey(dna) {
+  if (typeof dna !== 'string' || !dna.includes(':')) return '';
+  const hull = dna.slice(0, dna.indexOf(':'));
+  if (!hull || hull.includes(';')) return '';
+  return Object.hasOwn(dnaRecipes || {}, hull) ? hull : '';
+}
+
 function renderDetailDNA() {
   const dna = loadedDNA || catalog.state.dna || currentItem?.dna || '';
   const label = $('detail-dna'), copy = $('copy-dna'), edit = $('edit-dna');
   label.textContent = dna ? `DNA: ${dna}` : '';
   label.title = dna;
-  label.hidden = copy.hidden = edit.hidden = !dna;
+  label.hidden = copy.hidden = !dna;
+  edit.hidden = !dnaRecipeKey(dna);
   copy.textContent = t('copyDNA');
-  if (dna) edit.href = './dna-editor.html?' + new URLSearchParams({ dna });
-  else edit.removeAttribute('href');
+}
+
+function dnaPalette(hull) {
+  if (!dnaPalettes.has(hull)) {
+    const request = (async () => {
+      const recipe = await loadJSON(resourceURL(dnaRecipes[hull]));
+      return loadJSON(resourceURL(recipe.paletteIndex));
+    })().catch((error) => {
+      dnaPalettes.delete(hull);
+      throw error;
+    });
+    dnaPalettes.set(hull, request);
+  }
+  return dnaPalettes.get(hull);
+}
+
+function fillDNAChoices(select, values, current) {
+  const choices = [...new Set(values)].sort();
+  if (current && !choices.includes(current)) choices.unshift(current);
+  select.replaceChildren(...choices.map((value) => new Option(value, value)));
+  if (current) select.value = current;
+}
+
+async function openDNAEditor() {
+  const dna = $('detail-dna').title, hull = dnaRecipeKey(dna);
+  if (!hull) return;
+  const parts = dna.split(':'), request = ++dnaEditorRequest;
+  dnaEditorDNA = dna;
+  $('dna-faction').replaceChildren();
+  $('dna-race').replaceChildren();
+  $('apply-dna').disabled = true;
+  $('dna-status').textContent = t('loading');
+  if (!$('dna-dialog').open) $('dna-dialog').showModal();
+  try {
+    const palette = await dnaPalette(hull);
+    if (request !== dnaEditorRequest || !$('dna-dialog').open) return;
+    fillDNAChoices($('dna-faction'), Object.keys(palette.factions || {}), parts[1]);
+    fillDNAChoices($('dna-race'), Object.keys(palette.races || {}), parts[2]);
+    $('dna-status').textContent = '';
+    $('apply-dna').disabled = false;
+  } catch (error) {
+    if (request === dnaEditorRequest) $('dna-status').textContent = t('dnaOptionsFailed');
+    console.error(error);
+  }
+}
+
+function applyDNA() {
+  const parts = dnaEditorDNA.split(':'), faction = $('dna-faction').value, race = $('dna-race').value;
+  if (parts.length < 3 || !faction || !race || !currentItem) return;
+  const dna = [parts[0], faction, race, ...parts.slice(3)].join(':');
+  $('dna-dialog').close();
+  loadedDNA = dna;
+  catalog.update({ dna });
+  saveRoute(true);
+  renderDetailDNA();
+  showModel(currentItem, dna);
 }
 
 $('copy-dna').onclick = async () => {
@@ -711,6 +779,7 @@ async function toggleViewerExpanded() {
 function closeDetail(route = true) {
   setViewerExpanded(false);
   if (document.fullscreenElement === $('model-dialog')) document.exitFullscreen().catch(() => {});
+  if ($('dna-dialog').open) $('dna-dialog').close();
   ++detailRevision;
 
   if ($('model-dialog').open) {
@@ -783,6 +852,15 @@ function setupEvents() {
   });
   $('viewer-performance').addEventListener('click', () => $('catalog-viewer').showPerformance());
   $('close-dialog').addEventListener('click', () => closeDetail());
+  $('edit-dna').addEventListener('click', openDNAEditor);
+  $('close-dna').addEventListener('click', () => $('dna-dialog').close());
+  $('dna-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    applyDNA();
+  });
+  $('dna-dialog').addEventListener('close', () => {
+    dnaEditorRequest++;
+  });
   $('model-dialog').addEventListener('cancel', (event) => {
     event.preventDefault();
     if ($('model-dialog').classList.contains('viewer-expanded')) toggleViewerExpanded();
@@ -868,7 +946,7 @@ async function loadModelIndex(url, signal) {
       Object.entries(index.items).some(([key, item]) =>
         !item || typeof item.dna !== 'string' || !Number.isSafeInteger(Number(key))))
     throw new Error(t('resIndexFormat'));
-  return index;
+  return { index, recipes: header.dnaRecipes || {} };
 }
 
 function resetResCheck() {
@@ -980,10 +1058,12 @@ async function init() {
     const identities = await loadJSON('./icons/identities.json?v=races-factions-1');
     const affiliation = createAffiliationResolver(identities);
     const applyInventory = inventory => {
-      renderFallbacks = inventory?.renderFallbacks || {};
-      data = joinDirectory(inventory, identities, affiliation);
+      renderFallbacks = inventory?.index?.renderFallbacks || {};
+      dnaRecipes = inventory?.recipes || {};
+      data = joinDirectory(inventory?.index, identities, affiliation);
       catalogLoader = data.loader;
       groupsByID = new Map(data.categories.flatMap(c => c.groups.map(g => [g.id, {...g,category:c}])));
+      if (currentItem) renderDetailDNA();
     };
     applyInventory(null);
     racesByID = new Map(data.races.map((r) => [r.id, r]));

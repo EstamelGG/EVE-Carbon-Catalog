@@ -1,7 +1,6 @@
 const appTitle = "{{appTitle}}";
 
 export const messages = {
-  dnaRecipes: ['DNA 配方', 'DNA recipes'],
   catalogSettings: ['设置', 'Settings'],
   closeSettings: ['关闭设置', 'Close settings'],
   resBaseLabel: ['模型索引 URL', 'Model index URL'],
@@ -144,6 +143,10 @@ export const messages = {
   copyName: ['复制名称', 'Copy name'],
   copyDNA: ['复制 DNA', 'Copy DNA'],
   dnaEditor: ['DNA 编辑器', 'DNA editor'],
+  dnaRace: ['种族', 'Race'],
+  applyDNA: ['应用 DNA', 'Apply DNA'],
+  closeDNA: ['关闭 DNA 编辑器', 'Close DNA editor'],
+  dnaOptionsFailed: ['无法读取此舰体的 DNA 选项。', 'Could not load the DNA options for this hull.'],
   dnaSelected: ['请手动复制', 'Copy selection'],
   nameCopied: ['已复制', 'Copied'],
   copyNameFailed: ['复制失败，请选中名称手动复制。', 'Could not copy. Select the name and copy it manually.'],

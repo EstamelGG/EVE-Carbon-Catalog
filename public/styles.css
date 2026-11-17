@@ -191,6 +191,34 @@ svg {
 #catalog-settings button {
   justify-self: end;
 }
+#dna-dialog {
+  width: min(360px, calc(100vw - 32px));
+}
+#dna-form {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+}
+#dna-form select {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+}
+#dna-form button {
+  margin-top: 10px;
+  border-color: var(--line);
+  justify-self: end;
+}
+#dna-status {
+  margin: 0;
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: 12px;
+}
 #about-dialog {
   width: min(540px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
