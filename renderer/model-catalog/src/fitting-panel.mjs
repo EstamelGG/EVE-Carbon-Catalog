@@ -1,7 +1,7 @@
 import { loadJSON } from './resource-activity.mjs';
 import { resourceURL } from './resource-location.mjs';
 import { loadFittingData } from './fitting-data.mjs';
-import { uniqueEquipmentAssets } from './fitting-directory.mjs';
+import { uniqueEquipmentModels } from './fitting-directory.mjs';
 import { hardpointFamilies } from './hardpoint-locators.mjs';
 
 export function createFittingPanel({
@@ -286,7 +286,7 @@ export function createFittingPanel({
     if (!query) {
       groupEntries = groupEntries.map(([groupID, items]) => [
         groupID,
-        uniqueEquipmentAssets(items),
+        uniqueEquipmentModels(items),
       ]);
     }
     groupEntries.sort(([a], [b]) => Number(a) - Number(b));
