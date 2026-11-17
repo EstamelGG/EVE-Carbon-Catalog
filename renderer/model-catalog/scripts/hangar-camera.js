@@ -72,7 +72,10 @@ export function createHangarCamera(viewer,scene,controls){
   if(!Number.isFinite(limit))limit=radius;
   if(safeRadius===null||!Number.isFinite(safeRadius))safeRadius=limit;
   if(lastFrame!==scene.renderCount){
-   const now=performance.now(),elapsed=Math.max(0,now-lastTime);lastTime=now;lastFrame=scene.renderCount;
+   const now=performance.now(),measured=Number.isFinite(now)?now-lastTime:0;
+   const elapsed=Number.isFinite(measured)?Math.max(0,measured):0;
+   if(Number.isFinite(now))lastTime=now;
+   lastFrame=scene.renderCount;
    // A newly reached wall takes effect immediately. On release follow the
    // viewer's configured camera decay, snapping once the remaining distance
    // is below half a vertical pixel at the requested distance.

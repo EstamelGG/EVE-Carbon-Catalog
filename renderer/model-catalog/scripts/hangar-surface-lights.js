@@ -93,7 +93,8 @@ export function installHangarSurfaceLights(scene,root,packed,doc=globalThis.docu
   let initialized=false;
   const previousRoot=new Matrix4();
   const stop=beforeSceneRender(scene,camera=>{
-    const seconds=(now()-start)/1000;
+    const current=now(),elapsed=(current-start)/1000;
+    const seconds=Number.isFinite(elapsed)?Math.max(0,elapsed):0;
     animation.evaluate(seconds);
     camera.getWorldPosition(eye);camera.getWorldQuaternion(rotation);inverse.copy(root.matrixWorld).invert();cache.begin();
     const rootChanged=!initialized || !previousRoot.equals(root.matrixWorld);

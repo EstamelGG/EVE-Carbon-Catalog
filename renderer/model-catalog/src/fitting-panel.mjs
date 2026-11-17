@@ -1,6 +1,8 @@
 import { loadJSON } from './resource-activity.mjs';
 import { resourceURL } from './resource-location.mjs';
-import {loadFittingData} from './fitting-data.mjs';
+import { loadFittingData } from './fitting-data.mjs';
+import { uniqueEquipmentAssets } from './fitting-directory.mjs';
+import { hardpointFamilies } from './hardpoint-locators.mjs';
 
 export function createFittingPanel({
   root,
@@ -17,25 +19,29 @@ export function createFittingPanel({
 }) {
   const $ = (id) => root.querySelector('#' + id),
     saved = new Map(),
-    rows = new Map(),
-    focusButtons = new Map();
+    equipmentButtons = new Map();
   let active = false,
-    showMounts = false,
     context = null,
     generation = 0,
     pending = null,
     dataPromise = new Map(),
     data = null,
-    limit = 40,
-    selectedCategory = null,
-    operation = null;
+    operation = null,
+    expandedGroups = new Set(),
+    directoryQuery = '';
   let statusKey = 'fittingHint',
     statusValues;
   let lastEquipment = readRecent();
   const valid = (c) => context === c && currentViewer() === c.viewer && currentItem() === c.item;
   function state(id) {
     if (!saved.has(id))
-      saved.set(id, { choices: new Map(), slot: null, deployed: true, undo: null });
+      saved.set(id, {
+        choices: new Map(),
+        slot: null,
+        targeted: false,
+        deployed: true,
+        undo: null,
+      });
     return saved.get(id);
   }
   const busy = () => operation?.context === context;
@@ -44,7 +50,9 @@ export function createFittingPanel({
       statusKey = key;
       statusValues = values;
     }
-    $('fitting-status').textContent = t(statusKey, statusValues);
+    const node = $('fitting-status');
+    node.textContent = t(statusKey, statusValues);
+    node.dataset.kind = statusKey;
   }
   function loadingTask(title) {
     const task = loading?.beginTask(title);
@@ -52,14 +60,81 @@ export function createFittingPanel({
     task?.progress(2);
     return task;
   }
-  async function mountData(viewer) {
-    return loadData();
+  function equipmentItem(id) {
+    return data?.equipment.find((item) => item.id === Number(id));
   }
-  function loadData() {
-    const item=currentItem(), key=JSON.stringify([item?.fitting,item?.dna]);
-    if(!dataPromise.has(key))dataPromise.set(key,loadFittingData(item,loadResource).catch(error=>{
-      dataPromise.delete(key);throw error;
-    }));
+  function animateCategoryLabels(host) {
+    const labels = [...host.querySelectorAll('.fitting-category-label')];
+    requestAnimationFrame(() => {
+      for (const label of labels) {
+        const text = label.firstElementChild;
+        if (!label.isConnected || !text) continue;
+        const overflow = text.scrollWidth - label.clientWidth;
+        if (overflow <= 1) continue;
+        text.style.setProperty('--category-scroll-distance', `-${overflow + 4}px`);
+        text.style.animationDuration = `${Math.max(2400, Math.min(6000, overflow * 48))}ms`;
+        text.classList.add('is-scrolling');
+      }
+    });
+  }
+  function canFitSlot(slot, id) {
+    const fitting = context?.viewer.fitting,
+      item = equipmentItem(id);
+    return !busy() && !!fitting && !!item && fitting.canFit(slot, item);
+  }
+  function hasCompatibleTarget(id) {
+    const fitting = context?.viewer.fitting,
+      item = equipmentItem(id);
+    return (
+      !!fitting &&
+      !!item &&
+      fitting.slots.some(
+        (definition) =>
+          definition.available !== false && fitting.canFit(definition.slot, item),
+      )
+    );
+  }
+  function autoSlot(id) {
+    const fitting = context?.viewer.fitting,
+      item = equipmentItem(id);
+    if (!fitting || !item) return null;
+    const available = fitting.slots.filter((definition) => definition.available !== false),
+      ordered = [
+        ...available.filter((definition) => !fitting.get(definition.slot)),
+        ...available,
+      ],
+      unique = new Set();
+    for (const definition of ordered) {
+      if (unique.has(definition.slot)) continue;
+      unique.add(definition.slot);
+      if (fitting.canFit(definition.slot, item)) return definition.slot;
+    }
+    return null;
+  }
+  function viewerHardpoints(viewer) {
+    return (
+      (viewer?.appearanceDocument || viewer?.originalGltfJson)?.extras?.ccpdec
+        ?.locators?.hardpoints || []
+    );
+  }
+  async function mountData(viewer) {
+    return loadData(viewerHardpoints(viewer));
+  }
+  function loadData(hardpoints = []) {
+    const item = currentItem(),
+      key = JSON.stringify([
+        item?.fitting,
+        item?.dna,
+        hardpointFamilies(hardpoints),
+      ]);
+    if (!dataPromise.has(key))
+      dataPromise.set(
+        key,
+        loadFittingData(item, loadResource, hardpoints).catch((error) => {
+          dataPromise.delete(key);
+          throw error;
+        }),
+      );
     return dataPromise.get(key);
   }
   function totals() {
@@ -68,71 +143,236 @@ export function createFittingPanel({
     else if (fitting)
       status('fittingReady', { groups: fitting.slots.length, count: fitting.count });
   }
-  function closePicker(restore = false) {
-    const picker = $('fitting-picker');
-    picker.hidden = true;
-    $('fitting-picker-home').append(picker);
-    for (const button of rows.values()) button.setAttribute('aria-expanded', 'false');
-    if (restore && context) rows.get(state(context.item.id).slot)?.focus({ preventScroll: true });
+  function equipmentIcon(item) {
+    const frame = document.createElement('span');
+    frame.className = 'fitting-equipment-icon';
+    frame.setAttribute('aria-hidden', 'true');
+    if (item) {
+      const image = document.createElement('img');
+      image.src = `https://images.evetech.net/types/${item.id}/icon?size=64`;
+      image.alt = '';
+      image.width = 32;
+      image.height = 32;
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.onerror = () => {
+        image.hidden = true;
+      };
+      frame.append(image);
+    } else frame.textContent = '+';
+    return frame;
+  }
+  function renderSlots() {
+    const fitting = context?.viewer.fitting,
+      host = $('fitting-slots');
+    if (!fitting) {
+      host.replaceChildren();
+      return;
+    }
+    const s = state(context.item.id);
+    host.replaceChildren(
+      ...fitting.slots.map((definition) => {
+        const item = equipmentItem(fitting.get(definition.slot)?.id),
+          count = fitting.activeMounts(definition.slot).length,
+          number = String(definition.slot).padStart(2, '0'),
+          shell = document.createElement('div'),
+          target = document.createElement('button'),
+          numberNode = document.createElement('span'),
+          countNode = document.createElement('span');
+        shell.className = 'fitting-slot-shell';
+        target.type = 'button';
+        target.className = 'fitting-slot-target';
+        target.classList.toggle('is-empty', !item);
+        target.classList.toggle('is-installed', !!item);
+        target.disabled = busy() || definition.available === false;
+        target.setAttribute('aria-current', String(s.slot === definition.slot));
+        target.classList.toggle(
+          'is-targeted',
+          s.targeted && s.slot === definition.slot,
+        );
+        const description =
+          t('fittingSlot', { slot: number, count }) +
+          ' · ' +
+          (item ? name(item.name) : t('fittingEmpty'));
+        target.setAttribute('aria-label', description);
+        target.title = description;
+        numberNode.className = 'fitting-slot-number';
+        numberNode.textContent = number;
+        countNode.className = 'fitting-slot-count';
+        countNode.textContent = count > 1 ? `×${count}` : '';
+        target.append(numberNode, equipmentIcon(item), countNode);
+        target.addEventListener('click', () => {
+          if (busy()) return;
+          if (s.targeted && s.slot === definition.slot) s.targeted = false;
+          else {
+            s.slot = definition.slot;
+            s.targeted = true;
+          }
+          fitting.previewSlot?.(s.targeted ? definition.slot : null);
+          if (item) fitting.focusSlot?.(definition.slot);
+          refreshRows();
+        });
+        target.addEventListener('pointerenter', () => {
+          if (active) fitting.previewSlot?.(definition.slot);
+        });
+        target.addEventListener('pointerleave', () => fitting.previewSlot?.(null));
+        shell.append(target);
+        if (item) {
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'fitting-slot-remove';
+          remove.textContent = '×';
+          remove.title = t('fittingRemove');
+          remove.setAttribute('aria-label', t('fittingRemove'));
+          remove.disabled = busy();
+          remove.addEventListener('click', () => {
+            state(context.item.id).targeted = false;
+            void applyEquipment(definition.slot, null);
+          });
+          shell.append(remove);
+        }
+        return shell;
+      }),
+    );
   }
   function refreshRows() {
-    if (!context?.viewer.fitting) return;
-    const fitting = context.viewer.fitting,
-      s = state(context.item.id);
-    for (const [slot, button] of rows) {
-      const item = data.equipment.find((e) => e.id === s.choices.get(slot)),
-        definition = fitting.slots.find((s) => s.slot === slot);
-      const count = fitting.activeMounts(slot).length,
-        number = String(slot).padStart(2, '0');
-      const description =
-        t('fittingSlot', { slot: number, count }) +
-        ' · ' +
-        (item ? name(item.name) : t('fittingEmpty'));
-      button.dataset.count = String(count);
-      button.dataset.equipment = String(item?.id ?? '');
-      button.setAttribute('aria-label', description);
-      button.title = description;
-      button.setAttribute('aria-current', String(s.slot === slot));
-      button.disabled = busy() || definition.available === false;
-      const focus = focusButtons.get(slot);
-      focus.hidden = !item;
-      focus.disabled = busy() || !item;
-      focus.title = t(count > 1 ? 'fittingFocusCycle' : 'fittingFocus', {
-        name: item ? name(item.name) : '',
-      });
-      focus.setAttribute('aria-label', focus.title);
-      const id = document.createElement('span');
-      id.className = 'fitting-row-number';
-      id.textContent = number;
-      const text = document.createElement('span');
-      text.className = 'fitting-row-text';
-      const label = document.createElement('span');
-      label.className = 'fitting-row-name';
-      label.textContent = item
-        ? name(item.name)
-        : t(definition.available === false ? 'fittingNoCompatible' : 'fittingChooseEquipment');
-      text.append(label);
-      const arrow = document.createElement('span');
-      arrow.className = 'fitting-row-arrow';
-      arrow.setAttribute('aria-hidden', 'true');
-      arrow.textContent = '⌄';
-      button.replaceChildren(id, equipmentIcon(item), text, arrow);
-    }
+    const fitting = context?.viewer.fitting;
+    if (!fitting) return;
+    const s = state(context.item.id);
+    $('fitting-target-label').textContent = s.targeted
+      ? t('fittingTargetSlot', { slot: String(s.slot).padStart(2, '0') })
+      : t('fittingTargetAuto');
+    $('fitting-target-auto').hidden = !s.targeted;
+    $('fitting-browser').classList.toggle('is-auto-target', !s.targeted);
     $('fitting-undo').disabled = busy() || !s.undo;
     $('fitting-clear-all').disabled =
       busy() || !fitting.slots.some(({ slot }) => fitting.get(slot));
+    renderSlots();
+    const installed = new Set(s.choices.values());
+    for (const [id, button] of equipmentButtons) {
+      button.disabled = busy() || !hasCompatibleTarget(id);
+      button.setAttribute('aria-pressed', String(installed.has(id)));
+    }
   }
-  function selectSlot(slot, { open = false } = {}) {
-    const fitting = context?.viewer.fitting;
-    if (busy() || !fitting?.slots.some((s) => s.slot === slot && s.available !== false))
-      return false;
-    const s = state(context.item.id),
-      alreadyOpen = s.slot === slot && !$('fitting-picker').hidden;
-    s.slot = slot;
-    if (!alreadyOpen) closePicker();
+  async function renderDirectory() {
+    const categoriesHost = $('fitting-category'),
+      empty = $('fitting-results-empty'),
+      fitting = context?.viewer.fitting;
+    equipmentButtons.clear();
+    if (!fitting || !data) {
+      categoriesHost.replaceChildren();
+      empty.hidden = true;
+      return;
+    }
+    const query = $('fitting-search').value.trim().toLowerCase(),
+      matching = data.equipment
+        .filter((item) =>
+          fitting.supports ? fitting.supports(item) : hasCompatibleTarget(item.id),
+        )
+        .filter(
+          (item) =>
+            !query ||
+            `${item.id} ${item.name?.zh} ${item.name?.en} ${name(item.name)}`
+              .toLowerCase()
+              .includes(query),
+        )
+        .sort((a, b) => a.id - b.id);
+    let groups = new Map();
+    for (const item of matching) {
+      if (!groups.has(item.groupID)) groups.set(item.groupID, []);
+      groups.get(item.groupID).push(item);
+    }
+    let groupEntries = [...groups.entries()];
+    if (!query) {
+      groupEntries = groupEntries.map(([groupID, items]) => [
+        groupID,
+        uniqueEquipmentAssets(items),
+      ]);
+    }
+    groupEntries.sort(([a], [b]) => Number(a) - Number(b));
+    if (query !== directoryQuery) {
+      if (query) {
+        for (const [groupID] of groupEntries) expandedGroups.add(groupID);
+      } else expandedGroups.clear();
+      directoryQuery = query;
+    }
+    const s = state(context.item.id);
+    const equipmentButton = (item) => {
+      const button = document.createElement('button'),
+        text = document.createElement('span'),
+        id = document.createElement('small');
+      button.type = 'button';
+      button.dataset.item = String(item.id);
+      text.textContent = name(item.name);
+      id.textContent = item.id === lastEquipment ? t('fittingLastChoice') : `#${item.id}`;
+      button.append(equipmentIcon(item), text, id);
+      button.title = name(item.name);
+      button.addEventListener('click', () => {
+        if (busy()) return;
+        const target = s.targeted
+          ? canFitSlot(s.slot, item.id)
+            ? s.slot
+            : null
+          : autoSlot(item.id);
+        if (target == null) {
+          status(s.targeted ? 'fittingNoCompatible' : 'fittingNoFreeMount');
+          return;
+        }
+        s.targeted = false;
+        void applyEquipment(target, item.id);
+      });
+      equipmentButtons.set(item.id, button);
+      return button;
+    };
+    const groupSection = (groupID, items, label) => {
+      const section = document.createElement('section'),
+        button = document.createElement('button'),
+        labelNode = document.createElement('span'),
+        labelText = document.createElement('span'),
+        countNode = document.createElement('small'),
+        chevron = document.createElement('span'),
+        itemHost = document.createElement('div'),
+        expanded = expandedGroups.has(groupID),
+        count = items.length,
+        firstItem = items[0];
+      section.className = 'fitting-category-group';
+      button.type = 'button';
+      button.className = 'fitting-category-chip';
+      button.setAttribute('aria-expanded', String(expanded));
+      button.setAttribute('aria-label', `${label} (${count})`);
+      button.title = label;
+      labelNode.className = 'fitting-category-label';
+      labelText.className = 'fitting-category-label-text';
+      labelText.textContent = label;
+      labelNode.append(labelText);
+      countNode.textContent = String(count);
+      chevron.className = 'fitting-category-chevron';
+      chevron.textContent = '›';
+      chevron.setAttribute('aria-hidden', 'true');
+      itemHost.className = 'fitting-results fitting-category-items';
+      itemHost.id = `fitting-group-${groupID}`;
+      itemHost.hidden = !expanded;
+      itemHost.replaceChildren(...items.map(equipmentButton));
+      button.setAttribute('aria-controls', itemHost.id);
+      button.append(equipmentIcon(firstItem), labelNode, countNode, chevron);
+      button.addEventListener('click', () => {
+        const open = button.getAttribute('aria-expanded') !== 'true';
+        button.setAttribute('aria-expanded', String(open));
+        itemHost.hidden = !open;
+        if (open) expandedGroups.add(groupID);
+        else expandedGroups.delete(groupID);
+      });
+      section.append(button, itemHost);
+      return section;
+    };
+    categoriesHost.replaceChildren(
+      ...groupEntries.map(([groupID, items]) =>
+        groupSection(groupID, items, groupName(groupID)),
+      ),
+    );
+    animateCategoryLabels(categoriesHost);
+    empty.hidden = groupEntries.length > 0;
     refreshRows();
-    if (open && !alreadyOpen) openPicker();
-    return true;
   }
   async function change(c, slot, id) {
     if (!valid(c)) return false;
@@ -155,11 +395,11 @@ export function createFittingPanel({
     if (!c || busy() || slot == null) return;
     const s = state(c.item.id),
       previous = c.viewer.fitting.get(slot)?.id ?? null;
+    s.targeted = false;
     c.viewer.fitting.previewSlot?.(null);
     s.slot = slot;
     const current = { context: c };
     operation = current;
-    closePicker(true);
     refreshRows();
     status('fittingLoading');
     const task = id == null ? null : loadingTask('fittingLoading');
@@ -198,8 +438,8 @@ export function createFittingPanel({
       ),
     );
     if (!undo && !previous.size) return;
+    s.targeted = false;
     fitting.previewSlot?.(null);
-    closePicker();
     const current = { context: c };
     operation = current;
     refreshRows();
@@ -225,170 +465,12 @@ export function createFittingPanel({
       console.warn(error);
     } else totals();
   }
-  function equipmentIcon(item) {
-    const frame = document.createElement('span');
-    frame.className = 'fitting-equipment-icon';
-    frame.setAttribute('aria-hidden', 'true');
-    if (item) {
-      const image = document.createElement('img');
-      image.src = `https://images.evetech.net/types/${item.id}/icon?size=64`;
-      image.alt = '';
-      image.width = 32;
-      image.height = 32;
-      image.loading = 'lazy';
-      image.decoding = 'async';
-      image.onerror = () => {
-        image.hidden = true;
-      };
-      frame.append(image);
-    } else frame.textContent = '−';
-    return frame;
-  }
-  function results() {
-    if (!context) return;
-    const query = $('fitting-search').value.trim().toLowerCase();
-    const slot = state(context.item.id).slot,
-      choices = state(context.item.id).choices;
-    const fitting = context.viewer.fitting;
-    const available = data.equipment.filter(
-      (e) => slot != null && (fitting.supports ? fitting.supports(e) : fitting.canFit(slot, e)),
-    );
-    const recent = data.equipment.find((e) => e.id === lastEquipment),
-      recentRow = $('fitting-recent');
-    recentRow.replaceChildren();
-    recentRow.hidden = !recent;
-    if (recent) {
-      const compatible = available.some((e) => e.id === recent.id) && fitting.canFit(slot, recent),
-        button = document.createElement('button'),
-        text = document.createElement('span');
-      const caption = document.createElement('small'),
-        label = document.createElement('span');
-      caption.textContent = t('fittingLastChoice');
-      label.textContent = name(recent.name);
-      text.className = 'fitting-recent-text';
-      text.append(caption, label);
-      button.type = 'button';
-      button.dataset.item = String(recent.id);
-      button.disabled = !compatible;
-      button.title =
-        t('fittingLastChoice') +
-        ' · ' +
-        name(recent.name) +
-        (compatible ? '' : ' · ' + t('fittingNoCompatible'));
-      button.setAttribute('aria-label', button.title);
-      button.setAttribute('aria-pressed', String(choices.get(slot) === recent.id));
-      button.append(equipmentIcon(recent), text);
-      button.onclick = () => {
-        if (compatible) void applyEquipment(slot, recent.id);
-      };
-      recentRow.append(button);
-    }
-    const groups = new Map();
-    for (const item of available) {
-      if (!groups.has(item.groupID)) groups.set(item.groupID, []);
-      groups.get(item.groupID).push(item);
-    }
-    if (!groups.has(selectedCategory)) selectedCategory = null;
-    const browsing = selectedCategory === null && !query;
-    const categories = [...groups.keys()].sort((a, b) =>
-      String(groupName(a)).localeCompare(String(groupName(b))),
-    );
-    $('fitting-category').replaceChildren();
-    if (browsing) {
-      for (const id of categories) {
-        const items = groups.get(id),
-          button = document.createElement('button'),
-          label = document.createElement('span'),
-          count = document.createElement('small');
-        button.type = 'button';
-        button.dataset.group = String(id);
-        label.textContent = groupName(id);
-        count.textContent = String(items.length);
-        button.append(equipmentIcon(items[0]), label, count);
-        button.onclick = () => {
-          selectedCategory = id;
-          limit = 40;
-          results();
-          $('fitting-category').querySelector('button')?.focus();
-        };
-        $('fitting-category').append(button);
-      }
-    } else {
-      const back = document.createElement('button');
-      back.type = 'button';
-      back.className = 'fitting-group-back';
-      back.textContent = '‹ ' + t('fittingAllCategories');
-      back.onclick = () => {
-        selectedCategory = null;
-        $('fitting-search').value = '';
-        limit = 40;
-        results();
-        $('fitting-category').querySelector('button')?.focus();
-      };
-      $('fitting-category').append(back);
-      if (selectedCategory !== null) {
-        const heading = document.createElement('strong');
-        heading.className = 'fitting-group-title';
-        heading.textContent = groupName(selectedCategory);
-        $('fitting-category').append(heading);
-      }
-    }
-    const matches = available.filter(
-      (e) =>
-        (selectedCategory === null || e.groupID === selectedCategory) &&
-        (!query ||
-          `${e.id} ${e.name?.zh} ${e.name?.en} ${name(e.name)}`.toLowerCase().includes(query)),
-    );
-    $('fitting-results').replaceChildren(
-      ...[null, ...(browsing ? [] : matches.slice(0, limit))].map((item) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        const label = document.createElement('span'),
-          id = document.createElement('small');
-        label.textContent = item ? name(item.name) : t('fittingEmpty');
-        id.textContent = item ? String(item.id) : '—';
-        button.append(equipmentIcon(item), label, id);
-        if (item) button.dataset.item = String(item.id);
-        const compatible = !item || fitting.canFit(slot, item);
-        button.disabled = !compatible;
-        if (!compatible) button.title = t('fittingNoFreeMount');
-        button.setAttribute(
-          'aria-pressed',
-          String((choices.get(slot) ?? null) === (item?.id ?? null)),
-        );
-        button.onclick = () => {
-          if (compatible) void applyEquipment(slot, item?.id ?? null);
-        };
-        return button;
-      }),
-    );
-    $('fitting-results-empty').hidden = matches.length > 0;
-    $('fitting-more').hidden = browsing || matches.length <= limit;
-  }
-  function openPicker() {
-    if (busy() || !context) return;
-    const slot = state(context.item.id).slot,
-      button = rows.get(slot);
-    if (!button || button.disabled) return;
-    limit = 40;
-    selectedCategory = null;
-    button.parentElement.after($('fitting-picker'));
-    $('fitting-picker').hidden = false;
-    button.setAttribute('aria-expanded', 'true');
-    $('fitting-picker-title').textContent = t('fittingChoose', {
-      slot: String(slot).padStart(2, '0'),
-    });
-    $('fitting-search').value = '';
-    results();
-    $('fitting-search').focus({ preventScroll: true });
-  }
   function render() {
     context?.viewer.fitting?.previewSlot?.(null);
-    closePicker();
-    rows.clear();
-    focusButtons.clear();
+    equipmentButtons.clear();
     const fitting = context?.viewer.fitting;
     $('fitting-slots').replaceChildren();
+    $('fitting-category').replaceChildren();
     $('fitting-controls').hidden = !fitting;
     if (!fitting) {
       status();
@@ -396,42 +478,12 @@ export function createFittingPanel({
     }
     const s = state(context.item.id);
     $('fitting-deployed').checked = s.deployed;
-    $('fitting-show-mounts').checked = showMounts;
-    if (!fitting.slots.some((def) => def.slot === s.slot && def.available !== false))
-      s.slot = fitting.slots.find((def) => def.available !== false)?.slot ?? null;
-    for (const slot of fitting.slots) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'fitting-row';
-      button.dataset.slot = String(slot.slot);
-      const row = document.createElement('div');
-      row.className = 'fitting-row-container';
-      row.addEventListener('pointerenter', () => {
-        if (active) fitting.previewSlot?.(slot.slot);
-      });
-      row.addEventListener('pointerleave', () => fitting.previewSlot?.(null));
-      const focus = document.createElement('button');
-      focus.type = 'button';
-      focus.className = 'fitting-row-focus';
-      focus.innerHTML =
-        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg>';
-      focus.onclick = () => {
-        if (active && !busy() && fitting.get(slot.slot)) fitting.focusSlot(slot.slot);
-      };
-      button.setAttribute('aria-controls', 'fitting-picker');
-      button.setAttribute('aria-expanded', 'false');
-      button.onclick = () => {
-        if (busy()) return;
-        if (state(context.item.id).slot === slot.slot && !$('fitting-picker').hidden)
-          closePicker(true);
-        else selectSlot(slot.slot, { open: true });
-      };
-      rows.set(slot.slot, button);
-      focusButtons.set(slot.slot, focus);
-      row.append(button, focus);
-      $('fitting-slots').append(row);
+    if (!fitting.slots.some((definition) => definition.slot === s.slot)) {
+      s.slot = fitting.slots.find((definition) => definition.available !== false)?.slot ?? null;
+      s.targeted = false;
     }
     refreshRows();
+    void renderDirectory();
     totals();
   }
   async function ensure() {
@@ -442,7 +494,7 @@ export function createFittingPanel({
     }
     if (!valid(c)) return;
     if (c.viewer.fitting) {
-      c.viewer.fitting.setEditing(active && showMounts);
+      c.viewer.fitting.setEditing(active);
       return;
     }
     if (pending) return pending;
@@ -457,7 +509,7 @@ export function createFittingPanel({
       try {
         data = await mountData(c.viewer);
         if (!valid(c) || token !== generation) return;
-        const locators = (c.viewer.appearanceDocument || c.viewer.originalGltfJson)?.extras?.ccpdec?.locators?.hardpoints;
+        const locators = viewerHardpoints(c.viewer);
         if (data.version !== 2 || !locators?.length) {
           status('fittingUnavailable');
           return;
@@ -474,18 +526,20 @@ export function createFittingPanel({
         });
         c.viewer.lifecycle.set('fitting', fitting);
         $('tab-fitting').disabled = !fitting.slots.length;
-        fitting.setEditing(active && showMounts);
+        fitting.setEditing(active);
         const s = state(c.item.id);
         fitting.setDeployed(s.deployed);
         const restore = [...s.choices].filter(
-            ([slot, id]) => id != null && fitting.slots.some((s) => s.slot === slot),
+            ([slot, id]) => id != null && fitting.slots.some((item) => item.slot === slot),
           ),
           restoring = { context: c };
         if (restore.length) operation = restoring;
         render();
         let restored;
         try {
-          restored = await Promise.allSettled(restore.map(([slot, id]) => change(c, slot, id)));
+          restored = await Promise.allSettled(
+            restore.map(([slot, id]) => change(c, slot, id)),
+          );
         } finally {
           if (operation === restoring) operation = null;
         }
@@ -511,39 +565,20 @@ export function createFittingPanel({
     }
   }
   $('fitting-search').addEventListener('input', () => {
-    limit = 40;
-    results();
+    void renderDirectory();
   });
-  $('fitting-more').addEventListener('click', () => {
-    limit += 40;
-    results();
-  });
-  $('fitting-picker-close').addEventListener('click', () => closePicker(true));
-  $('fitting-picker').addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      closePicker(true);
-    }
-    if (event.key === 'ArrowDown' && event.target === $('fitting-search')) {
-      event.preventDefault();
-      (selectedCategory === null && !$('fitting-search').value.trim()
-        ? $('fitting-category')
-        : $('fitting-results')
-      )
-        .querySelector('button')
-        ?.focus();
-    }
+  $('fitting-target-auto').addEventListener('click', () => {
+    if (!context?.viewer.fitting) return;
+    const s = state(context.item.id);
+    s.targeted = false;
+    context.viewer.fitting.previewSlot?.(null);
+    refreshRows();
   });
   $('fitting-deployed').addEventListener('change', () => {
     if (context?.viewer.fitting) {
       state(context.item.id).deployed = $('fitting-deployed').checked;
       context.viewer.fitting.setDeployed($('fitting-deployed').checked);
     }
-  });
-  $('fitting-show-mounts').addEventListener('change', () => {
-    showMounts = $('fitting-show-mounts').checked;
-    context?.viewer.fitting?.setEditing(active && showMounts);
   });
   $('fitting-clear-all').addEventListener('click', () => void replaceEquipment(new Map()));
   $('fitting-undo').addEventListener('click', () => {
@@ -563,6 +598,8 @@ export function createFittingPanel({
       data = null;
       saved.clear();
       lastEquipment = null;
+      expandedGroups.clear();
+      directoryQuery = '';
     },
     async refreshFromViewer() {
       const c = context;
@@ -587,13 +624,14 @@ export function createFittingPanel({
     connect(viewer, item, module) {
       generation++;
       pending = null;
-      closePicker();
-      rows.clear();
-      focusButtons.clear();
+      equipmentButtons.clear();
       viewer.lifecycle.release('fitting');
       context = { viewer, item, module };
+      expandedGroups.clear();
+      directoryQuery = '';
       $('fitting-controls').hidden = true;
       $('fitting-slots').replaceChildren();
+      $('fitting-category').replaceChildren();
       status('fittingHint');
       $('tab-fitting').disabled = true;
       void ensure();
@@ -602,23 +640,20 @@ export function createFittingPanel({
       context?.viewer.fitting?.previewSlot?.(null);
       generation++;
       pending = null;
-      closePicker();
-      rows.clear();
-      focusButtons.clear();
+      equipmentButtons.clear();
       context?.viewer.fitting?.setEditing(false);
       context = null;
       $('tab-fitting').disabled = true;
       $('fitting-controls').hidden = true;
       $('fitting-slots').replaceChildren();
+      $('fitting-category').replaceChildren();
       status(active ? 'fittingWaitingModel' : 'fittingHint');
     },
     setActive(value) {
       active = value;
-      if (!active) {
-        context?.viewer.fitting?.previewSlot?.(null);
-        closePicker();
-      }
-      context?.viewer.fitting?.setEditing(active && showMounts);
+      $('panel')?.classList.toggle('is-fitting-active', active);
+      if (!active) context?.viewer.fitting?.previewSlot?.(null);
+      context?.viewer.fitting?.setEditing(active);
       if (active) void ensure();
     },
     render,

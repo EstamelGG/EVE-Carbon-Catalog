@@ -41,6 +41,7 @@ export function installLightBudget(scene, root, { points = 8, spots = 4, now = (
     // The normals-only pass temporarily changes camera layers and does not use direct lighting.
     if (normalPassScenes.has(scene)) return;
     const time = now();
+    if (!Number.isFinite(time)) return;
     const delta = lastTime === null ? 0 : Math.min(50, Math.max(0, time - lastTime));
     lastTime = time;
     if (!root.visible) return;

@@ -217,6 +217,9 @@ viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   counter.classList.toggle('visible', detail.visible);
 });
 function showModel(item, dna = '') {
+  const group = groupsByID?.get(item.groupID),
+    faction =
+      racesByID?.get(item.factionID) || racesByID?.get(item.affiliationID);
   if (dna) {
     viewer.removeAttribute('item-id');
     viewer.setAttribute('dna', dna);
@@ -227,7 +230,13 @@ function showModel(item, dna = '') {
   return viewer
     .configure({
       ...viewerConfig,
-      itemIdentity: dna ? undefined : { id: item.id, name: item.name },
+      itemIdentity: {
+        id: item.id,
+        name: item.name,
+        faction,
+        factionIcon: faction?.icon,
+        type: group?.name,
+      },
       groupNames: Object.fromEntries([...groupsByID].map(([id, group]) => [id, group.name])),
       subsystems: subsystemSelections.get(item.id),
       language: locale,
@@ -720,31 +729,8 @@ $('copy-dna').onclick = async () => {
 function renderDetail() {
   if (!currentItem) return;
   renderVariants();
-  const item = currentItem;
-  $('detail-title').textContent = localizedName(item.name) || `ID ${item.id}`;
-  renderDetailDNA();
-  $('detail-group').textContent = localizedName(groupsByID.get(item.groupID)?.name);
-  const factionVariant = [4, 52].includes(Number(item.metaGroupID));
-  $('detail-tech').hidden = !factionVariant && !item.techLevel;
-  $('detail-tech').textContent = factionVariant ? t('faction') : `T${item.techLevel}`;
-  $('detail-race').innerHTML =
-    `${raceMark(item.affiliationID)}${esc(raceName(item.affiliationID))}`;
-  $('detail-id').textContent = item.id || '—';
-  $('detail-triangles').textContent = item.triangles == null ? '—' : fmt(item.triangles);
-  const omissions = [];
-  if (item.warnings?.some((w) => w.startsWith('未显示残骸烟雾/碎屑粒子')))
-    omissions.push(t('missingParticles'));
-  if (item.warnings?.some((w) => w.startsWith('缺少发光贴图'))) omissions.push(t('missingGlow'));
-  if (item.warnings?.includes('部分星门特效尚未适配')) omissions.push(t('missingGateEffects'));
-  $('detail-warnings').textContent = omissions.join(' ');
-  $('detail-warnings').hidden = !omissions.length;
-  $('detail-size').textContent = item.subsystemParts
-    ? t('subsystemResources', { count: item.subsystemParts.length })
-    : item.modelBytes == null
-      ? '—'
-      : `${((item.modelBytes + (item.effectsBytes || 0)) / 1024 / 1024).toFixed(1)} MB`;
   const list = detailList(),
-    index = list.findIndex((i) => i.id === item.id);
+    index = list.findIndex((i) => i.id === currentItem.id);
   $('detail-position').textContent = `${index + 1} / ${list.length}`;
   $('previous-ship').disabled = index <= 0;
   $('next-ship').disabled = index >= list.length - 1;

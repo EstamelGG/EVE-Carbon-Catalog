@@ -39,6 +39,16 @@ export function createComponentController(root, emit) {
       (_, name) => values[name] ?? '',
     );
   const name = (value) => value?.[language === 'en' ? 'en' : 'zh'] || value?.en || value?.zh || '';
+  function renderHeading(item) {
+    const identity = item.viewerIdentity || {},
+      skin = currentSkins.find((entry) => String(entry.id) === String(options.officialSkin));
+    renderViewerHeading(root, item, name(item.name) || `ID ${item.id}`, {
+      faction: name(identity.faction),
+      factionIcon: identity.factionIcon,
+      type: name(identity.type),
+      skin: name(skin?.name) || (options.officialSkin ? '' : t('skin')),
+    });
+  }
   function setLanguage(choice) {
     language = componentLocale(choice);
     for (const node of root.querySelectorAll('[data-i18n]'))
@@ -49,7 +59,7 @@ export function createComponentController(root, emit) {
     for (const option of $('hull-animation').options)
       option.textContent = t(option.value.split('.').pop());
     if (currentItem) {
-      renderViewerHeading(root, currentItem, name(currentItem.name) || `ID ${currentItem.id}`);
+      renderHeading(currentItem);
       runtime.viewer?.setAttribute('alt', t('modelAlt', { name: name(currentItem.name) }));
     }
     loading.refresh();
@@ -119,7 +129,7 @@ export function createComponentController(root, emit) {
       settings: () => settings,
       batch: () => loading.batch,
       dimensions(item, size) {
-        renderViewerHeading(root, item, name(item.name) || `ID ${item.id}`);
+        renderHeading(item);
         for (const axis of ['x', 'y', 'z'])
           $('dimension-' + axis).textContent = formatDimension(size?.[axis]);
       },
@@ -134,7 +144,7 @@ export function createComponentController(root, emit) {
         fittingPanel.reset();
         hangarPanel.reset();
         if (!loading.batch) loading.begin();
-        renderViewerHeading(root, item, name(item.name) || `ID ${item.id}`);
+        renderHeading(item);
       },
       reset() {
         loadedItem = null;
@@ -436,7 +446,10 @@ export function createComponentController(root, emit) {
     } catch (error) {
       if (token === revision) console.warn('Skins unavailable', error);
     } finally {
-      if (token === revision) renderPanel();
+      if (token === revision) {
+        if (currentItem) renderHeading(currentItem);
+        renderPanel();
+      }
     }
   }
   function renderPanel() {
@@ -520,14 +533,24 @@ export function createComponentController(root, emit) {
     // the picker is filled once the model is already usable.
     currentSkins = [];
     if (options.itemIdentity?.id === item.id && options.itemIdentity.name)
-      item = { ...item, name: options.itemIdentity.name };
+      item = {
+        ...item,
+        name: options.itemIdentity.name,
+        viewerIdentity: {
+          faction: options.itemIdentity.faction || item.viewerIdentity?.faction,
+          factionIcon:
+            options.itemIdentity.factionIcon || item.viewerIdentity?.factionIcon,
+          type: options.itemIdentity.type || item.viewerIdentity?.type,
+        },
+      };
     if (options.officialSkin != null && item.skins?.length) {
       const skin = (await Promise.all(item.skins.map(id => source.skin(id).catch(() => null))))
         .find(entry => entry && String(entry.id) === String(options.officialSkin));
       if (skin) {
         const styled = await source.officialSkin(item, skin);
         if (token !== revision) throw new DOMException('Superseded', 'AbortError');
-        item = {...styled, name: item.name, id: item.id};
+        item = {...item, ...styled, name: item.name, id: item.id, skins: item.skins,
+          viewerIdentity: item.viewerIdentity};
       }
     }
     baseItem = item;
@@ -708,6 +731,7 @@ export function createComponentController(root, emit) {
       currentItem = null;
       $('stage-title').textContent = '';
       $('stage-subtitle').hidden = true;
+      $('stage-faction').hidden = true;
     },
     getHangars: () => hangarPanel.getOptions(),
     get capabilities() {

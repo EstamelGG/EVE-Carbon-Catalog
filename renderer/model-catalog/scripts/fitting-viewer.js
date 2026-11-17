@@ -23,7 +23,7 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
  const overlay=new Group(),outlines=[];
  overlay.name='Selected equipment outline';overlay.userData.eveEffects=true;overlay.matrixAutoUpdate=false;overlay.renderOrder=Infinity;
  scene.add(overlay);
- let disposed=false,editing=false,preview=null,selected=null,last=0;
+ let disposed=false,preview=null,selected=null,last=0;
  const focusCycle=createEquipmentFocusCycle();
  const onCameraChange=event=>{if(event.detail?.source==='user-interaction')focusCycle.reset();};
  viewer.addEventListener('camera-change',onCameraChange);
@@ -82,7 +82,7 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
  const canFit=(slot,item)=>mounts.canFit(slot,item);
  function activeMounts(slot){return mounts.get(slot)?.mounts||[];}
  function updateVisibility(){
-  layer.hidden=!editing&&preview==null;
+  layer.hidden=preview==null;
   if(layer.hidden)for(const outline of outlines)outline.visible=false;
   scene.queueRender();
  }
@@ -179,7 +179,7 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
    return instance?focusLabel(labels.find(label=>label.model===instance.model)):false;
   },
   previewSlot(slot){preview=mounts.get(slot)?slot:null;updateVisibility();},
-  setEditing(value){editing=Boolean(value);if(!editing)focusCycle.reset();updateVisibility();},
+  setEditing(value){if(!value){preview=null;focusCycle.reset();}updateVisibility();},
   dispose(){if(disposed)return;disposed=true;viewer.removeEventListener('camera-change',onCameraChange);focusCycle.reset();animationLoop.stop();unsubscribe();for(const outline of outlines)outline.dispose();overlay.removeFromParent();mounts.dispose();root.removeFromParent();layer.remove();for(const dispose of nativeDisposers)dispose();for(const resource of owned)resource.dispose();owned.clear();cache.clear();},
  };
 }

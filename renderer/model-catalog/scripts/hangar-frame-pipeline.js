@@ -40,6 +40,7 @@ export function installHangarFramePipeline(viewer,scene,normalPass,ao,composer,s
         pass.needsSwap || pass.needsDepthBlit : !pass.effects || (!pass.needsSwap && !pass.skipRendering) || pass.needsDepthBlit)))
       return renderFrame.call(this,deltaTime);
     if(deltaTime===undefined){this.timer.update();deltaTime=this.timer.getDelta();}
+    if(!Number.isFinite(deltaTime))deltaTime=0;
     this.preRender();
     try{
       let input=this.inputBuffer,index=0;

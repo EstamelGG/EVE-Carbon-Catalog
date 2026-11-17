@@ -5,9 +5,22 @@ export function formatDimension(meters) {
   return rounded >= 1000 ? `${Number((rounded / 1000).toFixed(2))}KM` : `${rounded}M`;
 }
 
-export function renderViewerHeading(root, item, title) {
+export function renderViewerHeading(
+  root,
+  item,
+  title,
+  { faction = '', factionIcon = '', type = '', skin = '' } = {},
+) {
   root.getElementById('stage-title').textContent = title;
+  const factionNode = root.getElementById('stage-faction');
+  const factionIconNode = root.getElementById('stage-faction-icon');
+  root.getElementById('stage-faction-name').textContent = faction;
+  if (factionIcon) factionIconNode.src = factionIcon;
+  else factionIconNode.removeAttribute('src');
+  factionIconNode.hidden = !factionIcon;
+  factionNode.hidden = !faction;
   const subtitle = root.getElementById('stage-subtitle');
-  subtitle.textContent = item.name?.en || '';
-  subtitle.hidden = !item.name?.en || item.name.en === title;
+  const details = [item.name?.en !== title ? item.name?.en : '', type, skin].filter(Boolean);
+  subtitle.textContent = details.join(' / ');
+  subtitle.hidden = !details.length;
 }

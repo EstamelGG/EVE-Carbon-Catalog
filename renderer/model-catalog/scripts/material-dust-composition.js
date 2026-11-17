@@ -17,7 +17,11 @@ eveDustRoughness = 1.0 - eveRough * mix(0.4, 0.2 + 0.4 * eveDustNoise.b, eve_use
 #else
 const float eveDustExposureOffset = 0.0;
 #endif
-float eveCoverage=clamp(eveDustMask*eveDustNoise.a*exp2(clamp(eve_dirtLevel+eveDustExposureOffset,-16.0,16.0))*eve_dirtStrength,0.0,1.0);
+float eveDirtRaw=max(eveDustMask*eveDustNoise.a*exp2(clamp(eve_dirtLevel+eveDustExposureOffset,-16.0,16.0))*eve_dirtStrength,0.0);
+// A linear coverage curve leaves most mid-strength dirt imperceptible. This
+// rational shoulder keeps zero clean, lifts low/mid masks, and still reaches
+// full coverage at high strength without changing the authored dirt pattern.
+float eveCoverage=clamp(eveDirtRaw*2.2/(1.0+eveDirtRaw),0.0,1.0);
 vec3 eveRuntimeDust=vec3(eveDustRoughness*eveDustRoughness,eveDustNoise.g*0.5,eveCoverage);
 vec3 eveRuntimeDustBase=clamp(eveAlbedo*eveLayer(eveW,eve_dustColor)*eveDustNoise.r,0.0,1.0);
 `;

@@ -6,6 +6,23 @@ import {Box3, Sphere, AnimationClip,AnimationMixer,PropertyBinding} from 'three'
 // Legacy glTF clips have names and keyframes but no autoplay flag. These are
 // the viewer's ambient actions; dock/door/state clips retain their settled pose.
 const ambientNames=new Set(['NormalLoop','Layer1Loop','LiftLoop']);
+const maxAnimationStep=.25;
+const ambientClip=(clip,tracks)=>new AnimationClip(
+ clip.name,
+ Number.isFinite(clip.duration)&&clip.duration>0?clip.duration:-1,
+ tracks,
+);
+
+// A bad clock sample must never reach AnimationMixer: its internal action time
+// cannot recover from NaN and would also poison pose bounds and frustum culling.
+export function hangarAnimationDelta(previous,current) {
+ if(!Number.isFinite(current))return null;
+ if(previous===null)return 0;
+ if(!Number.isFinite(previous))return null;
+ const seconds=(current-previous)/1000;
+ return Number.isFinite(seconds)?Math.min(maxAnimationStep,Math.max(0,seconds)):null;
+}
+
 export function hangarAmbientClips(clips){
  return clips.filter(clip=>ambientNames.has(clip.name.split('.').pop())).map(clip=>{
   // Exported clips include constant tracks for the entire rig. Those tracks
@@ -15,8 +32,8 @@ export function hangarAmbientClips(clips){
    for(let i=size;i<values.length;i++)if(Math.abs(values[i]-values[i%size])>1e-6)return true;
    return false;
   });
-  return new AnimationClip(clip.name,clip.duration,tracks);
- }).filter(clip=>clip.tracks.length);
+  return ambientClip(clip,tracks);
+ }).filter(clip=>clip.tracks.length&&clip.duration>0);
 }
 
 // The published dock controller supplies an unmasked base and a binary mask
@@ -45,7 +62,7 @@ function dockClips(root, clips, dock) {
     moving.push(track);
    }
   }
-  if (moving.length) movingClips.push(new AnimationClip(clip.name, clip.duration, moving));
+  if (moving.length) movingClips.push(ambientClip(clip, moving));
  }
  root.updateMatrixWorld(true);
  root.traverse(node => {
@@ -58,7 +75,9 @@ function dockClips(root, clips, dock) {
 }
 
 export function createHangarAnimation(root,clips,dock){
- const ambient=dock ? dockClips(root,clips,dock) : hangarAmbientClips(clips),mixer=new AnimationMixer(root),nodes=new Set();
+ const ambient=(dock ? dockClips(root,clips,dock) : hangarAmbientClips(clips))
+  .filter(clip=>clip.tracks.length&&Number.isFinite(clip.duration)&&clip.duration>0);
+ const mixer=new AnimationMixer(root),nodes=new Set();
  for(const clip of ambient)for(const track of clip.tracks){
   const node=PropertyBinding.findNode(root,PropertyBinding.parseTrackName(track.name).nodeName);
   if(node)nodes.add(node);
@@ -80,7 +99,11 @@ export function createHangarAnimation(root,clips,dock){
   }else object.frustumCulled=false;
  });
  for(const clip of ambient)mixer.clipAction(clip).play();
- return {names:ambient.map(clip=>clip.name),update(seconds){mixer.update(seconds);},
+ // Actions do not touch the skeleton until the mixer advances. Apply the first
+ // pose before the room's initial queued frame can be presented.
+ mixer.update(0);
+ root.updateMatrixWorld(true);
+ return {names:ambient.map(clip=>clip.name),update(seconds){if(Number.isFinite(seconds))mixer.update(Math.max(0,seconds));},
   updateBounds(){for(const [mesh] of meshes)mesh.eveUpdatePoseBounds?.();},
   dispose(){mixer.stopAllAction();mixer.uncacheRoot(root);for(const [mesh,cull,oldSphere] of meshes){delete mesh.eveUpdatePoseBounds;mesh.boundingSphere=oldSphere;mesh.frustumCulled=cull;delete mesh.userData.eveHangarAnimated;}}};
 }
@@ -90,8 +113,9 @@ export function installHangarAnimation(root,clips,scene,viewer,dock){
  viewer.dataset.hangarAnimations=JSON.stringify(animation.names);
  let last=null;
  const loop=ambientAnimationLoop(scene, now=>{
-  if(last!==null){animation.update(Math.max(0,(now-last)/1000));scene.queueRender();}
-  last=now;
+  const seconds=hangarAnimationDelta(last,now);
+  if(seconds===null){last=Number.isFinite(now)?now:null;return;}
+  last=now;animation.update(seconds);scene.queueRender();
  },viewer.ownerDocument);
  const releaseBounds=beforeSceneRender(scene,()=>animation.updateBounds(),{first:true});
  if(animation.names.length)loop.start();

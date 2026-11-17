@@ -34,9 +34,13 @@ export function skinnedPoseBounds(mesh, bounds) {
   if(!boxes)return false;
   bounds.makeEmpty();
   boxes.forEach((box,i)=>{
+    if(!box || !mesh.skeleton.bones[i]) return;
     matrix.multiplyMatrices(mesh.bindMatrixInverse,mesh.skeleton.bones[i].matrixWorld);
     bounds.union(part.copy(box).applyMatrix4(matrix));
   });
+  if(bounds.isEmpty()||![...bounds.min.toArray(),...bounds.max.toArray()].every(Number.isFinite)){
+    bounds.makeEmpty();return false;
+  }
   bounds.expandByScalar(1e-5*(1+Math.max(bounds.min.length(),bounds.max.length())));
   return true;
 }

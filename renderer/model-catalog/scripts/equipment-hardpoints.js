@@ -1,28 +1,30 @@
 import { Group, Matrix4 } from 'three';
 import { equipmentAnimation } from './equipment-animation.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
+import {
+  equipmentLocatorCandidates,
+  equipmentLocatorName,
+  parseHardpointLocator,
+} from '../src/hardpoint-locators.mjs';
+
+export { equipmentLocatorCandidates, equipmentLocatorName };
 
 // Carbon row-vector matrices flatten directly into Three's column-major
 // representation. Preserve source matrices here; equipment placement uses
 // unit locator axes, matching CCP's EveTurretSet.UpdateItemsFromLocators.
-export const HARDPOINT_PREFIXES=['locator_turret_','locator_launcher_','locator_bomb_','locator_xl_','locator_moonharvester_'];
-
-export function equipmentLocatorName(item={}) {
- return typeof item.locatorName==='string'?item.locatorName.toLowerCase().replace(/[0-9]+$/,''):'';
-}
-
 export function groupHardpoints(locators) {
- const slots=new Map(),names=new Set();
+ const slots=new Map(),names=new Set(),families=new Set();
  for(const locator of locators){
-  const match=/^(locator_(?:turret|launcher|bomb|xl|moonharvester)_)(\d+)([a-z]*)$/i.exec(locator.name||'');
-  if(!match)continue;
+  const parsed=parseHardpointLocator(locator.name);
+  if(!parsed)continue;
   // Trinity's FindLocatorTransformByName selects the first match in source order.
   const name=locator.name.toLowerCase();
   if(names.has(name))continue;
-  const prefix=match[1].toLowerCase(),slot=Number(match[2]),matrix=locator.transform?.flat();
+  const prefix=parsed.prefix,slot=parsed.slot,matrix=locator.transform?.flat();
   if(slot<1||!matrix||matrix.length!==16||!matrix.every(Number.isFinite))
    throw Error('Invalid turret locator: '+locator.name);
   names.add(name);
+  families.add(prefix);
   if(!slots.has(slot))slots.set(slot,{slot,mounts:[],types:{}});
   const definition=slots.get(slot);
   (definition.types[prefix]??=[]).push({name:locator.name,matrix});
@@ -33,7 +35,7 @@ export function groupHardpoints(locators) {
  for(const definition of slots.values()){
   const positions=new Map();
   definition.mounts=[];
-  for(const prefix of HARDPOINT_PREFIXES)for(const mount of definition.types[prefix]||[]){
+  for(const prefix of families)for(const mount of definition.types[prefix]||[]){
    const key=JSON.stringify(mount.matrix);
    if(!positions.has(key))positions.set(key,prefix);
    if(positions.get(key)===prefix)definition.mounts.push(mount);
@@ -45,7 +47,7 @@ export function groupHardpoints(locators) {
  // layouts cannot hide distinct launcher/bomb slots. Mount order is immaterial.
  const layouts=new Map();
  for(const group of [...slots.values()].sort((a,b)=>a.slot-b.slot)){
-  const key=JSON.stringify(HARDPOINT_PREFIXES.map(prefix=>
+  const key=JSON.stringify([...families].sort().map(prefix=>
    (group.types[prefix]||[]).map(m=>JSON.stringify(m.matrix)).sort()));
   const existing=layouts.get(key);
   if(existing)existing.aliases.push(group.slot);
@@ -55,11 +57,12 @@ export function groupHardpoints(locators) {
 }
 
 export function selectHardpoints(slots,slot,prefix) {
- if(!HARDPOINT_PREFIXES.includes(prefix))throw Error('Unsupported equipment locator: '+prefix);
  const definition=slots.find(s=>s.slot===slot);
- const mounts=definition?.types?.[prefix];
- if(!mounts?.length)throw Error('Missing hardpoint slot: '+prefix+slot);
- return mounts;
+ for(const candidate of equipmentLocatorCandidates({locatorName:prefix})){
+  const mounts=definition?.types?.[candidate];
+  if(mounts?.length)return mounts;
+ }
+ throw Error('Missing hardpoint slot: '+prefix+slot);
 }
 
 export function canFitEquipment(slots,slot,equipment,hullCategory=6) {
@@ -80,9 +83,10 @@ export function planEquipmentPlacements(slots,choices,equipment,hullCategory=6,p
  };
  const requests=[...choices].filter(([,id])=>id!=null).map(([row,id])=>{
   const item=equipment.find(e=>e.id===id),prefix=equipmentLocatorName(item);
-  const candidates=slots.filter(s=>canFitEquipment(slots,s.slot,item,hullCategory)).map(s=>({
-   row,id,prefix,nativeSlot:s.slot,mounts:s.types[prefix],keys:s.types[prefix].map(poseKey),
-  }));
+  const candidates=slots.filter(s=>canFitEquipment(slots,s.slot,item,hullCategory)).map(s=>{
+   const mounts=selectHardpoints(slots,s.slot,prefix);
+   return {row,id,prefix,nativeSlot:s.slot,mounts,keys:mounts.map(poseKey)};
+  });
   const old=previous.get(row);
   candidates.sort((a,b)=>Number(b.nativeSlot===old?.nativeSlot&&prefix===old?.prefix)-Number(a.nativeSlot===old?.nativeSlot&&prefix===old?.prefix)||a.nativeSlot-b.nativeSlot);
   return {row,candidates,stable:candidates.some(c=>old?.id===id&&old.nativeSlot===c.nativeSlot)};

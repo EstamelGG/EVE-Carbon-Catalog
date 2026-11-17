@@ -7,13 +7,22 @@ export function pageActivity(doc = document) {
     listeners = new Set();
   let active = false,
     elapsed = 0,
-    started = win.performance.now();
-  const now = () => elapsed + (active ? win.performance.now() - started : 0);
+    started = 0;
+  function readTime() {
+    const value = win.performance.now();
+    return Number.isFinite(value) ? value : started;
+  }
+  started = readTime();
+  const now = () => {
+    const base = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+    const value = active ? base + Math.max(0, readTime() - started) : base;
+    return Number.isFinite(value) ? value : base;
+  };
   function update() {
     const next = doc.visibilityState !== 'hidden' && doc.hasFocus();
     if (next === active) return;
     elapsed = now();
-    started = win.performance.now();
+    started = readTime();
     active = next;
     for (const listener of listeners) listener(active);
   }

@@ -1,13 +1,3 @@
-<slot name="details"></slot>
-<div class="model-export model-export-compact">
-  <span data-i18n="exportModel"></span>
-  <div class="model-export-buttons">
-    <button id="export-glb" class="reset-button" disabled>GLB</button
-    ><button id="export-obj" class="reset-button" disabled>OBJ</button
-    ><button id="export-skybox" class="reset-button" disabled data-i18n="exportSkybox"></button>
-  </div>
-  <p id="export-status" hidden role="status"></p>
-</div>
 <div
   class="settings-tabs"
   role="tablist"
@@ -100,6 +90,15 @@
           aria-hidden="true"
         ></span
       ></label>
+      <div class="model-export model-export-compact">
+        <span data-i18n="exportModel"></span>
+        <div class="model-export-buttons">
+          <button id="export-glb" class="reset-button" disabled>GLB</button
+          ><button id="export-obj" class="reset-button" disabled>OBJ</button
+          ><button id="export-skybox" class="reset-button" disabled data-i18n="exportSkybox"></button>
+        </div>
+        <p id="export-status" hidden role="status"></p>
+      </div>
     </fieldset>
     <fieldset class="settings-group performance-settings">
       <legend data-i18n="performanceSettings">Quality &amp; performance</legend>
@@ -360,13 +359,6 @@
             aria-hidden="true"
           ></span
         ></label>
-        <label class="toggle-row" for="fitting-show-mounts"
-          ><span data-i18n="fittingShowMounts">Show hardpoints</span
-          ><input id="fitting-show-mounts" type="checkbox" /><span
-            class="toggle-visual"
-            aria-hidden="true"
-          ></span
-        ></label>
         <div class="fitting-actions">
           <button
             id="fitting-undo"
@@ -393,31 +385,25 @@
       </p>
       <div
         id="fitting-slots"
-        class="fitting-rows"
+        class="fitting-slots"
         role="group"
         data-i18n-aria-label="fittingMounts"
         aria-label="Equipment slots"
       ></div>
-      <div id="fitting-picker-home">
-        <div
-          id="fitting-picker"
-          class="fitting-picker"
-          role="region"
-          aria-labelledby="fitting-picker-title"
-          hidden
-        >
-          <div class="fitting-picker-heading">
-            <strong id="fitting-picker-title"></strong
-            ><button
-              id="fitting-picker-close"
-              type="button"
-              data-i18n-aria-label="fittingClose"
-              aria-label="Close equipment picker"
-            >
-              ×
-            </button>
-          </div>
-          <div id="fitting-recent" class="fitting-results fitting-recent" hidden></div>
+      <div id="fitting-browser" class="fitting-browser">
+        <div class="fitting-browser-heading">
+          <strong id="fitting-target-label"></strong>
+          <button
+            id="fitting-target-auto"
+            type="button"
+            class="fitting-target-auto"
+            data-i18n="fittingUseAuto"
+            hidden
+          >
+            Auto
+          </button>
+        </div>
+        <div class="fitting-search-row">
           <input
             id="fitting-search"
             type="search"
@@ -427,27 +413,17 @@
             placeholder="Search equipment name or ID"
             aria-label="Search equipment name or ID"
           />
-          <div
-            id="fitting-category"
-            class="fitting-groups"
-            role="group"
-            data-i18n-aria-label="fittingCategory"
-            aria-label="Equipment type"
-          ></div>
-          <div id="fitting-results" class="fitting-results"></div>
-          <p id="fitting-results-empty" class="fitting-note" data-i18n="fittingNoResults" hidden>
-            No matching equipment
-          </p>
-          <button
-            id="fitting-more"
-            class="reset-button"
-            type="button"
-            data-i18n="fittingMore"
-            hidden
-          >
-            Show more
-          </button>
         </div>
+        <div
+          id="fitting-category"
+          class="fitting-category"
+          role="group"
+          data-i18n-aria-label="fittingCategory"
+          aria-label="Equipment type"
+        ></div>
+        <p id="fitting-results-empty" class="fitting-note" data-i18n="fittingNoResults" hidden>
+          No matching equipment
+        </p>
       </div>
     </div>
   </div>

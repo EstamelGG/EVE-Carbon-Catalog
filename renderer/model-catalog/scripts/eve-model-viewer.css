@@ -120,6 +120,44 @@ model-viewer {
 #panel .viewer-settings select {
   width: auto;
 }
+#panel.is-fitting-active {
+  overflow: hidden;
+}
+#panel.is-fitting-active .detail-scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+#panel.is-fitting-active #panel-fitting:not([hidden]),
+#panel.is-fitting-active #fitting-controls {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+#panel.is-fitting-active .fitting-status,
+#panel.is-fitting-active .fitting-toolbar,
+#panel.is-fitting-active .fitting-slots,
+#panel.is-fitting-active .fitting-browser-heading,
+#panel.is-fitting-active .fitting-search-row {
+  flex: none;
+}
+#panel.is-fitting-active .fitting-browser {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+#panel.is-fitting-active .fitting-category {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
 .ship-annotations {
   position: absolute;
   inset: 0;
@@ -214,6 +252,10 @@ slot[name='overlay'] {
   #panel .detail-scroll {
     flex: none;
     overflow: visible;
+  }
+  #panel.is-fitting-active {
+    max-height: clamp(300px, 42dvh, 380px);
+    overflow: hidden;
   }
   main {
     height: auto;

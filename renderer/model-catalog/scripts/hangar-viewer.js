@@ -197,7 +197,8 @@ export function createHangarViewer(viewer,{item,settings}) {
      next.room.stopGridUpdate=beforeSceneRender(scene,camera=>{
       if(current!==next)return;
       lighting.roomLights.eveViewToRoom.value.copy(next.room.root.matrixWorld).invert().multiply(camera.matrixWorld);
-      grid.updateEmission?.((performance.now()-start)/1000);
+      const seconds=(performance.now()-start)/1000;
+      if(Number.isFinite(seconds))grid.updateEmission?.(Math.max(0,seconds));
      });
     }else{
       next.surfaceLighting={...next.surfaceLighting,lights:[...next.surfaceLighting.lights,...[...points,...spots].map(source=>({source,transforms:[]}))]};

@@ -8,7 +8,12 @@ import {LineSegmentsGeometry} from 'three/addons/lines/LineSegmentsGeometry.js';
 import {LineMaterial} from 'three/addons/lines/LineMaterial.js';
 import {authoredLocal} from './ship-authored-spotlights.js';
 
+const finitePoint = value =>
+  Array.isArray(value) && value.length >= 3 && value.slice(0, 3).every(Number.isFinite);
+
 export function circlePoints(path,time=0) {
+  if(!Number.isFinite(path.circleRadius))return [];
+  time=Number.isFinite(time)?time:0;
   const completeness=Math.max(0,Math.min(2,path.completeness??1));
   const fraction=1-Math.abs(completeness-1),n=Math.floor(((path.numSegments||64)+.5)*(path.scaleSegmentsByCompleteness?fraction:1));
   if(n<=1)return [];
@@ -30,6 +35,8 @@ export async function sceneLines(record,resources,root) {
   const [tex,overlay]=await Promise.all([resources.texture(record.textures.TexMap),resources.texture(record.textures.OverlayTexMap,{repeat:true})]);
   const entries=[];
   const paths=[];
+  const baseColor=Array.isArray(record.baseColor)&&record.baseColor.length>=4?record.baseColor:[0,0,0,0];
+  const animColor=Array.isArray(record.animColor)&&record.animColor.length>=4?record.animColor:[0,0,0,0];
   function flatten(sources,parents=[]){for(const source of sources){
     if(source.type==='trinity.EveLineChildContainer')flatten(source.lines||[],[...parents,source]);
     else paths.push({source,parents});}}
@@ -77,9 +84,10 @@ export async function sceneLines(record,resources,root) {
         e.mesh.updateMatrixWorld(true);
       }
       e.material.resolution.set(width,height);
-      e.extra.eveLineTint.value.fromArray(record.baseColor).multiplyScalar(brightness);
-      e.extra.eveLineAnim.value.fromArray(record.animColor).multiplyScalar(brightness);
-      e.extra.eveLineTime.value=(time*record.scrollSpeed)%1;
+      e.extra.eveLineTint.value.fromArray(baseColor).multiplyScalar(brightness);
+      e.extra.eveLineAnim.value.fromArray(animColor).multiplyScalar(brightness);
+      e.extra.eveLineTime.value=Number.isFinite(time)&&Number.isFinite(record.scrollSpeed)
+        ?(time*record.scrollSpeed)%1:0;
     }
   },dispose(){for(const e of entries)e.mesh.removeFromParent();}};
 }
@@ -89,6 +97,8 @@ export async function sceneLines(record,resources,root) {
 // https://github.com/carbonengine/trinity/blob/f644516ae4f921f6f3a3e58dc5d19107781571ec/trinity/Eve/SpaceObject/Children/LineSetPaths/EveBezierCurve.cpp#L166-L204
 export function linePoints(path, time=0, state) {
   if (path.type !== 'trinity.EveBezierCurve') return circlePoints(path, time);
+  if (!finitePoint(path.point1) || !finitePoint(path.bezierPoint) || !finitePoint(path.point2)) return [];
+  time = Number.isFinite(time) ? time : 0;
   const completeness = Math.min(2, Math.max(0, path.completeness ?? 1));
   const span = 1 - Math.abs(completeness - 1);
   const start = Math.max(0, completeness - 1);

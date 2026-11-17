@@ -18,20 +18,24 @@ function compileFixtureCurve(curve) {
  return time=>{context.time=time;return program(context);};
 }
 export function fixtureCurveValue(binding,seconds) {
+ const time=Number.isFinite(seconds)?seconds:0;
  let evaluate=bindingEvaluators.get(binding);
  if (!evaluate) {
   evaluate=compileFixtureCurve(binding.curve);
   bindingEvaluators.set(binding,evaluate);
  }
- return binding.scale*evaluate(seconds*binding.clockScale)+binding.offset;
+ const value=binding.scale*evaluate(time*binding.clockScale)+binding.offset;
+ return Number.isFinite(value)?value:Number.isFinite(binding.offset)?binding.offset:0;
 }
 
 // LightData::AsPerPointLightData applies authored noise before the manager receives the light.
 export function hangarLightIntensity(record,seconds){
- const brightness=record.brightnessBinding ? fixtureCurveValue(record.brightnessBinding,seconds) : record.brightness;
- if(!record.noiseAmplitude)return brightness;
- const noise=perlinNoise1D(seconds*(record.noiseFrequency??1),2,2,record.noiseOctaves??1);
- return brightness*record.noiseAmplitude*(noise+1)/2;
+ const time=Number.isFinite(seconds)?seconds:0;
+ const brightness=record.brightnessBinding ? fixtureCurveValue(record.brightnessBinding,time) : record.brightness;
+ if(!record.noiseAmplitude)return Number.isFinite(brightness)?brightness:0;
+ const noise=perlinNoise1D(time*(record.noiseFrequency??1),2,2,record.noiseOctaves??1);
+ const value=brightness*record.noiseAmplitude*(noise+1)/2;
+ return Number.isFinite(value)?value:Math.max(0,Number.isFinite(brightness)?brightness:0);
 }
 
 export function createHangarLights(room,scale){
