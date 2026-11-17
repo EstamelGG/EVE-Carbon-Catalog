@@ -55,7 +55,5 @@ export function hardpointFamilies(locators = []) {
 }
 
 export function equipmentPrefixesForMountFamilies(families = []) {
-  const prefixes = new Set(families.map(prefixFor));
-  if (prefixes.has(TURRET_LOCATOR)) prefixes.add(LAUNCHER_LOCATOR);
-  return [...prefixes];
+  return [...new Set(families.map(prefixFor))];
 }

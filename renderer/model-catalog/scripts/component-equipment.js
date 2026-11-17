@@ -16,7 +16,7 @@ export async function configureEquipment({
     if (!isCurrent()) throw new DOMException('Superseded', 'AbortError');
   };
   const embedded = (viewer.appearanceDocument || viewer.originalGltfJson)?.extras?.ccpdec?.locators?.hardpoints;
-  const fittingData = await loadFittingData(item, url => viewer.assetSession.json(url));
+  const fittingData = await loadFittingData(item, url => viewer.assetSession.json(url), embedded);
   checkCurrent();
   if (fittingData.version !== 2) throw Error('Fitting metadata version 2 is required');
   const locators = embedded ?? fittingData.ships?.[item.id];
@@ -29,6 +29,7 @@ export async function configureEquipment({
       'fitting',
       renderer.installFitting(viewer, {
         locators,
+        slots: fittingData.slots,
         equipment,
         settings,
         appearance: fittingData.appearance,
@@ -40,7 +41,8 @@ export async function configureEquipment({
   let choices;
   if (equipmentIds !== undefined) {
     try {
-      choices = equipmentChoices(equipmentIds, locators, equipment, fittingData.hullCategory ?? item.categoryID);
+      choices = equipmentChoices(equipmentIds, locators, equipment,
+        fittingData.hullCategory ?? item.categoryID, fittingData.slots);
     } catch (error) {
       if (error.equipmentIndex !== undefined)
         error.message = t('equipmentCannotFit', {

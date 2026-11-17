@@ -15,7 +15,7 @@ import {focusAnnotation} from './annotation-focus.js';
 import {loadArrayBuffer,trackResource} from '../src/resource-activity.mjs';
 import {resolveFittingMaterial,applyFittingMaterial} from './fitting-materials.js';
 
-export function installFitting(viewer,{locators,equipment,settings,hullCategory=6,appearance,dna=''}) {
+export function installFitting(viewer,{locators,equipment,slots:definitions,settings,hullCategory=6,appearance,dna=''}) {
  const materialProfile=resolveFittingMaterial(appearance,dna);
  const scene=viewer[$scene],root=new Group(),cache=new Map(),owned=new Set(),nativeDisposers=new Set();
  const nativeSlots=groupHardpoints(locators),layer=viewer.ownerDocument.createElement('div'),labels=[];
@@ -78,7 +78,7 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
   })().catch(error=>{cache.delete(id);throw error;}));
   return cache.get(id);
  }
- const mounts=createAutomaticEquipmentMounts(root,nativeSlots,equipment,load,hullCategory,
+ const mounts=createAutomaticEquipmentMounts(root,nativeSlots,definitions,equipment,load,hullCategory,
   {model:scene.model,document:viewer.originalGltfJson}),slots=mounts.slots;
  const canFit=(slot,item)=>mounts.canFit(slot,item);
  function activeMounts(slot){return mounts.get(slot)?.mounts||[];}
@@ -103,21 +103,28 @@ export function installFitting(viewer,{locators,equipment,settings,hullCategory=
  function refreshLabels(){
   focusCycle.reset();
   layer.replaceChildren(leaders);leaders.replaceChildren();labels.length=0;
-  for(const native of nativeSlots)for(const mount of native.mounts){
-   const bubble=viewer.ownerDocument.createElement('button');bubble.type='button';bubble.className='ship-annotation fitting-label';
-   let displayMount=mount,model,row,instance;
-   for(const logical of slots){
-    const entry=mounts.get(logical.slot),index=entry?.mounts.findIndex(m=>m.name===mount.name||JSON.stringify(m.matrix)===JSON.stringify(mount.matrix));
-    if(index>=0){displayMount=entry.mounts[index];instance=entry.instances[index];model=instance.model;
-     row=logical.slot;break;}
+  for(const definition of slots){
+   const entry=mounts.get(definition.slot),
+     native=nativeSlots.find(candidate=>candidate.slot===definition.nativeSlot),
+     authored=native?.types?.[definition.family]||native?.mounts||[],
+     selectedMounts=entry?.mounts?.length?entry.mounts:authored,
+     seen=new Set();
+   const kind=(definition.requirement||/^locator_(.+)_$/.exec(definition.family||'')?.[1]||'mount').toUpperCase();
+   for(const mount of selectedMounts){
+    const key=JSON.stringify(mount.matrix);
+    if(seen.has(key))continue;
+    seen.add(key);
+    const bubble=viewer.ownerDocument.createElement('button');bubble.type='button';bubble.className='ship-annotation fitting-label';
+    const index=entry?.mounts.findIndex(candidate=>candidate.name===mount.name||JSON.stringify(candidate.matrix)===key)??-1,
+      instance=index>=0?entry.instances[index]:undefined,
+      suffix=(mount.name.match(/[a-z]+$/i)?.[0]||'a').toUpperCase();
+    bubble.textContent=kind+' '+String(definition.slot).padStart(2,'0')+suffix;
+    bubble.dataset.mount=mount.name;bubble.hidden=true;
+    const line=viewer.ownerDocument.createElementNS('http://www.w3.org/2000/svg','polyline');line.style.display='none';leaders.append(line);layer.append(bubble);
+    bubble.setAttribute('aria-pressed',String(selected===mount.name));
+    labels.push({bubble,line,mount,model:instance?.model,row:definition.slot,instance,
+     anchor:new Vector3().fromArray(mount.matrix,12)});
    }
-   const family=/^locator_(.+)_\d/i.exec(displayMount.name)?.[1].toUpperCase();
-   bubble.textContent=family+' '+String(native.slot).padStart(2,'0')+(displayMount.name.match(/[a-z]+$/i)?.[0]||'a').toUpperCase();
-   bubble.dataset.mount=displayMount.name;bubble.hidden=true;
-   const line=viewer.ownerDocument.createElementNS('http://www.w3.org/2000/svg','polyline');line.style.display='none';leaders.append(line);layer.append(bubble);
-   bubble.setAttribute('aria-pressed',String(selected===mount.name));
-   labels.push({bubble,line,mount,model,row,instance,
-    anchor:new Vector3().fromArray(mount.matrix,12)});
   }
  }
  refreshLabels();

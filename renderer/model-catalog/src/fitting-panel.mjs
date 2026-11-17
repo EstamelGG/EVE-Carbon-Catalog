@@ -518,6 +518,7 @@ export function createFittingPanel({
         if (!valid(c) || token !== generation) return;
         const fitting = c.module.installFitting(c.viewer, {
           locators,
+          slots: data.slots,
           equipment: data.equipment,
           settings,
           appearance: data.appearance,

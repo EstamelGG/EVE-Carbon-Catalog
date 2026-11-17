@@ -57,9 +57,8 @@ test('derives all equipment shards needed by the current hull families', () => {
   assert.ok(!prefixes.includes('locator_bomb_'));
 });
 
-test('turret-mounted hulls request launcher equipment shards', () => {
+test('locator families do not imply equipment compatibility', () => {
   assert.deepEqual(equipmentPrefixesForMountFamilies(['turret']), [
     'locator_turret_',
-    'locator_launcher_',
   ]);
 });

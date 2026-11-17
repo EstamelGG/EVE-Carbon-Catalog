@@ -5,6 +5,7 @@ import {
   bindHardpointBones,
   canFitEquipment,
   groupHardpoints,
+  logicalHardpoints,
   planEquipmentPlacements,
   selectHardpoints,
 } from './equipment-hardpoints.js';
@@ -30,9 +31,54 @@ test('launcher equipment can use turret mounts but chain equipment cannot', () =
   );
 });
 
+test('logical slots follow SDE capacity instead of locator group count', () => {
+  const turrets = groupHardpoints(
+    Array.from({length: 6}, (_, index) => ({
+      name: `locator_turret_${index + 1}a`,
+      transform: [...identity.slice(0, 12), index * 10, 0, 0, 1],
+    })),
+  );
+  const slots = logicalHardpoints(
+    turrets,
+    Array.from({length: 5}, (_, index) => ({
+      slot: index + 1,
+      requirement: 'launcher',
+      family: 'locator_turret_',
+      nativeSlot: index + 1,
+    })),
+  );
+  assert.equal(turrets.length, 6);
+  assert.equal(slots.length, 5);
+  assert.equal(slots.at(-1).nativeSlot, 5);
+  assert.equal(
+    canFitEquipment(slots, 1, {categoryID: 7, requirement: 'launcher', locatorName: 'locator_launcher_'}),
+    true,
+  );
+  assert.equal(
+    canFitEquipment(slots, 1, {categoryID: 7, requirement: 'turret', locatorName: 'locator_turret_'}),
+    false,
+  );
+});
+
 test('launcher equipment prefers an exact launcher mount', () => {
   const mounts = selectHardpoints(slots, 1, 'locator_launcher_');
   assert.deepEqual(mounts.map(({ name }) => name), ['locator_launcher_1a']);
+});
+
+test('duplicate locator suffixes expose one physical mount', () => {
+  const caracalGroup = groupHardpoints([
+    { name: 'locator_turret_5a', transform: identity },
+    { name: 'locator_turret_5b', transform: shifted },
+    { name: 'locator_turret_5c', transform: shifted },
+  ]);
+  assert.deepEqual(caracalGroup[0].mounts.map(({ name }) => name), [
+    'locator_turret_5a',
+    'locator_turret_5b',
+  ]);
+  assert.deepEqual(
+    selectHardpoints(caracalGroup, 5, 'locator_turret_').map(({ name }) => name),
+    ['locator_turret_5a', 'locator_turret_5b'],
+  );
 });
 
 test('launcher equipment can be planned onto a turret-only slot', () => {

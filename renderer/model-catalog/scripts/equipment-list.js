@@ -1,4 +1,4 @@
-import {groupHardpoints,planEquipmentPlacements} from './equipment-hardpoints.js';
+import {groupHardpoints,logicalHardpoints,planEquipmentPlacements} from './equipment-hardpoints.js';
 
 export function equipmentList(value){
  if(value===undefined)return undefined;
@@ -12,8 +12,8 @@ export function equipmentList(value){
 
 // Validate each prefix of the requested list before touching the current scene.
 // The existing allocator resolves native families and overlapping positions.
-export function equipmentChoices(ids,locators,equipment,hullCategory=6){
- const slots=groupHardpoints(locators),choices=new Map();
+export function equipmentChoices(ids,locators,equipment,hullCategory=6,definitions=[]){
+ const slots=logicalHardpoints(groupHardpoints(locators),definitions),choices=new Map();
  for(const [index,id] of ids.entries()){
   choices.set(index+1,id);
   try{

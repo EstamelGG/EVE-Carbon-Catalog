@@ -14,7 +14,7 @@ export { equipmentLocatorCandidates, equipmentLocatorName };
 // representation. Preserve source matrices here; equipment placement uses
 // unit locator axes, matching CCP's EveTurretSet.UpdateItemsFromLocators.
 export function groupHardpoints(locators) {
- const slots=new Map(),names=new Set(),families=new Set();
+ const slots=new Map(),names=new Set(),families=new Set(),transforms=new Map();
  for(const locator of locators){
   const parsed=parseHardpointLocator(locator.name);
   if(!parsed)continue;
@@ -28,11 +28,17 @@ export function groupHardpoints(locators) {
   families.add(prefix);
   if(!slots.has(slot))slots.set(slot,{slot,mounts:[],types:{}});
   const definition=slots.get(slot);
+  const key=prefix+'\0'+JSON.stringify(matrix);
+  if(!transforms.has(slot))transforms.set(slot,new Set());
+  const seen=transforms.get(slot);
+  if(seen.has(key))continue;
+  seen.add(key);
   (definition.types[prefix]??=[]).push({name:locator.name,matrix});
  }
  // An empty slot must expose all its physical locations. Capital hulls can
  // have ordinary top/bottom turrets and separate side XL mounts at the same ID.
- // Share a label only when the complete transforms match across families.
+ // Exact duplicate transforms are one physical mount, including repeated
+ // suffixes such as Caracal's 5b/5c and 6b/6c.
  for(const definition of slots.values()){
   const positions=new Map();
   definition.mounts=[];
@@ -57,6 +63,18 @@ export function groupHardpoints(locators) {
  return [...layouts.values()];
 }
 
+// SDE hardpoint capacities decide how many logical fitting rows exist.
+// Authored locator groups only decide where a row's equipment is drawn.
+export function logicalHardpoints(nativeSlots, definitions) {
+ if(!Array.isArray(definitions)||!definitions.length)return nativeSlots;
+ return definitions.map((definition,index)=>{
+  const slot=Number(definition.slot??index+1),
+    nativeSlot=Number(definition.nativeSlot??slot),
+    native=nativeSlots.find(candidate=>candidate.slot===nativeSlot);
+  return {...definition,slot,nativeSlot,types:native?.types||{},mounts:native?.mounts||[]};
+ });
+}
+
 export function selectHardpoints(slots,slot,prefix) {
  const definition=slots.find(s=>s.slot===slot);
  for(const candidate of equipmentLocatorCandidates({locatorName:prefix})){
@@ -71,6 +89,11 @@ export function canFitEquipment(slots,slot,equipment,hullCategory=6) {
  // Keep ship and structure equipment separate; do not apply hull allowlists.
  const equipmentCategory=hullCategory===6?7:hullCategory===65?66:null;
  if(equipmentCategory===null||equipment.categoryID!==equipmentCategory)return false;
+ const definition=slots.find(candidate=>candidate.slot===slot);
+ if(!definition||equipment.requirement==='unsupported')return false;
+ // A launcher slot may be drawn on a turret locator, but a turret weapon is
+ // still incompatible unless the SDE granted turret capacity.
+ if(definition.requirement&&equipment.requirement&&definition.requirement!==equipment.requirement)return false;
  try{return selectHardpoints(slots,slot,equipmentLocatorName(equipment)).length>0;}
  catch{return false;}
 }
@@ -86,7 +109,7 @@ export function planEquipmentPlacements(slots,choices,equipment,hullCategory=6,p
   const item=equipment.find(e=>e.id===id),prefix=equipmentLocatorName(item);
   const candidates=slots.filter(s=>canFitEquipment(slots,s.slot,item,hullCategory)).map(s=>{
    const mounts=selectHardpoints(slots,s.slot,prefix);
-   return {row,id,prefix,nativeSlot:s.slot,mounts,keys:mounts.map(poseKey)};
+   return {row,id,prefix,nativeSlot:s.nativeSlot??s.slot,mounts,keys:mounts.map(poseKey)};
   });
   const old=previous.get(row);
   candidates.sort((a,b)=>Number(b.nativeSlot===old?.nativeSlot&&prefix===old?.prefix)-Number(a.nativeSlot===old?.nativeSlot&&prefix===old?.prefix)||a.nativeSlot-b.nativeSlot);
@@ -160,16 +183,16 @@ export function createEquipmentMounts(root,slots,loadEquipment,binding=null) {
   entry.group.removeFromParent();
  }
  return {
-  async set(slot,id,{nativeSlot=slot}={}){
+  async set(slot,id){
    if(disposed)throw Error('Mounts disposed');
-   const definition=slots.find(s=>s.slot===nativeSlot);if(!definition)throw Error('Unknown hardpoint slot');
+   const definition=slots.find(s=>s.slot===slot);if(!definition)throw Error('Unknown hardpoint slot');
    const revision=(revisions.get(slot)||0)+1;revisions.set(slot,revision);
    if(id==null){release(entries.get(slot));entries.delete(slot);return true;}
    const asset=await loadEquipment(id);
    if(disposed||revisions.get(slot)!==revision)return false;
-   const selected=selectHardpoints(slots,nativeSlot,equipmentLocatorName(asset));
+   const selected=selectHardpoints(slots,slot,equipmentLocatorName(asset));
    const group=new Group();group.name='Equipment slot '+slot;
-   const entry={id,group,nativeSlot,prefix:equipmentLocatorName(asset),mounts:selected,instances:[]};
+   const entry={id,group,nativeSlot:definition.nativeSlot??slot,prefix:equipmentLocatorName(asset),mounts:selected,instances:[]};
    try{
     for(const mount of selected){
      const source=new Matrix4().fromArray(mount.matrix);
@@ -204,26 +227,27 @@ export function createEquipmentMounts(root,slots,loadEquipment,binding=null) {
  };
 }
 
-export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEquipment,hullCategory=6,binding=null) {
- let container=new Group(),mounts=createEquipmentMounts(container,nativeSlots,loadEquipment,binding),choices=new Map(),placements=new Map();
+export function createAutomaticEquipmentMounts(root,nativeSlots,definitions,equipment,loadEquipment,hullCategory=6,binding=null) {
+ const slots=logicalHardpoints(nativeSlots,definitions);
+ let container=new Group(),mounts=createEquipmentMounts(container,slots,loadEquipment,binding),choices=new Map(),placements=new Map();
  let disposed=false,deployed=true,queue=Promise.resolve();const fitCache=new Map();root.add(container);
- const supports=item=>nativeSlots.some(s=>canFitEquipment(nativeSlots,s.slot,item,hullCategory));
+ const supports=item=>slots.some(s=>canFitEquipment(slots,s.slot,item,hullCategory));
  const available=equipment.some(supports);
- const slots=nativeSlots.map((_,index)=>({slot:index+1,mounts:[],available}));
+ const rows=slots.map((definition,index)=>({...definition,slot:definition.slot??index+1,mounts:[],available}));
  function plan(row,item){
-  if(!slots.some(s=>s.slot===row)||!supports(item))throw Error('Unsupported equipment or row');
+  if(!rows.some(s=>s.slot===row)||!supports(item))throw Error('Unsupported equipment or row');
   const next=new Map(choices);next.set(row,item.id);
-  return planEquipmentPlacements(nativeSlots,next,equipment,hullCategory,placements);
+  return planEquipmentPlacements(rows,next,equipment,hullCategory,placements);
  }
  async function apply(next){
   if(disposed)return false;
-  for(const row of next.keys())if(!slots.some(s=>s.slot===row))throw Error('Unknown equipment row');
-  const planned=planEquipmentPlacements(nativeSlots,next,equipment,hullCategory,placements);
+  for(const row of next.keys())if(!rows.some(s=>s.slot===row))throw Error('Unknown equipment row');
+  const planned=planEquipmentPlacements(rows,next,equipment,hullCategory,placements);
   // Prepare the entire new layout off-scene. Failed loads cannot remove or
   // relocate any currently fitted equipment, including other logical rows.
-  const stagedContainer=new Group(),staged=createEquipmentMounts(stagedContainer,nativeSlots,loadEquipment,binding);
+  const stagedContainer=new Group(),staged=createEquipmentMounts(stagedContainer,rows,loadEquipment,binding);
   const startingDeployed=deployed;staged.setDeployed(deployed);
-  const results=await Promise.allSettled([...planned].map(([row,p])=>staged.set(row,p.id,{nativeSlot:p.nativeSlot})));
+  const results=await Promise.allSettled([...planned].map(([row,p])=>staged.set(row,p.id)));
   const failed=results.find(r=>r.status==='rejected');
   if(disposed||failed){staged.dispose();if(failed)throw failed.reason;return false;}
   if(deployed!==startingDeployed)staged.setDeployed(deployed,false);
@@ -232,7 +256,7 @@ export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEq
  }
  function enqueue(next){const task=queue.then(()=>apply(next()));queue=task.catch(()=>{});return task;}
  return {
-  slots,supports,
+  slots:rows,supports,
   canFit(row,item){
    if(!supports(item))return false;
    const key=row+':'+equipmentLocatorName(item);
@@ -240,7 +264,7 @@ export function createAutomaticEquipmentMounts(root,nativeSlots,equipment,loadEq
    return fitCache.get(key);
   },
   set(row,id){return enqueue(()=>{
-   if(!slots.some(s=>s.slot===row))throw Error('Unknown equipment row');
+   if(!rows.some(s=>s.slot===row))throw Error('Unknown equipment row');
    const next=new Map(choices);if(id==null)next.delete(row);else next.set(row,id);return next;
   });},
   replace(entries){const next=new Map(entries);return enqueue(()=>next);},
