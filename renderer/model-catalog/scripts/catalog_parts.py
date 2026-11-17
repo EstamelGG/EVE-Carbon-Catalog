@@ -1,7 +1,6 @@
 """Publish immutable browser chunks; retain catalog.json for build tools."""
 from collections import defaultdict
 from copy import deepcopy
-import hashlib
 import json
 import os
 import re
@@ -26,12 +25,9 @@ def publish_catalog_parts(path, catalog, write):
         search.append({key: item[key] for key in SEARCH_FIELDS if key in item})
 
     def chunk(name, value):
-        encoded = json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
-        digest = hashlib.sha256(encoded).hexdigest()[:20]
-        relative = f'catalog/{name}-{digest}.json'
+        relative = f'catalog/{name}.json'
         target = path.parent / relative
-        if not target.exists():
-            write(target, value)
+        write(target, value)
         return 'data/' + relative
 
     index = {key: value for key, value in catalog.items() if key != 'items'}
@@ -62,7 +58,7 @@ def publish_catalog_parts(path, catalog, write):
                     os.utime(candidate, None)
             except FileNotFoundError:
                 pass
-    # Publish last: readers always see a complete snapshot, even during builds.
+    # Write the index after its named chunks.
     write(path.parent / 'catalog-index.json', index)
     # Keep the preceding publication and a one-hour grace period for open tabs.
     # Only generated catalogue chunks are collected; model assets are untouched.

@@ -18,10 +18,6 @@ from sof_parameters import SurfaceParameters
 from sof_texture_schema import AREA_LISTS, AREA_TYPES
 from sof_resources import SofResources, UnsupportedSofDNA
 
-# Compatibility for callers of the original surface-only entry point.
-SofTextureResources = SofResources
-UnsupportedTextureDNA = UnsupportedSofDNA
-
 TRANSPARENCY = {'opaqueAreas': 'SOT_OPAQUE', 'decalAreas': 'SOT_CLIP', 'transparentAreas': 'SOT_TRANSPARENT'}
 
 
@@ -52,13 +48,13 @@ def mesh_areas(hulls):
 def parse_surface_dna(dna):
     parts = dna.lower().split(':')
     if len(parts) < 3 or not all(parts[0].split(';')):
-        raise UnsupportedTextureDNA('Expected SOF hull, faction and race')
+        raise UnsupportedSofDNA('Expected SOF hull, faction and race')
     hull_name, faction_name, race_name = parts[:3]
     commands = {}
     for segment in parts[3:]:
         command, sep, value = segment.partition('?')
         if not sep or command not in ('material', 'pattern', 'respathinsert'):
-            raise UnsupportedTextureDNA('Unsupported surface command: ' + segment)
+            raise UnsupportedSofDNA('Unsupported surface command: ' + segment)
         commands[command] = value.split(';')
     return hull_name, faction_name, race_name, commands
 
@@ -94,7 +90,7 @@ def surface_textures(resources, dna):
     for kind, area, offset in mesh_areas(hulls):
         shader = area['shader']
         if shader not in shaders:
-            raise UnsupportedTextureDNA('Missing generic shader definition: ' + shader)
+            raise UnsupportedSofDNA('Missing generic shader definition: ' + shader)
         textures = {t['name']: faction_texture(resources, t['resFilePath'], insert)
                     for t in area.get('textures', [])}
         area_type = AREA_TYPES[area.get('areaType', 0)]
@@ -134,7 +130,7 @@ def surface_textures(resources, dna):
 def authored_hull_surface(resources, dna):
     try:
         return require_hull_surface(resources, dna)
-    except (UnsupportedTextureDNA, FileNotFoundError):
+    except (UnsupportedSofDNA, FileNotFoundError):
         return None
 
 
@@ -146,7 +142,7 @@ def require_hull_surface(resources, dna):
     # the catalog surface pass; opaque, cutout, transparent and additive do.
     areas = [a for a in resolved['areas'] if a['kind'] != 'distortionAreas']
     if not areas:
-        raise UnsupportedTextureDNA('Hull has no renderable surface areas: ' + dna)
+        raise UnsupportedSofDNA('Hull has no renderable surface areas: ' + dna)
     surface = dict(areas=areas, customMasks=resolved['customMasks'], surfaceSource='sof')
     sphere = resolved['boundingSphere']
     if resolved['fixedSphere'] and sphere and sphere[3] > 0:
@@ -158,14 +154,14 @@ def require_hull_surface(resources, dna):
             try:
                 check_overlay_inputs(area, profile)
             except ValueError as error:
-                raise UnsupportedTextureDNA(f"{area['effect']}: {error}") from error
+                raise UnsupportedSofDNA(f"{area['effect']}: {error}") from error
             # SetupMesh uses the authored sphere after subsystem placement.
             # https://github.com/carbonengine/trinity/blob/f644516ae4f921f6f3a3e58dc5d19107781571ec/trinity/Eve/SpaceObjectFactory/EveSOFDNA.cpp#L1120-L1141
             sphere = resolved['boundingSphere']
             if sphere and sphere[3] > 0:
                 surface['overlayRadius'] = sphere[3]
         else:
-            raise UnsupportedTextureDNA('Unsupported hull surface shader: ' + area['effect'])
+            raise UnsupportedSofDNA('Unsupported hull surface shader: ' + area['effect'])
     return surface
 
 
@@ -173,7 +169,7 @@ def apply_surface_textures(hull, resources):
     """Replace independently resolved bindings on unambiguous authored draw calls."""
     try:
         resolved = surface_textures(resources, hull['dna'])
-    except (UnsupportedTextureDNA, FileNotFoundError) as exc:
+    except (UnsupportedSofDNA, FileNotFoundError) as exc:
         hull.setdefault('warnings', []).append('SOF 贴图沿用已有记录：' + str(exc))
         return
     if resolved['geometry'].replace('\\', '/').lower() != hull['geometry'].replace('\\', '/').lower():
@@ -214,4 +210,4 @@ if __name__ == '__main__':
     parser.add_argument('--cache', type=Path, required=True)
     parser.add_argument('--dna', required=True)
     args = parser.parse_args()
-    print(json.dumps(surface_textures(SofTextureResources(args.cache), args.dna), indent=2))
+    print(json.dumps(surface_textures(SofResources(args.cache), args.dna), indent=2))

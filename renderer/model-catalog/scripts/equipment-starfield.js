@@ -14,10 +14,11 @@ export function starfieldGeometry(settings) {
   let seed = ((settings.seed ?? 0) >>> 0) % 714025;
   const step = () => (seed = (((seed << 12) + 150889) >>> 0) % 714025);
   const random = () => f(step() / 714025);
-  // Older equipment manifests store only count/seed/display from previewTurrets.red.
-  const near = settings.minDist ?? 100, far = settings.maxDist ?? 300;
-  const low = settings.minFlashRate ?? f(.1), high = settings.maxFlashRate ?? f(.4);
-  const minimum = settings.minFlashIntensity ?? .5;
+  for (const key of ['minDist','maxDist','minFlashRate','maxFlashRate','minFlashIntensity'])
+    if (!Number.isFinite(settings[key])) throw Error('Missing starfield parameter: ' + key);
+  const near = settings.minDist, far = settings.maxDist;
+  const low = settings.minFlashRate, high = settings.maxFlashRate;
+  const minimum = settings.minFlashIntensity;
   for (let i = 0; i < count; i++) {
     const angle = f(f(random() * 2) * f(Math.PI)), z = f(f(random() - .5) * 2);
     const distance = random();

@@ -14,5 +14,5 @@ export async function loadFittingData(item, load) {
   }
   const appearance=await resolveFittingRules(descriptor.materialRules,item.dna,load);
   return {version:2, equipment:[...equipment.values()], appearance,
-    hullCategory:descriptor.hullCategory};
+    hullCategory:item.categoryID === 65 ? 65 : descriptor.hullCategory};
 }

@@ -2,9 +2,8 @@ import {createHullVariantIndex, hullKey} from './hull-variants.mjs';
 
 export function joinDirectory(directory, inventory, identities, affiliation) {
   const byID = new Map(), groups = new Map(), models = new Map();
-  for (const [dna, model] of Object.entries(inventory?.models || {})) {
-    for (const id of model.itemIds) models.set(id, {dna, raceID:model.raceID});
-  }
+  for (const item of Object.values(inventory?.items || {}))
+    models.set(item.id, {dna:item.dna, raceID:item.raceID});
   const categories = directory.map(category => {
     const children = category.groups.map(group => {
       const items = group.items.map(row => {

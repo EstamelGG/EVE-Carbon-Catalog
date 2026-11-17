@@ -103,7 +103,7 @@ async function init(){
   }
   const config=await read('./site-config.json');modelIndex=savedModelIndex()||defaultModelIndex(config);
   const [index]=await Promise.all([read(modelIndex),import(config.rendererModuleURL||'./eve-model-viewer.js')]);
-  if(index?.version!==3)throw Error(text('需要第 3 版模型索引。','A version 3 model index is required.'));
+  if(index?.version!==4)throw Error(text('需要第 4 版模型索引。','A version 4 model index is required.'));
   recipes=index.dnaRecipes||{};
   if(!Object.keys(recipes).length)throw Error(text('当前资源站尚未发布 DNA 配方库。','This resource site has no published DNA recipes.'));
   const hulls=[...new Set(Object.keys(recipes))];

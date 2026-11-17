@@ -89,7 +89,7 @@ export function createViewerController() {
 export function viewerUpdateKind(viewer, item, { native = false, profile = null } = {}) {
   const current = viewer?.readyItem;
   if (profile || !current) return 'model';
-  if (item.subsystemParts && viewer.subsystemAssembly && current.id === item.id) return 'subsystems';
+  if (!item.layoutAssembly && item.subsystemParts && viewer.subsystemAssembly && current.id === item.id) return 'subsystems';
   if (!native || item.subsystemParts || current.subsystemParts ||
       item.renderKind === 'equipment' || current.renderKind === 'equipment') return 'model';
   return 'appearance'; // Geometry compatibility is checked after reading the document.

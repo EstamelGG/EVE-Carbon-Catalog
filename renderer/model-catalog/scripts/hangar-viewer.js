@@ -141,10 +141,6 @@ export function createHangarViewer(viewer,{item,settings}) {
   cancelPending();
   if(disposed||token!==revision)return false;
   if(!room){clear();return true;}
-  if (room.environmentLOD) {
-   // Only the room document uses the environment LOD. A docked ship is a separate asset.
-   room = {...room, ...room.environmentLOD, resourceBundles: undefined};
-  }
   const previous=current,next={room:newAsset(room),entry:room,ship:null};
   const transaction={next,previous,previousMode:mode,previousPhase:viewer.dataset.hangarPhase,previousDock:viewer.dataset.hangarDock};pending=transaction;
   const valid=()=>!disposed&&token===revision&&pending===transaction;

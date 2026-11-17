@@ -1,4 +1,3 @@
-import {effectInstanceURL} from './effects-template.js';
 import {assembleDNA} from './dna-recipe.js';
 import {isStrategicCruiser, subsystemSlots, subsystemGroups} from '../src/subsystems.mjs';
 import { createResourceLocator, normalizeModelIndex } from '../src/resource-location.mjs';
@@ -6,11 +5,6 @@ import { createResourceLocator, normalizeModelIndex } from '../src/resource-loca
 
 export function componentResourceKey(options) {
   return normalizeModelIndex(options.modelIndex);
-}
-
-function itemName(model, id, dna) {
-  if (id == null || id === model.id) return model.name || {en:dna, zh:dna};
-  return model.itemNames?.[id] || {en:`ID ${id}`, zh:`ID ${id}`};
 }
 
 export function createComponentResources(key, fetchJSON) {
@@ -28,7 +22,7 @@ export function createComponentResources(key, fetchJSON) {
   }
   function loadIndex() {
     headerRequest ??= fetchJSON(key).then(data => {
-      if (data?.version !== 3 || typeof data.directory !== 'string')
+      if (data?.version !== 4 || typeof data.directory !== 'string')
         throw Error('Unsupported model index');
       return index = data;
     }).catch(error => { headerRequest = null; throw error; });
@@ -44,36 +38,38 @@ export function createComponentResources(key, fetchJSON) {
         if (!hull.startsWith(prefix) || !/^[1-3]$/.test(hull.slice(prefix.length))) continue;
         const variant = Number(hull.slice(prefix.length));
         if (!options.some(option => option.variant === variant))
-          options.push({variant, hull, id:part.id, name:part.name});
+          options.push({variant, hull, id:part.id, name:part.name, nextSubsystem:part.nextSubsystem});
       }
       return {key, options};
     });
     if (slots.every(slot => slot.options.length)) item.subsystems = {default:'1111', slots};
   }
-  async function resolveModel(value, itemId, staticDNA=value) {
+  async function resolveModel(value, itemId) {
     await loadIndex();
-    const expected = staticDNA.trim().toLowerCase();
+    const expected = value.trim().toLowerCase();
     if(itemId==null && Object.hasOwn(index.dnaRecipes||{},expected.split(':')[0]))
       return assembleDNA(expected,index,loadRecipe,resolveURL);
     await loadCatalog();
-    if (!Object.hasOwn(directory.models, expected)) {
-      if(itemId != null || !index.dnaRecipes)throw Error('Model has not been built: '+expected);
-      return assembleDNA(expected,index,loadRecipe,resolveURL);
-    }
-    const summary = directory.models[expected];
-    const item = await loadRecipe(summary.detail);
-    if (!item.model || (itemId != null && !item.itemIds.includes(itemId))) throw Error('Invalid model index entry: ' + expected);
-    const result = {...item, dna:expected, available:true, id:itemId ?? item.id, categoryID:item.categoryID ?? 6,
-      name:itemName(item, itemId, expected), model:resolveURL(item.model),
-      effects:item.effects && (expected.startsWith('graphic:') || item.renderKind==='equipment' ? resolveURL(item.effects) : effectInstanceURL(resolveURL(item.effects),expected))};
+    const identity = itemId == null ? null : directory.items[itemId];
+    if (itemId != null && (!identity || identity.dna !== expected))
+      throw Error('Item is absent from the component index');
+    let composed;
+    if (expected.startsWith('graphic:')) {
+      const asset = directory.assets[expected];
+      if (!asset) throw Error('Unpublished graphic: '+expected);
+      composed = await loadRecipe(asset);
+      composed = {...composed, model:resolveURL(composed.model),
+        effects:composed.effects && resolveURL(composed.effects)};
+    } else composed = await assembleDNA(expected,index,loadRecipe,resolveURL);
+    const result = {...composed,...identity,dna:expected,available:true,
+      id:itemId ?? composed.id, name:identity?.name || composed.name,
+      officialSkins:identity?.officialSkins ? {[identity.id]:identity.officialSkins} : composed.officialSkins};
     if (isStrategicCruiser(result) && !result.subsystems) await inferSubsystems(result, expected);
     return result;
   }
-  function dna(value, itemId, staticDNA=value) {
-    if (itemId == null && (!directory || !Object.hasOwn(directory.models,staticDNA.trim().toLowerCase())))
-      return resolveModel(value,itemId,staticDNA);
-    const key = JSON.stringify([value.trim().toLowerCase(), itemId, staticDNA]);
-    if (!models.has(key)) models.set(key, resolveModel(value, itemId, staticDNA).catch(error => {
+  function dna(value, itemId) {
+    const key = JSON.stringify([value.trim().toLowerCase(), itemId]);
+    if (!models.has(key)) models.set(key, resolveModel(value, itemId).catch(error => {
       models.delete(key);
       throw error;
     }));
@@ -85,22 +81,13 @@ export function createComponentResources(key, fetchJSON) {
       directory = await loadRecipe(data.directory);
       const items = new Map();
       const groups = new Map();
-      for (const [dna, model] of Object.entries(directory.models)) {
-        for (const id of model.itemIds) {
-          items.set(id, {id, dna, name:itemName(model, id, dna), groupID:model.groupID, categoryID:model.categoryID, available:true});
-        }
-      }
+      for (const row of Object.values(directory.items))
+        items.set(row.id,{...row,available:true});
       for (const item of items.values()) {
         if (!groups.has(item.groupID)) groups.set(item.groupID, []);
         groups.get(item.groupID).push(item);
       }
-      async function group(id) {
-        const rows = groups.get(id) || [];
-        const url = directory.groupNames?.[id];
-        if (!url) return rows;
-        const names = await loadRecipe(url);
-        return rows.map(item => ({...item, name:names[item.id] || item.name}));
-      }
+      async function group(id) { return groups.get(id) || []; }
       catalog = {
         item: async id => items.has(id) ? dna(items.get(id).dna, id) : null,
         search: async () => (await Promise.all([...groups.keys()].map(group))).flat(),

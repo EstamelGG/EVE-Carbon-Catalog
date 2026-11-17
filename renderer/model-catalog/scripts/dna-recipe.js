@@ -1,3 +1,4 @@
+import {assembleLayoutDNA} from './layout-recipe.js';
 import {assembleEffects,effectInstanceURL} from './effects-template.js';
 import { messages } from '../src/messages.mjs';
 import {factionParameter,legacyLayers} from './hull-definition.js';
@@ -22,9 +23,9 @@ export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}
   const commands=new Map();
   for(const token of tokens){
     const [key,...rest]=token.split('?');
-    const limit={material:4,pattern:3,respathinsert:1}[key];
+    const limit={material:4,pattern:3,respathinsert:1,layout:32}[key];
     const values=(rest[0]||'').split(';');
-    if(!['material','pattern','respathinsert'].includes(key)||commands.has(key)||rest.length!==1||
+    if(!['material','pattern','respathinsert','layout'].includes(key)||commands.has(key)||rest.length!==1||
        values.length>limit||values.some(v=>!v))throw Error('DNA 参数无效 · '+token);
     commands.set(key,values);
   }
@@ -84,7 +85,16 @@ export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}
   }
   const effects=await assembleEffects(packet,dna,load);
   const url=effectInstanceURL(resolveURL(base.effects),dna);
-  return {...base,categoryID:base.categoryID ?? 6,dna,available:true,name:{zh:(base.name?.zh||hull)+' · '+messages.custom[0],en:(base.name?.en||hull)+' · '+messages.custom[1]},model:resolveURL(base.model),preview:style.preview.url,
+  const result = {...base,categoryID:base.categoryID ?? 6,dna,available:true,name:{zh:(base.name?.zh||hull)+' · '+messages.custom[0],en:(base.name?.en||hull)+' · '+messages.custom[1]},model:resolveURL(base.model),preview:style.preview.url,
     appearance,appearanceRevision:base.appearanceRevision+'-'+base.recipe.options+'-'+base.recipe.palette+'-'+dna,
-    effects:url,recipeEffects:effects};
+    effects:url,recipeEffects:effects, locatorSets:options.locatorSets||[]};
+  if (!commands.has('layout')) return result;
+  const layoutData=await load(index.layouts);
+  if(layoutData.version!==1)throw Error('Unsupported layout component data');
+  return assembleLayoutDNA(result,commands.get('layout'),layoutData.layouts,child=>{
+    const hull=child.split(':')[0],locator=layoutData.locators[hull];
+    if(!own(index.dnaRecipes,hull) && locator?.locatorOnly)
+      return {dna:child,locatorSets:locator.locatorSets};
+    return assembleDNA(child,index,load,resolveURL,{officialSkin});
+  });
 }

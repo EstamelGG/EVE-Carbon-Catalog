@@ -846,13 +846,13 @@ async function loadModelIndex(url, signal) {
   const response = await fetch(url, { cache: 'no-cache', signal });
   if (!response.ok) throw new Error(t('resIndexHttp', { status: response.status }));
   const header = await response.json();
-  if (header?.version !== 3 || typeof header.directory !== 'string' || !header.directory.startsWith('res/'))
+  if (header?.version !== 4 || typeof header.directory !== 'string' || !header.directory.startsWith('res/'))
     throw new Error(t('resIndexFormat'));
   const directory = await fetch(new URL(header.directory.slice(4), url), { signal });
   if (!directory.ok) throw new Error(t('resIndexHttp', { status: directory.status }));
   const index = await directory.json();
-  if (!index?.models || typeof index.models !== 'object' || Array.isArray(index.models) ||
-      Object.values(index.models).some(model => !Array.isArray(model?.itemIds)))
+  if (!index?.items || typeof index.items !== 'object' || Array.isArray(index.items) ||
+      Object.values(index.items).some(item => !Number.isSafeInteger(item?.id) || typeof item.dna !== 'string'))
     throw new Error(t('resIndexFormat'));
   return index;
 }

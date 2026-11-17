@@ -87,7 +87,7 @@ export async function installSubsystemParts(viewer, item, settings, installEffec
     if (Number.isInteger(root.userData.eveSubsystemSlot))
       roots.set(root.userData.eveSubsystemSlot, root);
   });
-  if (roots.size !== 4) throw Error('Missing subsystem roots');
+  if (roots.size !== item.subsystemParts.length) throw Error('Missing assembly roots');
   let disposed = false,
     mode = 'cruise',
     flightMode = 'cruise',
@@ -108,7 +108,7 @@ export async function installSubsystemParts(viewer, item, settings, installEffec
       url.searchParams.set('v', part.modelRevision || 'material-options-v1');
       const [document, rawEffects] = await Promise.all([
         subsystemDocument(session,url.href,part),
-        session.json(resolveURL(part.effects)),
+        part.recipeEffects ?? session.json(resolveURL(part.effects)),
       ]);
       const data = {
         ...part,
@@ -124,7 +124,8 @@ export async function installSubsystemParts(viewer, item, settings, installEffec
         root = parsed.scene.children[0];
         root.removeFromParent();
         disposeGeometry = geometryDisposer(root);
-        root.position.fromArray(part.offset);
+        if(part.matrix){root.matrix.fromArray(part.matrix);root.matrix.decompose(root.position,root.quaternion,root.scale);}
+        else root.position.fromArray(part.offset);
         if (settings)
           disposeNative = await installNativePreview(
             viewer,

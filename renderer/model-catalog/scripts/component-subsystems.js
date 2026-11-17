@@ -58,7 +58,7 @@ export function createSubsystemPanel(root, { state, configure, runtime, translat
   return {
     render,
     install(viewer, item, module) {
-      if (!item.subsystemParts) return;
+      if (item.groupID !== 963 || !item.subsystemParts) return;
       viewer.lifecycle.set(
         'disposeSubsystemLabels',
         module.installSubsystemLabels(viewer, () =>

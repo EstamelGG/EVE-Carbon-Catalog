@@ -15,12 +15,12 @@ const arrays = [
 ];
 const clone = (value) => structuredClone(value);
 const add = (a, b) => a.map((v, i) => v + b[i]);
-function validateGeometry(d) {
-  if (d.animations?.length)
+function validateGeometry(d, layoutPart=false) {
+  if (!layoutPart && d.animations?.length)
     throw Error('Animated parts require separate binding support');
   if (d.extensionsRequired?.some((e) => !['EXT_texture_webp','EXT_meshopt_compression','KHR_texture_basisu'].includes(e)))
     throw Error('Unsupported subsystem geometry extension');
-  if (d.materials.some((m) => m.extras?.ccpdecNative?.patterns?.length))
+  if (!layoutPart && d.materials.some((m) => m.extras?.ccpdecNative?.patterns?.length))
     throw Error('Projected subsystem patterns require assembled coordinates');
 }
 
@@ -150,17 +150,23 @@ export function assembleGeometry(parts) {
       off = Object.fromEntries(arrays.map((k) => [k, out[k].length]));
     const prefix = `s${slot + 1}_`,
       absolute = (uri) => new URL(uri, part.url).href;
-    validateGeometry(d);
+    validateGeometry(d,part.layoutPart);
     remapResources(d, off, absolute);
     remapMaterials(d, off, prefix, absolute);
     remapMeshes(d, off, prefix);
     remapNodes(d, off, prefix);
+    for(const animation of d.animations||[]){
+      for(const sampler of animation.samplers){sampler.input+=off.accessors;sampler.output+=off.accessors;}
+      for(const channel of animation.channels) if(channel.target.node!=null) channel.target.node+=off.nodes;
+      animation.name=prefix+(animation.name||'animation');
+      (out.animations||=[]).push(animation);
+    }
     for (const k of arrays) out[k].push(...(d[k] || []));
     out.scenes[0].nodes.push(out.nodes.length);
     out.nodes.push({
       name: `Subsystem ${slot + 1}`,
       extras: { eveSubsystemSlot: slot },
-      translation: part.offset,
+      ...(part.matrix ? {matrix:part.matrix} : {translation:part.offset}),
       children: d.scenes[d.scene || 0].nodes.map((i) => i + off.nodes),
     });
     for (const k of ['extensionsUsed', 'extensionsRequired'])
@@ -204,7 +210,7 @@ export async function prepareSubsystemModel(session, item, source, pageURL) {
       url.searchParams.set('v', part.modelRevision || 'material-options-v1');
       const [document, effects] = await Promise.all([
         subsystemDocument(session,url.href,part),
-        session.json(resolveURL(part.effects)),
+        part.recipeEffects ?? session.json(resolveURL(part.effects)),
       ]);
       return { ...part, url: url.href, document, effects };
     }),

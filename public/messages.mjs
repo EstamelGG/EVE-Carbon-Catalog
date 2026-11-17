@@ -12,7 +12,7 @@ export const messages = {
   resIndexChecking: ['正在检查 model-index.json…', 'Checking model-index.json…'],
   resIndexHttp: ['无法读取 model-index.json（HTTP {status}）。', 'Could not read model-index.json (HTTP {status}).'],
   resIndexJson: ['model-index.json 的内容无法解析为 JSON。', 'model-index.json does not contain valid JSON.'],
-  resIndexFormat: ['模型索引格式不受支持，需要第 3 版索引和有效的物品目录。', 'Expected a version 3 model index with a valid item directory.'],
+  resIndexFormat: ['模型索引格式不受支持，需要第 4 版索引和有效的物品目录。', 'Expected a version 4 model index with a valid item directory.'],
   resIndexTimeout: ['读取 model-index.json 超时，请重试。', 'Reading model-index.json timed out. Try again.'],
   resIndexNetwork: ['无法请求 model-index.json，请检查地址、网络和跨域访问设置。', 'Could not fetch model-index.json. Check the URL, network connection and CORS settings.'],
   rendererUnavailable: ['暂时无法加载渲染组件', 'Model viewer unavailable'],

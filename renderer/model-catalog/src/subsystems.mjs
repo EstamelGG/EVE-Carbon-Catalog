@@ -1,5 +1,3 @@
-import { subsystemConnectors } from './subsystem-connectors.mjs?v=assembly-v1';
-
 export const subsystemSlots = ['core', 'defensive', 'offensive', 'propulsion'];
 export const subsystemGroups = [958, 954, 956, 957];
 export function isStrategicCruiser(item) {
@@ -15,8 +13,8 @@ export function withSubsystems(item, parts) {
       const part = byID.get(option.id);
       return {
         ...option, part, name:part?.name || option.name,
-        nextSubsystem: Object.hasOwn(option, 'nextSubsystem') ? option.nextSubsystem : subsystemConnectors[option.hull],
-        available: !!part?.available && (Object.hasOwn(option, 'nextSubsystem') || Object.hasOwn(subsystemConnectors, option.hull)),
+        nextSubsystem: option.nextSubsystem,
+        available: !!part?.available && Object.hasOwn(option, 'nextSubsystem'),
       };
     }),
   }));
