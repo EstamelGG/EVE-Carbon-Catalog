@@ -16,8 +16,8 @@ async function optionalShard(load, path) {
 export async function loadFittingData(item, load, hardpoints = []) {
   if (!item?.fitting) return {version:2, equipment:[]};
   const descriptor = await load(item.fitting);
-  if (![3,4].includes(descriptor.version) || !Array.isArray(descriptor.equipmentShards))
-    throw Error('Per-hull fitting metadata version 3 or 4 is required');
+  if (![3,4,5].includes(descriptor.version) || !Array.isArray(descriptor.equipmentShards))
+    throw Error('Per-hull fitting metadata version 3, 4 or 5 is required');
   if (!Object.hasOwn(descriptor,'materialRules'))throw Error('Missing fitting rules; rebuild fitting resources');
   const categoryID = descriptor.hullCategory === 65 ? 66 : 7,
     shardURLs = new Set(descriptor.equipmentShards);
@@ -43,6 +43,7 @@ export async function loadFittingData(item, load, hardpoints = []) {
     if (!capacity) return true;
     if (row.requirement === 'launcher') return Number(capacity.launcher) > 0;
     if (row.requirement === 'turret') return Number(capacity.turret) > 0;
+    if (row.requirement === 'high') return Number(capacity.high) > 0;
     return true;
   };
   for (const shard of shards) {
@@ -50,7 +51,11 @@ export async function loadFittingData(item, load, hardpoints = []) {
     for (const row of shard.equipment) if (compatible(row)) equipment.set(row.id, row);
   }
   const appearance=await resolveFittingRules(descriptor.materialRules,item.dna,load);
+  const slots=Array.isArray(descriptor.slots)
+    ? descriptor.slots.map(definition=>descriptor.hardpoints
+      ? {...definition,hardpoints:descriptor.hardpoints}:definition)
+    : undefined;
   return {version:2, equipment:[...equipment.values()], appearance,
     hullCategory:item.categoryID === 65 ? 65 : descriptor.hullCategory,
-    slots:Array.isArray(descriptor.slots) ? descriptor.slots : undefined};
+    hardpoints:descriptor.hardpoints, slots};
 }

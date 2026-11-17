@@ -2,25 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadFittingData} from './fitting-data.mjs';
 
-test('version 4 uses only the hull compatibility shards and SDE slots', async()=>{
+test('version 5 uses only the hull compatibility shards and generic high slots', async()=>{
   const slots=[
-    {slot:1,requirement:'launcher',family:'locator_turret_',nativeSlot:1},
-    {slot:2,requirement:'launcher',family:'locator_turret_',nativeSlot:2},
+    {slot:1,requirement:'high',family:'locator_turret_',nativeSlot:1},
+    {slot:2,requirement:'high',family:'locator_turret_',nativeSlot:2},
   ];
   const records={
-    ship:{version:4,hullCategory:6,hardpoints:{launcher:2,turret:0},slots,
+    ship:{version:5,hullCategory:6,hardpoints:{high:2,launcher:2,turret:0},slots,
       equipmentShards:['launchers'],materialRules:null},
     launchers:{version:1,equipment:[
       {id:501,requirement:'launcher'},
       {id:461,requirement:'turret'},
-      {id:85084,requirement:'unsupported'},
+      {id:25861,requirement:'high'},
     ]},
   };
   const calls=[],load=async key=>{calls.push(key);return records[key];};
   const ship=await loadFittingData({fitting:'ship'},load,[{name:'locator_turret_1a'}]);
   assert.deepEqual(calls,['ship','launchers']);
-  assert.deepEqual(ship.equipment,[{id:501,requirement:'launcher'}]);
-  assert.deepEqual(ship.slots,slots);
+  assert.deepEqual(ship.equipment,[{id:501,requirement:'launcher'},{id:25861,requirement:'high'}]);
+  assert.deepEqual(ship.slots,slots.map(slot=>({...slot,hardpoints:{high:2,launcher:2,turret:0}})));
+  assert.deepEqual(ship.hardpoints,{high:2,launcher:2,turret:0});
 });
 
 test('version 4 keeps structure equipment in its category', async()=>{
@@ -52,5 +53,5 @@ test('version 3 remains readable but does not invent launcher compatibility', as
 
 test('missing hull data does not request a global fitting file', async()=>{
   assert.deepEqual((await loadFittingData({},()=>{throw Error('Unexpected request');})).equipment,[]);
-  await assert.rejects(loadFittingData({fitting:'bad'},async()=>({version:2})),/version 3 or 4/);
+  await assert.rejects(loadFittingData({fitting:'bad'},async()=>({version:2})),/version 3, 4 or 5/);
 });

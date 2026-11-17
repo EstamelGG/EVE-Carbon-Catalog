@@ -5,7 +5,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {ktx2Loader} from '@google/model-viewer/lib/three-components/CachingGLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {subsystemDocument} from './shared-hull.js';
-import {createAutomaticEquipmentMounts,groupHardpoints,singleEquipmentDocument,equipmentLocatorName} from './equipment-hardpoints.js';
+import {createAutomaticEquipmentMounts,groupHardpoints,singleEquipmentDocument,equipmentLocatorName,resolveHardpointLocators} from './equipment-hardpoints.js';
 import {installNativePreview} from './native-viewer.js';
 import {beforeSceneRender} from './effect-resources.js';
 import {resourceURL} from '../src/resource-location.mjs';
@@ -18,6 +18,7 @@ import {resolveFittingMaterial,applyFittingMaterial} from './fitting-materials.j
 export function installFitting(viewer,{locators,equipment,slots:definitions,settings,hullCategory=6,appearance,dna=''}) {
  const materialProfile=resolveFittingMaterial(appearance,dna);
  const scene=viewer[$scene],root=new Group(),cache=new Map(),owned=new Set(),nativeDisposers=new Set();
+ locators=resolveHardpointLocators(locators,scene.model,viewer.originalGltfJson);
  const nativeSlots=groupHardpoints(locators),layer=viewer.ownerDocument.createElement('div'),labels=[];
  const leaders=viewer.ownerDocument.createElementNS('http://www.w3.org/2000/svg','svg');leaders.classList.add('fitting-leaders');leaders.setAttribute('aria-hidden','true');
  const overlay=new Group(),outlines=[];

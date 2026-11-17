@@ -1,5 +1,7 @@
 import { equipmentChoices } from './equipment-list.js';
 import {loadFittingData} from '../src/fitting-data.mjs';
+import {$scene} from '@google/model-viewer/lib/model-viewer-base.js';
+import {resolveHardpointLocators} from './equipment-hardpoints.js';
 
 // All programmatic fits use the same transactional allocator as the controls.
 export async function configureEquipment({
@@ -19,8 +21,9 @@ export async function configureEquipment({
   const fittingData = await loadFittingData(item, url => viewer.assetSession.json(url), embedded);
   checkCurrent();
   if (fittingData.version !== 2) throw Error('Fitting metadata version 2 is required');
-  const locators = embedded ?? fittingData.ships?.[item.id];
-  if (!locators?.length) throw Error('No compatible equipment mounts');
+  const authored = embedded ?? fittingData.ships?.[item.id];
+  if (!authored?.length) throw Error('No compatible equipment mounts');
+  const locators = resolveHardpointLocators(authored, viewer[$scene]?.model, viewer.originalGltfJson);
   const equipment = fittingData.equipment.filter((item) => item.supported !== false);
   if (!viewer.fitting) {
     const settings = nativePreview ? await viewer.assetSession.json(nativePreview) : {};

@@ -1,7 +1,7 @@
 import { Group, Matrix4 } from 'three';
 import { equipmentAnimation } from './equipment-animation.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
-import { bindAttachmentBones } from './source-bones.js';
+import { bindAttachmentBones, resolveBoneLocators } from './source-bones.js';
 import {
   equipmentLocatorCandidates,
   equipmentLocatorName,
@@ -9,6 +9,7 @@ import {
 } from '../src/hardpoint-locators.mjs';
 
 export { equipmentLocatorCandidates, equipmentLocatorName };
+export const resolveHardpointLocators = resolveBoneLocators;
 
 // Carbon row-vector matrices flatten directly into Three's column-major
 // representation. Preserve source matrices here; equipment placement uses
@@ -70,7 +71,7 @@ export function logicalHardpoints(nativeSlots, definitions) {
  return definitions.map((definition,index)=>{
   const slot=Number(definition.slot??index+1),
     nativeSlot=Number(definition.nativeSlot??slot),
-    native=nativeSlots.find(candidate=>candidate.slot===nativeSlot);
+    native=nativeSlots.find(candidate=>candidate.slot===nativeSlot||candidate.aliases?.includes(nativeSlot));
   return {...definition,slot,nativeSlot,types:native?.types||{},mounts:native?.mounts||[]};
  });
 }
@@ -91,9 +92,15 @@ export function canFitEquipment(slots,slot,equipment,hullCategory=6) {
  if(equipmentCategory===null||equipment.categoryID!==equipmentCategory)return false;
  const definition=slots.find(candidate=>candidate.slot===slot);
  if(!definition||equipment.requirement==='unsupported')return false;
- // A launcher slot may be drawn on a turret locator, but a turret weapon is
- // still incompatible unless the SDE granted turret capacity.
- if(definition.requirement&&equipment.requirement&&definition.requirement!==equipment.requirement)return false;
+ const capacity=definition.hardpoints;
+ if(capacity){
+  // High slots are generic. Launcher and turret capacities only decide whether
+  // the hull supports that weapon class at all; fitting is intentionally not
+  // capped by those SDE reference values.
+  if(equipment.requirement==='launcher'&&Number(capacity.launcher)<=0)return false;
+  if(equipment.requirement==='turret'&&Number(capacity.turret)<=0)return false;
+  if(equipment.requirement!=='launcher'&&equipment.requirement!=='turret'&&Number(capacity.high)<=0)return false;
+ }else if(definition.requirement&&equipment.requirement&&definition.requirement!==equipment.requirement)return false;
  try{return selectHardpoints(slots,slot,equipmentLocatorName(equipment)).length>0;}
  catch{return false;}
 }
@@ -146,16 +153,12 @@ export function singleEquipmentDocument(document) {
 }
 
 export function bindHardpointBones(root, model, document, instances) {
- const palette=document?.extras?.ccpdec?.bonePalette;
- if(!palette?.length)return ()=>{};
  const targets=new Map();
  for(const instance of instances){
   const name=instance.mount.name.toLowerCase();
-  const index=palette.findIndex(value=>String(value).toLowerCase()===name);
-  if(index<0)continue;
-  const entries=targets.get(index)||[];
+  const entries=targets.get(name)||[];
   entries.push({holder:instance.holder,base:instance.base});
-  targets.set(index,entries);
+  targets.set(name,entries);
  }
  const update=bindAttachmentBones(root,model,document,targets);
  if(!update)return ()=>{};

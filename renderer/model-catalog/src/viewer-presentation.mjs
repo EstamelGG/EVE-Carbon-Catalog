@@ -73,38 +73,6 @@ export function watchOcclusionRadius(viewer, { homeDistance, profile, ao, compos
   };
 }
 
-// These GR2 clip families spell the destination differently from the transition.
-// Keep names scoped to the selected geometry, including independently animated doors and spinners.
-const transitionClips = new Map([
-  ['DoorClosed2Open', 'DoorOpen'], ['DoorOpen2Closed', 'DoorClosed'],
-  ['Doors_Closed2Open', 'Doors_open'], ['Doors_open2Closed', 'Doors_Closed'],
-  ['Attack2Siegie', 'SiegeLoop'], ['Active2InActive', 'InactiveLoop'],
-  ['ActiveStart','ActiveLoop'], ['ActiveEnd','NormalLoop'],
-  ['TriggerStart','TriggerLoop'], ['TriggerEnd','NormalLoop'],
-  ['Linking_ActiveStart','Linking_Active'], ['Linking_ActiveEnd','Linking_Inactive'],
-  ['spinner_hacking2empty', 'spinner_empty'], ['StartSiege', 'SiegeLoop'], ['EndSiege', 'NormalLoop'],
-]);
-const loopClips = new Map([
-  ['Normal', 'NormalLoop'], ['Warp', 'WarpLoop'], ['Attack', 'AttackLoop'],
-  ['Siege', 'SiegeLoop'], ['SiegeAttack', 'SiegeAttackLoop'],
-  ['Defensive', 'DefensiveModeLoop'], ['Sniper', 'SniperModeLoop'], ['Speed', 'SpeedModeLoop'],
-  ['Active', 'ActiveLoop'], ['Inactive','InactiveLoop'], ['Off', 'OffLoop'],
-  ['Online','OnlineLoop'], ['Offline','OfflineLoop'], ['Docked','DockedLoop'],
-]);
-
-function destinationClip(current, clips) {
-  const start = current.lastIndexOf('.') + 1;
-  const prefix = current.slice(0, start), name = current.slice(start);
-  const qualified = transitionClips.get(name);
-  if (qualified) return clips.find(clip => clip === prefix + qualified);
-  const transition = /^([A-Za-z_]+?)(?:_2_|2)([A-Za-z][A-Za-z_]*)$/.exec(name);
-  if (!transition) return;
-  const destination = transition[2];
-  if (clips.includes(prefix + destination)) return prefix + destination;
-  const loop = loopClips.get(destination);
-  if (loop && clips.includes(prefix + loop)) return prefix + loop;
-}
-
 export function configureHullAnimations(
   viewer,
   { row, select, translate: t, play: playHullAnimation, isActive },
@@ -137,19 +105,7 @@ export function configureHullAnimations(
     viewer.animationName = normal;
     playHullAnimation(viewer);
   }
-  const finish = () => {
-    if (!isActive()) return;
-    const settled = destinationClip(viewer.animationName || '', clips);
-    if (!settled) return;
-    // Native state transitions hand off to the destination loop. Holding
-    // the transition's final frame would leave its one-shot FX frozen.
-    select.value = settled;
-    viewer.animationName = settled;
-    viewer.currentTime = 0;
-    playHullAnimation(viewer);
-  };
-  if (clips.length && !viewer.equipmentPreview) viewer.addEventListener('finished', finish);
-  return () => viewer.removeEventListener('finished', finish);
+  return () => {};
 }
 
 export async function initializeViewerCamera(
