@@ -2,7 +2,11 @@ import { loadJSON } from './resource-activity.mjs';
 import { resourceURL } from './resource-location.mjs';
 import { loadFittingData } from './fitting-data.mjs';
 import { uniqueEquipmentModels } from './fitting-directory.mjs';
-import { hardpointFamilies } from './hardpoint-locators.mjs';
+import {
+  equipmentSize,
+  hardpointFamilies,
+  hardpointSlotSize,
+} from './hardpoint-locators.mjs';
 
 export function createFittingPanel({
   root,
@@ -143,7 +147,7 @@ export function createFittingPanel({
     else if (fitting)
       status('fittingReady', { groups: fitting.slots.length, count: fitting.count });
   }
-  function equipmentIcon(item) {
+  function equipmentIcon(item, placeholder = '+') {
     const frame = document.createElement('span');
     frame.className = 'fitting-equipment-icon';
     frame.setAttribute('aria-hidden', 'true');
@@ -159,7 +163,7 @@ export function createFittingPanel({
         image.hidden = true;
       };
       frame.append(image);
-    } else frame.textContent = '+';
+    } else frame.textContent = placeholder;
     return frame;
   }
   function renderSlots() {
@@ -175,9 +179,11 @@ export function createFittingPanel({
         const item = equipmentItem(fitting.get(definition.slot)?.id),
           count = fitting.activeMounts(definition.slot).length,
           number = String(definition.slot).padStart(2, '0'),
+          size = hardpointSlotSize(definition, currentItem()),
           shell = document.createElement('div'),
           target = document.createElement('button'),
           numberNode = document.createElement('span'),
+          sizeNode = document.createElement('span'),
           countNode = document.createElement('span');
         shell.className = 'fitting-slot-shell';
         target.type = 'button';
@@ -193,14 +199,19 @@ export function createFittingPanel({
         const description =
           t('fittingSlot', { slot: number, count }) +
           ' · ' +
-          (item ? name(item.name) : t('fittingEmpty'));
+          (item ? name(item.name) : t('fittingEmpty')) +
+          (size ? ` · ${size}` : '');
         target.setAttribute('aria-label', description);
         target.title = description;
         numberNode.className = 'fitting-slot-number';
         numberNode.textContent = number;
+        sizeNode.className = 'fitting-slot-size';
+        sizeNode.textContent = size;
         countNode.className = 'fitting-slot-count';
         countNode.textContent = count > 1 ? `×${count}` : '';
-        target.append(numberNode, equipmentIcon(item), countNode);
+        if (item) target.append(numberNode, sizeNode);
+        else target.append(numberNode);
+        target.append(equipmentIcon(item, size), countNode);
         target.addEventListener('click', () => {
           if (busy()) return;
           if (s.targeted && s.slot === definition.slot) s.targeted = false;
@@ -300,13 +311,20 @@ export function createFittingPanel({
     const equipmentButton = (item) => {
       const button = document.createElement('button'),
         text = document.createElement('span'),
+        sizeNode = document.createElement('span'),
+        size = equipmentSize(item),
         id = document.createElement('small');
       button.type = 'button';
       button.dataset.item = String(item.id);
+      text.className = 'fitting-equipment-name';
       text.textContent = name(item.name);
       id.textContent = item.id === lastEquipment ? t('fittingLastChoice') : `#${item.id}`;
-      button.append(equipmentIcon(item), text, id);
-      button.title = name(item.name);
+      sizeNode.className = 'fitting-equipment-size';
+      sizeNode.textContent = size;
+      button.append(equipmentIcon(item), text);
+      if (size) button.append(sizeNode);
+      button.append(id);
+      button.title = size ? `${name(item.name)} · ${size}` : name(item.name);
       button.addEventListener('click', () => {
         if (busy()) return;
         const target = s.targeted

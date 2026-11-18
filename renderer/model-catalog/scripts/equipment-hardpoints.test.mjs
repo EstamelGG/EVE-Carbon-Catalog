@@ -18,12 +18,19 @@ const slots = groupHardpoints([
   { name: 'locator_launcher_1a', transform: shifted },
 ]);
 
-test('launcher equipment can use turret mounts but chain equipment cannot', () => {
+test('launcher and turret equipment share generic weapon mounts', () => {
   const turretOnly = groupHardpoints([
     { name: 'locator_turret_1a', transform: identity },
   ]);
+  const launcherOnly = groupHardpoints([
+    { name: 'locator_launcher_1a', transform: identity },
+  ]);
   assert.equal(
     canFitEquipment(turretOnly, 1, { categoryID: 7, locatorName: 'locator_launcher_' }),
+    true,
+  );
+  assert.equal(
+    canFitEquipment(launcherOnly, 1, { categoryID: 7, locatorName: 'locator_turret_' }),
     true,
   );
   assert.equal(
@@ -59,7 +66,7 @@ test('logical slots follow SDE capacity instead of locator group count', () => {
   );
   assert.equal(
     canFitEquipment(slots, 1, {categoryID: 7, requirement: 'turret', locatorName: 'locator_turret_'}),
-    false,
+    true,
   );
   assert.equal(
     canFitEquipment(slots, 1, {categoryID: 7, requirement: 'high', locatorName: 'locator_turret_'}),
@@ -108,7 +115,7 @@ test('hiPower utility equipment uses any generic high slot', () => {
   assert.equal(canFitEquipment(slots, 1, salvager), true);
   assert.equal(
     canFitEquipment(slots, 1, { categoryID: 7, requirement: 'turret', locatorName: 'locator_turret_' }),
-    false,
+    true,
   );
   const plan = planEquipmentPlacements(slots, new Map([[1, 25861]]), [salvager], 6);
   assert.deepEqual(plan.get(1).mounts.map(({ name }) => name), ['locator_turret_1a']);
@@ -160,6 +167,48 @@ test('launcher equipment can be planned onto a turret-only slot', () => {
     6,
   );
   assert.deepEqual(plan.get(1).mounts.map(({ name }) => name), ['locator_turret_1a']);
+});
+
+test('turret equipment can be planned onto a launcher-only slot', () => {
+  const launcherOnly = groupHardpoints([
+    { name: 'locator_launcher_1a', transform: identity },
+  ]);
+  const equipment = [{ id: 461, categoryID: 7, locatorName: 'locator_turret_' }];
+  const plan = planEquipmentPlacements(
+    launcherOnly,
+    new Map([[1, 461]]),
+    equipment,
+    6,
+  );
+  assert.deepEqual(plan.get(1).prefix, 'locator_launcher_');
+  assert.deepEqual(plan.get(1).mounts.map(({ name }) => name), ['locator_launcher_1a']);
+});
+
+test('XL equipment never falls back to ordinary weapon mounts', () => {
+  const turret = groupHardpoints([
+    { name: 'locator_turret_1a', transform: identity },
+    { name: 'locator_launcher_1a', transform: shifted },
+  ]);
+  const xl = groupHardpoints([
+    { name: 'locator_xl_1a', transform: identity },
+  ]);
+  const xlWeapon = {
+    id: 88348, categoryID: 7,
+    locatorName: 'locator_turret_',
+    model: 'res/dx9/model/turret/energy/beam/xl/beam_xl.glb',
+  };
+  const mediumWeapon = {
+    id: 461, categoryID: 7,
+    locatorName: 'locator_turret_',
+    model: 'res/dx9/model/turret/energy/beam/m/beam_medium.glb',
+  };
+  assert.equal(canFitEquipment(turret, 1, xlWeapon), false);
+  assert.equal(canFitEquipment(xl, 1, xlWeapon), true);
+  assert.equal(canFitEquipment(xl, 1, mediumWeapon), false);
+  assert.throws(
+    () => planEquipmentPlacements(turret, new Map([[1, xlWeapon.id]]), [xlWeapon], 6),
+    /No free compatible equipment mounts/,
+  );
 });
 
 test('unrelated equipment families stay incompatible', () => {

@@ -19,9 +19,29 @@ test('version 5 uses only the hull compatibility shards and generic high slots',
   const calls=[],load=async key=>{calls.push(key);return records[key];};
   const ship=await loadFittingData({fitting:'ship'},load,[{name:'locator_turret_1a'}]);
   assert.deepEqual(calls,['ship','launchers']);
-  assert.deepEqual(ship.equipment,[{id:501,requirement:'launcher'},{id:25861,requirement:'high'}]);
+  assert.deepEqual(ship.equipment,[
+    {id:501,requirement:'launcher'},
+    {id:461,requirement:'turret'},
+    {id:25861,requirement:'high'},
+  ]);
   assert.deepEqual(ship.slots,slots.map(slot=>({...slot,hardpoints:{high:2,launcher:2,turret:0}})));
   assert.deepEqual(ship.hardpoints,{high:2,launcher:2,turret:0});
+});
+
+test('launcher-only hull data includes turret equipment', async()=>{
+  const records={
+    ship:{version:5,hullCategory:6,hardpoints:{high:5,launcher:5,turret:0},
+      slots:[{slot:1,requirement:'high',family:'locator_turret_',nativeSlot:1}],
+      equipmentShards:['launchers','turrets'],materialRules:null},
+    launchers:{version:1,equipment:[{id:501,requirement:'launcher'}]},
+    turrets:{version:1,equipment:[{id:461,requirement:'turret'}]},
+  };
+  const load=async key=>records[key];
+  const ship=await loadFittingData({fitting:'ship'},load,[{name:'locator_turret_1a'}]);
+  assert.deepEqual(ship.equipment,[
+    {id:501,requirement:'launcher'},
+    {id:461,requirement:'turret'},
+  ]);
 });
 
 test('version 4 keeps structure equipment in its category', async()=>{

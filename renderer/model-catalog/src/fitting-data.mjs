@@ -41,9 +41,9 @@ export async function loadFittingData(item, load, hardpoints = []) {
   const compatible = (row) => {
     if (row.supported === false || row.requirement === 'unsupported') return false;
     if (!capacity) return true;
-    if (row.requirement === 'launcher') return Number(capacity.launcher) > 0;
-    if (row.requirement === 'turret') return Number(capacity.turret) > 0;
-    if (row.requirement === 'high') return Number(capacity.high) > 0;
+    if (['high', 'launcher', 'turret', 'xl'].includes(row.requirement))
+      return [capacity.high, capacity.launcher, capacity.turret]
+        .some((value) => Number(value) > 0);
     return true;
   };
   for (const shard of shards) {

@@ -76,13 +76,21 @@ export function logicalHardpoints(nativeSlots, definitions) {
  });
 }
 
-export function selectHardpoints(slots,slot,prefix) {
+export function resolveHardpointCandidate(slots,slot,equipment) {
+ const item=typeof equipment==='string'?{locatorName:equipment}:(equipment||{});
  const definition=slots.find(s=>s.slot===slot);
- for(const candidate of equipmentLocatorCandidates({locatorName:prefix})){
+ for(const candidate of equipmentLocatorCandidates(item)){
   const mounts=definition?.types?.[candidate];
-  if(mounts?.length)return mounts;
+  if(mounts?.length)return {prefix:candidate,mounts};
  }
- throw Error('Missing hardpoint slot: '+prefix+slot);
+ return null;
+}
+
+export function selectHardpoints(slots,slot,equipment) {
+ const selected=resolveHardpointCandidate(slots,slot,equipment);
+ if(selected)return selected.mounts;
+ throw Error('Missing hardpoint slot: '+equipmentLocatorName(
+  typeof equipment==='string'?{locatorName:equipment}:equipment)+slot);
 }
 
 export function canFitEquipment(slots,slot,equipment,hullCategory=6) {
@@ -94,15 +102,12 @@ export function canFitEquipment(slots,slot,equipment,hullCategory=6) {
  if(!definition||equipment.requirement==='unsupported')return false;
  const capacity=definition.hardpoints;
  if(capacity){
-  // High slots are generic. Launcher and turret capacities only decide whether
-  // the hull supports that weapon class at all; fitting is intentionally not
-  // capped by those SDE reference values.
-  if(equipment.requirement==='launcher'&&Number(capacity.launcher)<=0)return false;
-  if(equipment.requirement==='turret'&&Number(capacity.turret)<=0)return false;
-  if(equipment.requirement!=='launcher'&&equipment.requirement!=='turret'&&Number(capacity.high)<=0)return false;
- }else if(definition.requirement&&equipment.requirement&&definition.requirement!==equipment.requirement)return false;
- try{return selectHardpoints(slots,slot,equipmentLocatorName(equipment)).length>0;}
- catch{return false;}
+  // High slots are generic, including both weapon families. The capacities
+  // only decide whether the hull has a high-slot mount at all; the actual
+  // locator families and equipment size decide where an item can be drawn.
+  if(![capacity.high,capacity.launcher,capacity.turret].some(value=>Number(value)>0))return false;
+ }
+ return Boolean(resolveHardpointCandidate(slots,slot,equipment));
 }
 
 // UI rows are logical equipment slots. Native locator numbers are local to
@@ -113,13 +118,14 @@ export function planEquipmentPlacements(slots,choices,equipment,hullCategory=6,p
   return new Matrix4().extractRotation(source).copyPosition(source).elements.join(',');
  };
  const requests=[...choices].filter(([,id])=>id!=null).map(([row,id])=>{
-  const item=equipment.find(e=>e.id===id),prefix=equipmentLocatorName(item);
+  const item=equipment.find(e=>e.id===id);
   const candidates=slots.filter(s=>canFitEquipment(slots,s.slot,item,hullCategory)).map(s=>{
-   const mounts=selectHardpoints(slots,s.slot,prefix);
-   return {row,id,prefix,nativeSlot:s.nativeSlot??s.slot,mounts,keys:mounts.map(poseKey)};
-  });
+   const selected=resolveHardpointCandidate(slots,s.slot,item);
+   return selected&&{row,id,prefix:selected.prefix,nativeSlot:s.nativeSlot??s.slot,
+    mounts:selected.mounts,keys:selected.mounts.map(poseKey)};
+  }).filter(Boolean);
   const old=previous.get(row);
-  candidates.sort((a,b)=>Number(b.nativeSlot===old?.nativeSlot&&prefix===old?.prefix)-Number(a.nativeSlot===old?.nativeSlot&&prefix===old?.prefix)||a.nativeSlot-b.nativeSlot);
+  candidates.sort((a,b)=>Number(b.nativeSlot===old?.nativeSlot&&b.prefix===old?.prefix)-Number(a.nativeSlot===old?.nativeSlot&&a.prefix===old?.prefix)||a.nativeSlot-b.nativeSlot);
   return {row,candidates,stable:candidates.some(c=>old?.id===id&&old.nativeSlot===c.nativeSlot)};
  }).sort((a,b)=>a.candidates.length-b.candidates.length||Number(b.stable)-Number(a.stable)||a.row-b.row);
  const plan=new Map(),occupied=new Set(),families=new Set();
@@ -193,11 +199,13 @@ export function createEquipmentMounts(root,slots,loadEquipment,binding=null) {
    if(id==null){release(entries.get(slot));entries.delete(slot);return true;}
    const asset=await loadEquipment(id);
    if(disposed||revisions.get(slot)!==revision)return false;
-   const selected=selectHardpoints(slots,slot,equipmentLocatorName(asset));
+   const selected=resolveHardpointCandidate(slots,slot,asset);
+   if(!selected)throw Error('Missing hardpoint slot: '+equipmentLocatorName(asset)+slot);
    const group=new Group();group.name='Equipment slot '+slot;
-   const entry={id,group,nativeSlot:definition.nativeSlot??slot,prefix:equipmentLocatorName(asset),mounts:selected,instances:[]};
+   const entry={id,group,nativeSlot:definition.nativeSlot??slot,prefix:selected.prefix,
+    mounts:selected.mounts,instances:[]};
    try{
-    for(const mount of selected){
+    for(const mount of selected.mounts){
      const source=new Matrix4().fromArray(mount.matrix);
      for(const offset of [0,4,8])if(Math.hypot(...mount.matrix.slice(offset,offset+3))===0)throw Error('Degenerate hardpoint axes: '+mount.name);
      const holder=new Group();holder.name=mount.name;
@@ -262,7 +270,7 @@ export function createAutomaticEquipmentMounts(root,nativeSlots,definitions,equi
   slots:rows,supports,
   canFit(row,item){
    if(!supports(item))return false;
-   const key=row+':'+equipmentLocatorName(item);
+   const key=row+':'+item.id;
    if(!fitCache.has(key)){try{plan(row,item);fitCache.set(key,true);}catch{fitCache.set(key,false);}}
    return fitCache.get(key);
   },
