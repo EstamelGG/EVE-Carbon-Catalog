@@ -6,6 +6,7 @@ import './depth-of-field.js';
 import './scene-sharpening.js';
 import { installEmissionBloom } from './emission-bloom.js';
 import {installHangarFramePipeline} from './hangar-frame-pipeline.js';
+import {installAutoExposure} from './auto-exposure.js';
 import {Renderer} from '@google/model-viewer/lib/three-components/Renderer.js';
 import {createRenderPower} from './render-power.js';
 export const renderPower=createRenderPower({
@@ -63,7 +64,8 @@ export function installViewerBloom(viewer, bloom) {
   const composer=viewer.querySelector('effect-composer');
   const releasePipeline=installHangarFramePipeline(viewer,viewer[$scene],composer[$normalPass],composer.querySelector('ssao-effect').effects[0],composer[$effectComposer],composer[$renderPass]);
   const releaseBloom=installEmissionBloom(viewer[$scene],bloom);
-  return ()=>{releaseBloom();releasePipeline();};
+  const releaseExposure=installAutoExposure(viewer,viewer[$scene]);
+  return ()=>{releaseExposure();releaseBloom();releasePipeline();};
 }
 export {installNativePreview} from './native-viewer.js';
 export {installFitting} from './fitting-viewer.js';

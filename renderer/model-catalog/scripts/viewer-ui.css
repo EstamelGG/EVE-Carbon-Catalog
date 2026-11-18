@@ -436,6 +436,22 @@ button.ship-annotation:focus-visible {
   font-size: 11px;
   line-height: 1.5;
 }
+.depth-of-field-control[hidden] {
+  display: none;
+}
+.advanced-settings > summary {
+  padding: 0 5px;
+  color: #bacbd2;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+}
+.advanced-settings[open] > summary {
+  margin-bottom: 8px;
+}
+.advanced-settings:not([open]) > summary {
+  margin-bottom: 0;
+}
 .toggle-row input:indeterminate + .toggle-visual {
   background: #8c7957;
 }

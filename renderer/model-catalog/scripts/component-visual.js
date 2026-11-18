@@ -124,6 +124,7 @@ export function bindNativeVisualPanel(root, { state, update, runtime, emit, sele
         enabled.some((input) => input.checked) && !$('show-textures').checked;
       $('dirt').disabled = !roles || !roles.has('DirtMap');
       $('show-textures').disabled = !roles;
+      $('depth-of-field-control').hidden = !settings.display.depthOfField;
       $('depthOfField').disabled = !settings.display.depthOfField;
       const hasKills = (viewer?.killMarkCount || 0) > 0;
       for (const id of ['kill-count', 'kill-count-input']) {

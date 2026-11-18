@@ -87,3 +87,29 @@ test('GateAnimation evaluates recipes at render time',()=>{
   assert.equal(animation.evaluate(1.5)[0].brightness,1.5);
   assert.equal(animation.evaluate(0.5)[0].brightness,.5);
 });
+
+test('GateAnimation samples authored state transitions before settling',()=>{
+  const data={targets:[{brightness:0}],completeStates:true,sets:[{
+    name:'Structure_Gate',duration:3,fps:30,playing:false,
+    ranges:[
+      {name:'Inactive',start:0,end:.25,loop:false},
+      {name:'Active_Linked',start:.25,end:.5,loop:false},
+      {name:'Active_Linked2Inactive',start:.5,end:2.5,loop:false},
+    ],
+    tracks:[],
+    recipe:{version:1,objects:[
+      {curve:{type:'scalar',keys:[[0,0,0,0,1],[3,3,0,0,1]],before:0,after:0,scale:1,offset:0}},
+      {type:'EveChildContainer'},
+    ],bindings:[
+      {source:0,sourceAttribute:'currentValue',destination:1,destinationAttribute:'brightness'},
+    ],outputs:[{object:1,target:0,field:'brightness'}]},
+  }]};
+  const animation=new GateAnimation(data);
+  animation.evaluate(0);
+  assert.equal(animation.setState('Inactive',10),true);
+  assert.equal(animation.transition,'Active_Linked2Inactive');
+  assert.equal(animation.transitionDuration,2);
+  assert.equal(animation.evaluate(10)[0].brightness,.5);
+  assert.equal(animation.evaluate(11)[0].brightness,1.5);
+  assert.equal(animation.evaluate(12.5)[0].brightness,.25);
+});

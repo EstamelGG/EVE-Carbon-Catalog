@@ -1,5 +1,11 @@
 import { savedModelIndex, defaultModelIndex } from './res-preference.mjs';
 
+function rendererModuleURL(config) {
+  if (config.rendererModuleURL) return config.rendererModuleURL;
+  const version = config.frontendPublishedAt ? `?v=${encodeURIComponent(config.frontendPublishedAt)}` : '';
+  return `./eve-model-viewer.js${version}`;
+}
+
 export async function previewConfig() {
   let config = {};
   try {
@@ -12,6 +18,6 @@ export async function previewConfig() {
 export async function loadPreviewRenderer(viewer, config) {
   config ??= await previewConfig();
   viewer?.setAttribute('model-index', config.modelIndex);
-  await import(config.rendererModuleURL || './eve-model-viewer.js');
+  await import(rendererModuleURL(config));
   return config;
 }

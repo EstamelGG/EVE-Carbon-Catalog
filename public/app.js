@@ -1028,7 +1028,8 @@ async function init() {
   try {
     const config = await siteConfig;
     rendererModuleURL =
-      config.rendererModuleURL || './eve-model-viewer.js?v=component-identity-v2';
+      config.rendererModuleURL ||
+      `./eve-model-viewer.js?v=${encodeURIComponent(config.frontendPublishedAt || 'current')}`;
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
     resField.placeholder = defaultModelIndex(config);

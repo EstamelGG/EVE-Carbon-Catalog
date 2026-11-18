@@ -103,13 +103,12 @@
     <fieldset class="settings-group performance-settings">
       <legend data-i18n="performanceSettings">Quality &amp; performance</legend>
       <label class="toggle-row" for="gpu-preference"><span data-i18n="gpuPreference">GPU preference</span>
-        <select id="gpu-preference" aria-describedby="gpu-preference-hint">
+        <select id="gpu-preference">
           <option value="default" data-i18n="gpuAutomatic">Automatic</option>
           <option value="low-power" data-i18n="gpuLowPower">Prefer power saving</option>
           <option value="high-performance" data-i18n="gpuHighPerformance" selected>Prefer high performance</option>
         </select>
       </label>
-      <small id="gpu-preference-hint" data-i18n="gpuPreferenceHint">The browser chooses the GPU. Changing this reloads all model viewers on this page.</small>
       <label class="toggle-row" for="show-antialias"
         ><span data-i18n="showAntialias">Anti-aliasing</span>
         <select id="show-antialias">
@@ -128,27 +127,6 @@
           aria-hidden="true"
         ></span
       ></label>
-      <label class="toggle-row" for="no-color"
-        ><span data-i18n="noColor">View white model</span
-        ><input type="checkbox" id="no-color" /><span
-          class="toggle-visual"
-          aria-hidden="true"
-        ></span
-      ></label>
-      <label class="toggle-row" for="show-occlusion"
-        ><span data-i18n="showOcclusion">Ambient occlusion</span
-        ><input type="checkbox" id="show-occlusion" checked /><span
-          class="toggle-visual"
-          aria-hidden="true"
-        ></span
-      ></label>
-      <label class="toggle-row" for="show-bloom"
-        ><span data-i18n="showBloom">Bloom</span
-        ><input type="checkbox" id="show-bloom" checked /><span
-          class="toggle-visual"
-          aria-hidden="true"
-        ></span
-      ></label>
       <label class="toggle-row" for="show-dof"
         ><span data-i18n="showDepthOfField">Depth of field</span
         ><input type="checkbox" id="show-dof" /><span
@@ -156,11 +134,13 @@
           aria-hidden="true"
         ></span
       ></label>
-      <label class="exposure-label" for="depthOfField"
-        ><span data-i18n="depthOfField">Focus blur</span
-        ><output id="depthOfField-value">1.0</output></label
-      >
-      <input type="range" id="depthOfField" min="0" max="3" step="0.1" value="1" disabled />
+      <div id="depth-of-field-control" class="depth-of-field-control" hidden>
+        <label class="exposure-label" for="depthOfField"
+          ><span data-i18n="depthOfField">Focus blur</span
+          ><output id="depthOfField-value">1.0</output></label
+        >
+        <input type="range" id="depthOfField" min="0" max="3" step="0.1" value="1" disabled />
+      </div>
     </fieldset>
     <fieldset class="settings-group">
       <legend data-i18n="hullAppearance">Hull appearance</legend>
@@ -294,6 +274,34 @@
         ><output id="reflection-value">0.7</output></label
       >
       <input type="range" id="reflection" min="0" max="3" step="0.1" value="0.7" />
+    </fieldset>
+    <details class="settings-group material-settings advanced-settings">
+      <summary data-i18n="advancedMaterialSettings">Advanced</summary>
+      <label class="toggle-row" for="no-color"
+        ><span data-i18n="noColor">View white model</span
+        ><input type="checkbox" id="no-color" /><span
+          class="toggle-visual"
+          aria-hidden="true"
+        ></span
+      ></label>
+      <label class="toggle-row" for="show-occlusion"
+        ><span data-i18n="showOcclusion">Ambient occlusion</span
+        ><input type="checkbox" id="show-occlusion" checked /><span
+          class="toggle-visual"
+          aria-hidden="true"
+        ></span
+      ></label>
+      <label class="exposure-label" for="occlusionStrength"><span data-i18n="occlusionStrength">Ambient occlusion strength</span><output id="occlusionStrength-value">4</output></label>
+      <input type="range" id="occlusionStrength" min="0" max="10" step="0.1" value="4" />
+      <label class="exposure-label" for="occlusionRadius"><span data-i18n="occlusionRadius">AO base radius</span><output id="occlusionRadius-value">0.16</output></label>
+      <input type="range" id="occlusionRadius" min="0.025" max="0.3" step="0.005" value="0.16" />
+      <label class="toggle-row" for="show-bloom"
+        ><span data-i18n="showBloom">Bloom</span
+        ><input type="checkbox" id="show-bloom" checked /><span
+          class="toggle-visual"
+          aria-hidden="true"
+        ></span
+      ></label>
       <label class="exposure-label" for="bloom"
         ><span data-i18n="bloom">Light bloom</span><output id="bloom-value">0.2</output></label
       >
@@ -302,32 +310,25 @@
       <input type="range" id="saturation" min="-1" max="1" step="0.1" value="0" />
       <label class="exposure-label" for="contrast"><span data-i18n="contrast">Contrast</span><output id="contrast-value">0</output></label>
       <input type="range" id="contrast" min="-1" max="1" step="0.1" value="0" />
-      <label class="exposure-label" for="occlusionStrength"><span data-i18n="occlusionStrength">Ambient occlusion strength</span><output id="occlusionStrength-value">4</output></label>
-      <input type="range" id="occlusionStrength" min="0" max="10" step="0.1" value="4" />
-      <label class="exposure-label" for="occlusionRadius"><span data-i18n="occlusionRadius">AO base radius</span><output id="occlusionRadius-value">0.16</output></label>
-      <input type="range" id="occlusionRadius" min="0.025" max="0.3" step="0.005" value="0.16" />
-      <details class="material-settings" open>
-        <summary data-i18n="advancedMaterialSettings">Advanced adjustments</summary>
-        <label class="exposure-label" for="sun"
-          ><span data-i18n="sun">Key light</span><output id="sun-value">1.0</output></label
-        >
-        <input type="range" id="sun" min="0" max="3" step="0.1" value="1" />
-        <label class="exposure-label" for="fill"
-          ><span data-i18n="fill">Fill lights</span><output id="fill-value">1.0</output></label
-        >
-        <input type="range" id="fill" min="0" max="3" step="0.1" value="1" />
-        <label class="exposure-label" for="f0"
-          ><span data-i18n="f0">Material reflectance (F0)</span
-          ><output id="f0-value">1.0</output></label
-        >
-        <input type="range" id="f0" min="0" max="3" step="0.1" value="1" />
-        <label class="exposure-label" for="roughness"
-          ><span data-i18n="roughness">Roughness</span
-          ><output id="roughness-value">1.0</output></label
-        >
-        <input type="range" id="roughness" min="0.1" max="3" step="0.1" value="1" />
-      </details>
-    </fieldset>
+      <label class="exposure-label" for="sun"
+        ><span data-i18n="sun">Key light</span><output id="sun-value">1.0</output></label
+      >
+      <input type="range" id="sun" min="0" max="3" step="0.1" value="1" />
+      <label class="exposure-label" for="fill"
+        ><span data-i18n="fill">Fill lights</span><output id="fill-value">1.0</output></label
+      >
+      <input type="range" id="fill" min="0" max="3" step="0.1" value="1" />
+      <label class="exposure-label" for="f0"
+        ><span data-i18n="f0">Material reflectance (F0)</span
+        ><output id="f0-value">1.0</output></label
+      >
+      <input type="range" id="f0" min="0" max="3" step="0.1" value="1" />
+      <label class="exposure-label" for="roughness"
+        ><span data-i18n="roughness">Roughness</span
+        ><output id="roughness-value">1.0</output></label
+      >
+      <input type="range" id="roughness" min="0.1" max="3" step="0.1" value="1" />
+    </details>
     <button id="reset-render" class="reset-button" data-i18n="resetRender">Restore defaults</button>
     <button id="reset-view" class="reset-button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 3v7h7" /></svg

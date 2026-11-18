@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -43,6 +44,8 @@ def main():
     shutil.copy2(renderer / 'third-party-notices.txt', dist / 'renderer-notices.txt')
     config = json.loads((dist / 'site-config.json').read_bytes())
     config['frontendPublishedAt'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    renderer_hash = hashlib.sha256((dist / 'eve-model-viewer.js').read_bytes()).hexdigest()[:16]
+    config['rendererModuleURL'] = f'./eve-model-viewer.js?v={renderer_hash}'
     for env, field in [('RESOURCE_BASE_URL', 'resourceBaseURL'), ('RENDERER_MODULE_URL', 'rendererModuleURL')]:
         if os.environ.get(env):
             config[field] = os.environ[env]

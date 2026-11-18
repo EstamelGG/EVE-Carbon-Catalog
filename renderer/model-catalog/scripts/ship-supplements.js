@@ -245,7 +245,9 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   const visibility = entries.some(entry => entry.flare) ? createFlareVisibility() : null;
   const updateFlares = createFlareBatch(root, entries.filter(entry => entry.flare), resources);
   const view=new Matrix4(),projection=new Matrix4(),rootWorld=new Matrix4(),viewport=new Vector4();
-  const clocks=entries.map(entry=>entry.object.material?.uniforms.time).filter(Boolean);
+  // Instanced surface meshes use MeshStandardMaterial, which has no uniforms.
+  // Keep shader clocks while allowing those meshes to participate in effects.
+  const clocks=entries.map(entry=>entry.object.material?.uniforms?.time).filter(Boolean);
   let previousCamera,previousWidth,previousDepth;
   const unsubscribe=beforeSceneRender(scene,(camera,renderer)=>{
     if (!root.visible) return;
