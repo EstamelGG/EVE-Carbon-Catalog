@@ -19,7 +19,13 @@ export async function assembleDNA(dna,index,load,resolveURL,{officialSkin=false}
     }),
     load(base.recipe.options),load(base.effects),
   ]);
-  const style=option(palette.races,race,'缺少种族配置');
+  // Race-less authored hulls (notably asteroids) still name their neutral race
+  // in DNA but have no race effect entry. Only that declared case may use the
+  // authored generic style; misspelled or unavailable races remain errors.
+  const neutralRace=typeof base.baseRace==='string'?base.baseRace.toLowerCase():'';
+  const style=own(palette.races,race)?palette.races[race]:
+    race===neutralRace && own(palette.races,'generic')?palette.races.generic:
+    option(palette.races,race,'缺少种族配置');
   const commands=new Map();
   for(const token of tokens){
     const [key,...rest]=token.split('?');

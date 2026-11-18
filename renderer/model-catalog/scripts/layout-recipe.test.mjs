@@ -137,3 +137,31 @@ test('material DNA is calculated from shared hull and material data',async()=>{
   assert.deepEqual(original.parameters.Mtl1DiffuseColor,[0,0,0,1]);
   assert.ok(requested.every(key=>!key.includes(':')));
 });
+
+test('a hull-authored neutral race falls back to the generic presentation',async()=>{
+  globalThis.location={href:'https://site.test/'};
+  const {assembleDNA}=await import('./dna-recipe.js');
+  const records={
+    hull:{base:{baseRace:'asteroid',baseFaction:'asteroid_regolith',
+      model:'res/asteroid.glb',effects:'effects',appearance:{extras:{}},appearanceRevision:'1',
+      recipe:{options:'options',palette:'palette',areas:[]}},paletteIndex:'palette'},
+    options:{modern:false,patterns:{},inserts:{},layout:{images:[],slotMaterials:[],materials:[]}},
+    palette:{races:{generic:{preview:{url:'res/preview.json'},heat:[16,14]}},
+      factions:{asteroid_regolith:'faction'},materials:{},
+      materialPrefixes:[],patternPrefixes:[],patternNames:[]},
+    faction:{definition:{},colors:[]},
+    effects:{version:4,kind:'sof-hull-effects',hull:'hull',library:{url:'library'},
+      rules:[],fixed:{booster:{placements:[]}}},
+    library:{version:4,factions:{asteroid_regolith:{url:'faction'}},races:{}},
+  };
+  const load=async key=>{
+    assert.ok(records[key],key);
+    return structuredClone(records[key]);
+  };
+  const resolve=key=>new URL(key,'https://assets.test/').href;
+  const index={dnaRecipes:{hull:'hull'}};
+  const asteroid=await assembleDNA('hull:asteroid_regolith:asteroid',index,load,resolve);
+  assert.equal(asteroid.preview,'res/preview.json');
+  await assert.rejects(()=>assembleDNA('hull:asteroid_regolith:asteroidz',index,load,resolve),
+    /缺少种族配置 · asteroidz/);
+});
