@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { factionIconPath, resolveViewerAffiliation } from './viewer-affiliation.mjs';
+import { factionIconSource, resolveViewerAffiliation } from './viewer-affiliation.mjs';
+import { resolveViewerIdentity } from './viewer-identity.mjs';
 
 test('the published faction ID is the primary affiliation source', () => {
   const result = resolveViewerAffiliation({
@@ -46,8 +47,27 @@ test('generic and unmapped race tokens become other', () => {
   }
 });
 
-test('faction icons use one R2-relative path derived from the faction ID', () => {
-  assert.equal(factionIconPath(500010), 'res/icons/factions/500010.png');
-  assert.equal(factionIconPath(null), 'res/icons/factions/default_logo.png');
-  assert.equal(factionIconPath(-1), 'res/icons/factions/default_logo.png');
+test('faction icons prefer the published faction ID', () => {
+  assert.equal(factionIconSource(500010, 17918), 'res/icons/factions/500010.png');
+});
+
+test('other items fall back to their official type icon', () => {
+  assert.equal(
+    factionIconSource(null, 64034),
+    'https://images.evetech.net/types/64034/icon?size=64',
+  );
+  assert.equal(
+    factionIconSource(-1, 54733),
+    'https://images.evetech.net/types/54733/icon?size=64',
+  );
+  assert.equal(factionIconSource(null, null), '');
+});
+
+test('viewer identity selects the item type icon for other affiliations', () => {
+  const identity = resolveViewerIdentity({ id: 64034, dna: 'x:custom:generic' });
+  assert.equal(identity.kind, 'other');
+  assert.equal(
+    identity.factionIconSource,
+    'https://images.evetech.net/types/64034/icon?size=64',
+  );
 });

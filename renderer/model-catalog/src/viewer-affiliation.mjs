@@ -84,10 +84,13 @@ const factionForRace = new Map([
 
 const other = Object.freeze({ id: null, en: 'Other', zh: '其他' });
 
-export function factionIconPath(factionID) {
+export function factionIconSource(factionID, typeID) {
   const id = Number(factionID);
-  const name = Number.isSafeInteger(id) && id > 0 ? id : 'default_logo';
-  return `res/icons/factions/${name}.png`;
+  if (Number.isSafeInteger(id) && id > 0) return `res/icons/factions/${id}.png`;
+  const type = Number(typeID);
+  if (Number.isSafeInteger(type) && type > 0)
+    return `https://images.evetech.net/types/${type}/icon?size=64`;
+  return '';
 }
 
 export function resolveViewerAffiliation(item = {}, explicit = {}) {

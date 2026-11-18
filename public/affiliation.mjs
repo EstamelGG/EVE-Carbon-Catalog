@@ -1,5 +1,5 @@
 // The Builder publishes the faction ID resolved from each item's DNA race.
-// The catalog only needs that ID to address the shared R2 icon path.
+// Faction icons live under R2; items without a faction use their official icon.
 export const OTHER_FACTION = -1;
 
 const factionForRace = new Map(Object.entries({
@@ -47,9 +47,13 @@ const factionForRace = new Map(Object.entries({
   deathless: 500029,
 }));
 
-export function factionIconPath(factionID) {
+export function factionIconSource(factionID, typeID) {
   const id = Number(factionID);
-  return `res/icons/factions/${Number.isSafeInteger(id) && id > 0 ? id : 'default_logo'}.png`;
+  if (Number.isSafeInteger(id) && id > 0) return `res/icons/factions/${id}.png`;
+  const type = Number(typeID);
+  if (Number.isSafeInteger(type) && type > 0)
+    return `https://images.evetech.net/types/${type}/icon?size=64`;
+  return '';
 }
 
 export function createAffiliationResolver() {

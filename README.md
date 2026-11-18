@@ -6,7 +6,7 @@
 
 在 Cloudflare Pages 使用仓库根目录、构建命令 `npm run build` 和输出目录 `dist`。构建需要 Node.js 22、npm 和 Python 3（命令 `python3`）。构建只做静态组装：打包渲染组件、替换站点品牌文案、写入发布时间。仓库不再下载 SDE，也不再生成物品清单。
 
-图鉴的物品目录、可用性、缩略图归属全部来自 Builder 发布在资源站上的 `res/index/catalog.json`（`categories`、`items`、`renderFallbacks`）。因此更新物品数据只需重新构建并上传资源，不必重新发布站点。`public/icons/identities.json` 只保留势力名称；物品的 `metaGroupID`、`factionID` 随目录分片一起下发。渲染器和图鉴都根据 `factionID` 拼接 `res/icons/factions/<factionID>.png`，由模型索引所在的资源站提供图标；无势力物品使用 `default_logo.png`。
+图鉴的物品目录、可用性、缩略图归属全部来自 Builder 发布在资源站上的 `res/index/catalog.json`（`categories`、`items`、`renderFallbacks`）。因此更新物品数据只需重新构建并上传资源，不必重新发布站点。`public/icons/identities.json` 只保留势力名称；物品的 `metaGroupID`、`factionID` 随目录分片一起下发。渲染器和图鉴都根据 `factionID` 拼接 `res/icons/factions/<factionID>.png`，由模型索引所在的资源站提供图标；无势力物品则在线加载 `https://images.evetech.net/types/<TypeID>/icon?size=64`。
 
 ## GitHub Pages 发布
 

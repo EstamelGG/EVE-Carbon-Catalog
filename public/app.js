@@ -10,7 +10,7 @@ import { createCardGrid } from './card-grid.mjs';
 import { createCatalogState } from './catalog-state.mjs?v=dna-route-v1';
 import { joinDirectory } from './build-directory.mjs';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
-import { createAffiliationResolver, factionIconPath } from './affiliation.mjs';
+import { createAffiliationResolver, factionIconSource } from './affiliation.mjs';
 import { configureResourceBase, normalizeModelIndex, resourceURL } from './resource-location.mjs';
 import { defaultModelIndex, savedModelIndex, saveModelIndex } from './res-preference.mjs';
 import { loadJSON } from './resource-activity.mjs?v=resource-plan-sky-fade-v1';
@@ -216,6 +216,14 @@ viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   if (detail.visible) counter.textContent = String(detail.count);
   counter.classList.toggle('visible', detail.visible);
 });
+document.addEventListener(
+  'error',
+  (event) => {
+    if (event.target instanceof HTMLImageElement && event.target.classList.contains('race-icon'))
+      event.target.remove();
+  },
+  true,
+);
 function showModel(item, dna = '') {
   const group = groupsByID?.get(item.groupID),
     faction =
@@ -308,9 +316,9 @@ function raceName(id) {
   return localizedName(racesByID.get(id)) || t('other');
 }
 
-function raceMark(id) {
-  if (!id) return '';
-  const url = resourceURL(factionIconPath(id));
+function raceMark(id, typeID) {
+  const url = resourceURL(factionIconSource(id, typeID));
+  if (!url) return '';
   return `<img class="race-icon" src="${esc(url)}" width="20" height="20" alt="" aria-hidden="true">`;
 }
 
@@ -329,7 +337,7 @@ function cardHTML(item, style = '') {
   const tag = item.available ? 'button' : 'article';
   return `<${tag} class="ship-card ${item.available ? '' : 'unavailable'}"${style ? ` style="${style}"` : ''}${item.available ? ` data-item="${item.id}" aria-label="${esc(t('viewModel', { name: localizedName(item.name) }))}"` : ''}>
       <div class="card-visual">${renderPreview(item, badge)}</div>
-      <div class="card-info"><div class="card-title-row"><span class="card-title">${esc(localizedName(item.name))}</span>${item.available ? '<span class="card-arrow" aria-hidden="true">↗</span>' : `<span class="unavailable-label">${t('unavailable')}</span>`}</div><div class="card-bottom"><span class="card-race">${raceMark(item.affiliationID)}<span class="card-race-name" title="${esc(raceName(item.affiliationID))}">${esc(raceName(item.affiliationID))}</span></span><span class="card-id">ID ${item.id}</span></div></div>
+      <div class="card-info"><div class="card-title-row"><span class="card-title">${esc(localizedName(item.name))}</span>${item.available ? '<span class="card-arrow" aria-hidden="true">↗</span>' : `<span class="unavailable-label">${t('unavailable')}</span>`}</div><div class="card-bottom"><span class="card-race">${raceMark(item.affiliationID, item.id)}<span class="card-race-name" title="${esc(raceName(item.affiliationID))}">${esc(raceName(item.affiliationID))}</span></span><span class="card-id">ID ${item.id}</span></div></div>
     </${tag}>`;
 }
 
