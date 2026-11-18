@@ -1,4 +1,4 @@
-import { flareFacing, flareProfile, flareSceneDepth } from './flare-profile.js';
+import { flareFacing, flareProfile, flareSceneDepth, softSceneVisibility } from './flare-profile.js';
 
 // For explicitly encoded gradient assets. Lamp colors are linear emissive inputs.
 export const displayDecode = `
@@ -62,14 +62,12 @@ flat in float streakWeight;
 ${instanced ? 'in vec3 instanceColor;' : 'uniform vec3 lightColor;'}
 ${flareProfile}
 ${softDepth ? `in float flareViewDepth,flareDepthSpan;
-${flareSceneDepth}` : ''}
+${flareSceneDepth}
+${softSceneVisibility}` : ''}
 void main() {
   float r = min(length(flareUV * 2.0 - 1.0), 1.0);
   float visibility=1.0;
-  ${softDepth ? `if (effectHasDepth) {
-    float penetration = max(0.0, flareViewDepth - flareSceneDistance());
-    visibility = 1.0-smoothstep(0.0,max(0.5*flareDepthSpan,1e-6),penetration);
-  }` : ''}
+  ${softDepth ? 'visibility = softSceneVisibility(flareViewDepth, flareDepthSpan);' : ''}
   float radiance = ${softFlare ? 'softFlareProfile(r)' : 'quadFlare(r, streakWeight)'};
   vec3 color = ${instanced ? 'instanceColor' : 'lightColor'} * radiance * offAxis * visibility;
   fragColor = vec4(color, 0);

@@ -1,7 +1,9 @@
-import { DynamicDrawUsage, InstancedBufferAttribute, InstancedMesh, Matrix4 } from 'three';
+import { DynamicDrawUsage, InstancedBufferAttribute, InstancedMesh, Matrix4, Vector2 } from 'three';
 import { beforeSceneRender } from './effect-resources.js';
 import { bindAttachmentBones } from './source-bones.js';
 import { spotlightCone, spotlightLenses } from './spotlight-geometry.js';
+import { flareSceneDepth, softSceneVisibility } from './flare-profile.js';
+import { createEffectDepth } from './effect-depth.js';
 
 // The public shader interface specifies colors, placement, sizes and propulsion gain.
 // https://github.com/carbonengine/trinity/blob/f644516ae4f921f6f3a3e58dc5d19107781571ec/shaders/include/Carbon/SpaceScene/EveSpotlightSet.fxh
@@ -36,6 +38,7 @@ const lensVertex = commonVertex + `
   uniform float modelScale;
   in vec3 spriteScale, spriteColor, flareColor;
   in float lensRole;
+  out float lensViewDepth, lensDepthSpan;
   void main() {
     mat4 lamp = modelViewMatrix * instanceMatrix;
     vec4 center = lamp[3];
@@ -45,6 +48,8 @@ const lensVertex = commonVertex + `
     vec2 streakSize = max(0.0, cosine) * spriteScale.yz;
     vec2 size = mix(vec2(diskWidth), streakSize, lensRole);
     center.xy += position.xy * size * modelScale;
+    lensViewDepth = max(0.0, -center.z);
+    lensDepthSpan = length(size) * modelScale;
     radiance = mix(spriteColor, flareColor, lensRole) * energy();
     sampleUV = vec2(uv.x, 1.0 - uv.y);
     gl_Position = projectionMatrix * center;
@@ -61,6 +66,20 @@ const fragment = `
   }
 `;
 
+const lensFragment = `
+  uniform sampler2D textureMap;
+  in vec2 sampleUV;
+  in vec3 radiance;
+  in float lensViewDepth, lensDepthSpan;
+  out vec4 fragColor;
+  ${flareSceneDepth}
+  ${softSceneVisibility}
+  void main() {
+    float visibility = softSceneVisibility(lensViewDepth, lensDepthSpan);
+    fragColor = vec4(radiance * texture(textureMap, sampleUV).rgb * visibility, 0.0);
+  }
+`;
+
 function vec3Attribute(items, name) {
   return new InstancedBufferAttribute(new Float32Array(items.flatMap(item => item[name].slice(0, 3))), 3);
 }
@@ -68,7 +87,7 @@ function vec3Attribute(items, name) {
 export async function installAttachmentLights(root, sets, resources, modelScale, {scene, model, document, boosterGain = {value:1}} = {}) {
   const groups = (sets || []).filter(set => set.items.length);
   const maps = await Promise.all(groups.map(set => Promise.all([resources.texture(set.coneMap), resources.texture(set.glowMap)])));
-  const batches = [], attached = new Map();
+  const batches = [], attached = new Map(), softPasses = [];
   for (const [setIndex, {items, intensity, zOffset, skinned}] of groups.entries()) {
     const beam = resources.own(spotlightCone(zOffset)), lenses = resources.own(spotlightLenses());
     const influence = new InstancedBufferAttribute(Float32Array.from(items, item => Number(item.boosterGainInfluence || 0)), 1);
@@ -81,9 +100,19 @@ export async function installAttachmentLights(root, sets, resources, modelScale,
 
     // Match Trinity's two additive batches. Both passes use the same per-lamp matrices.
     const meshes = [beam, lenses].map((geometry, i) => {
-      const material = resources.additiveMaterial(i === 0 ? beamVertex : lensVertex, fragment, {
+      const soft = i === 1;
+      const material = resources.additiveMaterial(soft ? lensVertex : beamVertex, soft ? lensFragment : fragment, {
         boosterGain, intensity:{value:intensity}, modelScale:{value:modelScale}, textureMap:{value:maps[setIndex][i]},
+        ...(soft ? {
+          effectSceneDepth:{value:null}, effectHasDepth:{value:false},
+          effectDepthSize:{value:new Vector2(1,1)}, effectCameraRange:{value:new Vector2(0.1,100)},
+        } : {}),
       });
+      if (soft) {
+        material.depthTest = false;
+        material.forceSinglePass = true;
+        softPasses.push(material);
+      }
       const mesh = new InstancedMesh(geometry, material, items.length);
       mesh.name = i === 0 ? 'EVE spotlight beams' : 'EVE spotlight lenses';
       mesh.frustumCulled = false;
@@ -117,8 +146,14 @@ export async function installAttachmentLights(root, sets, resources, modelScale,
     for (const buffer of changed) buffer.needsUpdate = true;
     changed.clear();
   });
+  const depth = scene && softPasses.length ? createEffectDepth(scene, softPasses) : null;
+  const unsubscribeDepth = depth && beforeSceneRender(scene, (camera, renderer) => {
+    if (root.visible && root.parent) depth.render(renderer, camera);
+  });
   return () => {
     unsubscribe?.();
+    unsubscribeDepth?.();
+    depth?.dispose();
     for (const mesh of batches) {
       mesh.removeFromParent();
       mesh.dispose();

@@ -38,3 +38,13 @@ float flareSceneDistance() {
   float depth = texture(effectSceneDepth, gl_FragCoord.xy / effectDepthSize).r;
   return -perspectiveDepthToViewZ(depth, effectCameraRange.x, effectCameraRange.y);
 }`;
+
+// Fade the fraction of a camera-facing light quad that has crossed the opaque
+// scene. This avoids the straight cut produced by a binary depth test while
+// retaining the scene depth rejection for portions wholly behind geometry.
+export const softSceneVisibility = `
+float softSceneVisibility(float viewDepth, float depthSpan) {
+  if (!effectHasDepth) return 1.0;
+  float penetration = max(0.0, viewDepth - flareSceneDistance());
+  return 1.0 - smoothstep(0.0, max(0.5 * depthSpan, 1e-6), penetration);
+}`;

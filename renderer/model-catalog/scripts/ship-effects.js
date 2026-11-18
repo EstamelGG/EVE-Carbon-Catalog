@@ -49,6 +49,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     disposeSpotlights,
     disposeLightBudget,
     disposeAttachmentLights,
+    disposeNavigationLights,
     disposePlanes,
     disposeSupplements,
     disposeHullOverlays,
@@ -64,6 +65,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     disposeSpotlights?.();
     disposeLightBudget?.();
     disposeAttachmentLights?.();
+    disposeNavigationLights?.();
     disposePlanes?.();
     disposeSupplements?.();
     disposeHullOverlays?.();
@@ -163,7 +165,7 @@ export async function installShipEffects(viewer, url, initialMode = 'cruise', {p
     }
     const updateBoosterLights = installBoosterLights(group, b, model.scale.x, data.typeID);
     updateBoosterLights(0, boosterGain.value);
-    installNavigationLights(group, attachmentOwner?.model ?? model, attachmentOwner?.document ?? viewer.originalGltfJson, data.sprites, resources, effectTime, model.scale.x);
+    disposeNavigationLights = installNavigationLights(group, attachmentOwner?.model ?? model, attachmentOwner?.document ?? viewer.originalGltfJson, data.sprites, resources, effectTime, model.scale.x, {scene});
     disposeAttachmentLights = await installAttachmentLights(group, data.attachmentSpotlights, resources, model.scale.x, {
       scene, model:attachmentOwner?.model ?? model, document:attachmentOwner?.document ?? viewer.originalGltfJson, boosterGain,
     });

@@ -1,9 +1,12 @@
 /*! Blink timing adapted from CCP's EveSpaceObjectAttachmentUtils.cpp (© 2024 CCP ehf., MIT). See third-party-notices.txt. */
 import {
   AdditiveBlending, GLSL3, InstancedBufferAttribute, InstancedBufferGeometry,
-  Mesh, PlaneGeometry, ShaderMaterial, Vector3,
+  Mesh, PlaneGeometry, ShaderMaterial, Vector2, Vector3,
 } from 'three';
 import { flashPulse } from './attachment-blink.js';
+import { flareSceneDepth, softSceneVisibility } from './flare-profile.js';
+import { beforeSceneRender } from './effect-resources.js';
+import { createEffectDepth } from './effect-depth.js';
 import { bindAttachmentBones } from './source-bones.js';
 
 // CCP Trinity (MIT), EveSpaceObjectAttachmentUtils::Blink, used for the sprite's
@@ -16,6 +19,7 @@ in vec4 blinkData;
 in float falloff;
 out vec2 disk;
 out vec3 emission;
+out float lightViewDepth, lightDepthSpan;
 uniform float time, modelScale;
 
 ${flashPulse}
@@ -38,6 +42,8 @@ void main() {
     gl_Position = projectionMatrix * anchor;
     disk = uv * 2.0 - 1.0;
     emission = lightColor * (1.0 + pulse);
+    lightViewDepth = max(0.0, -anchor.z);
+    lightDepthSpan = diameter * modelScale;
 }`;
 
 // Independent radial fit to 257 floating-point framebuffer samples of one
@@ -46,14 +52,17 @@ void main() {
 const fragmentShader = `
 in vec2 disk;
 in vec3 emission;
+in float lightViewDepth, lightDepthSpan;
 out vec4 fragColor;
+${flareSceneDepth}
+${softSceneVisibility}
 void main() {
     float radius = length(disk);
     float u = pow(min(radius, 1.0), 0.6);
     float rim = 1.0 - u;
     float profile = 4.5 * rim * rim * (1.0 - 0.46 * u + 0.08 * u * u);
     float resolved = max(0.0, 1.0 - fwidth(radius));
-    float strength = profile * resolved;
+    float strength = profile * resolved * softSceneVisibility(lightViewDepth, lightDepthSpan);
     fragColor = vec4(emission * strength, 0.5 * strength);
 }`;
 
@@ -80,7 +89,7 @@ function bindCenters(mesh, root, model, document, sprites) {
   };
 }
 
-export function installNavigationLights(root, model, document, sprites, resources, clock, modelScale = model.scale.x) {
+export function installNavigationLights(root, model, document, sprites, resources, clock, modelScale = model.scale.x, {scene} = {}) {
   if (!sprites.length) return;
   const quad = resources.own(new PlaneGeometry());
   const geometry = resources.own(new InstancedBufferGeometry());
@@ -97,13 +106,28 @@ export function installNavigationLights(root, model, document, sprites, resource
 
   const material = resources.own(new ShaderMaterial({
     glslVersion: GLSL3, vertexShader, fragmentShader,
-    uniforms: { time: clock, modelScale: { value: modelScale } },
-    transparent: true, depthWrite: false, blending: AdditiveBlending,
+    uniforms: {
+      time: clock, modelScale: { value: modelScale },
+      effectSceneDepth: { value: null }, effectHasDepth: { value: false },
+      effectDepthSize: { value: new Vector2(1, 1) },
+      effectCameraRange: { value: new Vector2(0.1, 100) },
+    },
+    transparent: true, depthWrite: false, depthTest: false, blending: AdditiveBlending,
   }));
+  material.forceSinglePass = true;
   material.userData.eveBloomEmission = true;
   const mesh = new Mesh(geometry, material);
   mesh.name = 'EVE navigation lights';
   mesh.frustumCulled = false;
   root.add(mesh);
   bindCenters(mesh, root, model, document, sprites);
+  const depth = scene ? createEffectDepth(scene, [material]) : null;
+  const unsubscribe = depth && beforeSceneRender(scene, (camera, renderer) => {
+    if (root.visible && root.parent) depth.render(renderer, camera);
+  });
+  return () => {
+    unsubscribe?.();
+    depth?.dispose();
+    mesh.removeFromParent();
+  };
 }
