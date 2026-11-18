@@ -4,7 +4,7 @@ import {attachmentAtlasTime} from './attachment-atlas-clock.js';
 // The directional attachment uses the independently implemented overlay shader.
 // See docs/source-audit-summary-2026-11-11.md; this annotation does not change historical provenance.
 import { MeshPhysicalMaterial, Vector2, Vector3, Vector4, BackSide, DoubleSide, SrcAlphaFactor, ZeroFactor, OneFactor, OneMinusSrcAlphaFactor, NormalBlending } from 'three';
-import {attachmentOverlayVertex, overlayFragment} from './overlay-shaders.js';
+import {attachmentOverlayVertex, uvEffectVertex, overlayFragment} from './overlay-shaders.js';
 import {volumeSphereVertex,volumeSphereFragment,hazeSphereFragment} from './volume-sphere-material.js';
 import { displayDecode } from './lighting-shaders.js';
 import {motionVectorVertex,motionVectorFragment} from './motion-vector-material.js';
@@ -113,7 +113,10 @@ export async function gateMaterial(record,resources,context) {
     uniforms[k] = {value: await resources.texture(source, {repeat})};
   }));
   let material;
-  if(record.shader==='fxdirectionalv5.fx') {
+  if(record.shader==='fxv5.fx') {
+    material=resources.additiveMaterial(uvEffectVertex, overlayFragment, uniforms);
+    if(record.blend==='transparentAreas')material.blending=NormalBlending;
+  } else if(record.shader==='fxdirectionalv5.fx') {
     uniforms.sourceRadius={value:record.sourceRadius};uniforms.directionalScale={value:new Vector3(1,1,1)};
     material=resources.additiveMaterial(attachmentOverlayVertex,overlayFragment,uniforms);
     if(record.blend==='transparentAreas')material.blending=NormalBlending;

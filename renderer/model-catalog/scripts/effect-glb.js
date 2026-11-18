@@ -27,7 +27,10 @@ export async function effectGeometry(session,ref){
   const primitives=accessor.meshes[ref.mesh].primitives;
   const selected=ref.vertices ? [primitives[0]] : primitives.slice(ref.first,ref.first+ref.count);
   const attrs=selected[0].attributes;
-  if(ref.instances)return {positions:accessor.read(attrs._INSTANCE_POSITION),data:accessor.read(attrs._INSTANCE_DATA)};
+  if(ref.instances)return {positions:accessor.read(attrs._INSTANCE_POSITION),
+    ...(attrs._INSTANCE_DATA?{data:accessor.read(attrs._INSTANCE_DATA)}:{}),
+    channels:Object.fromEntries(Object.entries(attrs).filter(([name])=>name.startsWith('_INSTANCE_')&&name!=='_INSTANCE_POSITION')
+      .map(([name,id])=>[name.slice('_INSTANCE_'.length),accessor.read(id)]))};
   const pos=accessor.read(attrs.POSITION),norm=attrs.NORMAL!=null && accessor.read(attrs.NORMAL),tex=attrs.TEXCOORD_0!=null && accessor.read(attrs.TEXCOORD_0);
   const position=[],normal=[],uv=[],indices=[],remap=new Map();
   for(const faces of ref.vertices?[ref.vertices]:selected.map(p=>accessor.read(p.indices))){

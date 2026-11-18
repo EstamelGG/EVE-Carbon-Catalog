@@ -26,6 +26,43 @@ class SupplementAssets(PlaneAssets):
     def __init__(self, cache, resources, *, dist=None, receipts=None):
         super().__init__(cache, resources, dist=dist, receipts=receipts)
         self.projection_meshes = {}
+        self.projection_mesh_sets = {}
+
+    def decal_mesh(self, resource, indices=None, projection=None, preferred=0):
+        """Pick the GR2 mesh a decal's authored indices or projection belongs to.
+
+        A SOF decal item's meshIndex is the hull-area index used for parent
+        textures, not necessarily the GR2 mesh ordinal. Multi-mesh hulls and
+        wreck clouds therefore have to validate the index buffer or projection
+        against each full mesh instead of always drawing mesh zero.
+        """
+        source, _ = self.source(resource)
+        if resource not in self.projection_mesh_sets:
+            from carbon_gr2 import read_gr2
+            self.projection_mesh_sets[resource] = read_gr2(source)['meshes']
+        meshes = self.projection_mesh_sets[resource]
+        if not meshes:
+            return 0
+        order = list(range(len(meshes)))
+        if 0 <= preferred < len(meshes):
+            order.remove(preferred)
+            order.insert(0, preferred)
+        best, best_score = 0, -1
+        for index in order:
+            mesh = meshes[index]
+            if indices:
+                count = len(mesh['vertex']['position']) // 3
+                score = len(indices) if min(indices) >= 0 and max(indices) < count else 0
+            elif projection is not None:
+                from decal_geometry import decal_indices
+                score = len(decal_indices(mesh, None, projection))
+            else:
+                score = 0
+            if score > best_score:
+                best, best_score = index, score
+            if indices and score:
+                break
+        return best
 
     def cube_texture(self, resource):
         source, checksum = self.source(resource)

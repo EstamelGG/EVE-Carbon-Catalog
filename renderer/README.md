@@ -12,6 +12,10 @@ npm run build
 
 推送 Catalog 的 `main` 会自动构建组件并随图鉴发布到 Pages。在 Actions 中手动运行 **Release Renderer**，输入新标签，可以另行发布组件 JS 和完整 ZIP。独立部署时将 ZIP 解压到同一目录，保留组件旁的 `vendor/basis/` 纹理解码器。
 
+## 特效实现来源
+
+新增特效材质前先核对 [CarbonEngineJS tools-blender](https://github.com/carbonenginejs/tools-blender/tree/d5b57ec375c7886e9b5ecaeda6f36e6aa88ed790)、[CarbonEngineJS runtime](https://github.com/carbonenginejs/runtime/tree/36b192a003f9705ae45806cf36d862e264198f00) 和 [carbonengine/trinity](https://github.com/carbonengine/trinity/tree/ca75818b537733d3bf0334b974d95cd30c8ad8d4)。`decalholev5.fx` 的球体射线求交、cubemap alpha 内部采样和 `DecalTransparencyMap.a` 混合约定记录在 Builder 仓库的 `docs/effect-upstream.md`，本仓库实现见 `scripts/hole-decals.js`。没有公开实现的圆柱贴花与残骸云材质继续保留明确诊断，不用名称相近的着色器替代。
+
 ## 按 DNA 使用
 
 ```html

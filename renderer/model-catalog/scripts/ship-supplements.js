@@ -1,10 +1,11 @@
 // Mesh supplements are drawn with their authored transforms and texture inputs.
 /*! Source-authored ubershader mesh effects and projected decals. See third-party-notices.txt. */
-import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, Quaternion, Vector3, Vector4, Color, SpotLight, PointLight } from 'three';
+import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, NormalBlending, Quaternion, Vector3, Vector4, Color, SpotLight, PointLight } from 'three';
 import {setSourceLightRadii} from './source-light-contract.js';
 import {hangarLightIntensity} from './hangar-lighting.js';
 import { installKillMarks } from './kill-marks.js';
 import { installGlowDecals } from './glow-decals.js';
+import { installHoleDecals } from './hole-decals.js';
 import { beforeSceneRender } from './effect-resources.js';
 import { createTransformCache } from './effect-performance.js';
 import { createFlareVisibility } from './flare-visibility.js';
@@ -14,6 +15,7 @@ import { createPaintDecal } from './paint-decal.js';
 import { authoredLocal, authoredWorld } from './ship-authored-spotlights.js';
 import { applyGateModifiers, gateBones } from './gate-transforms.js';
 import { createLayeredMeshMaterial, diffuseAtlases, regularVertex, layerCoordinates } from './layered-mesh-material.js';
+import { uvEffectVertex, overlayFragment } from './overlay-shaders.js';
 
 // Native texturecolor.fx: UV scaling/translation, sampled color and brightness.
 // Opaque child meshes must write depth before the additive effect shells.
@@ -101,6 +103,22 @@ export async function installSupplements(viewer, scene, root, data, resources, g
       root.add(object); entries.push({object,transforms:record.transforms});
       return;
     }
+    if (record.material==='fx-uv' || record.shader==='fxv5.fx') {
+      const maps=await Promise.all(['Layer1Map','Layer2Map','LayerMaskMap']
+        .map(role=>resources.texture(record.textures[role],{repeat:true})));
+      const uniforms={time:{value:0},Layer1Map:{value:maps[0]},Layer2Map:{value:maps[1]},LayerMaskMap:{value:maps[2]}};
+      const defaults={BaseColor:[1,1,1,1],FresnelFactors:[1,1,0,0],
+        Layer1Transform:[1,0,0,0],Layer2Transform:[1,0,0,0],
+        Layer1Scroll:[0,0,0,0],Layer2Scroll:[0,0,0,0]};
+      for(const [name,fallback] of Object.entries(defaults))
+        uniforms[name]=vector(p,name,fallback);
+      const material=resources.additiveMaterial(uvEffectVertex,overlayFragment,uniforms);
+      if(record.blend==='transparentAreas')material.blending=NormalBlending;
+      const object=new Mesh(resources.geometry(record.geometry),material);
+      object.name=record.name; object.matrixAutoUpdate=false; object.frustumCulled=false;
+      root.add(object); entries.push({object,transforms:record.transforms});
+      return;
+    }
     if (record.material==='uber-cube') {
       const maps=await Promise.all(['DiffuseMap1','DiffuseMap2','MaskMap','MainCubeMap']
         .map(role=>resources.texture(record.textures[role],{repeat:role!=='MainCubeMap'})));
@@ -145,10 +163,17 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   const disposeKillMarks = await installKillMarks(viewer, scene, root,
     data.decals.filter(record => record.material === 'kill-counter'), resources, onCommit, owner);
   let disposeGlowDecals;
+  let disposeHoleDecals;
   try {
     disposeGlowDecals = await installGlowDecals(viewer, scene, root,
       data.decals.filter(record => record.material === 'glow'), resources, () => getState().elapsed, owner);
-  } catch (error) { disposeKillMarks(); throw error; }
+    disposeHoleDecals = await installHoleDecals(viewer, scene, root,
+      data.decals.filter(record => record.material === 'hole'), resources, owner);
+  } catch (error) {
+    disposeGlowDecals?.();
+    disposeKillMarks();
+    throw error;
+  }
   const eye=new Vector3(),rotation=new Quaternion(),inverse=new Matrix4();
   const paths=entries.map(entry=>entry.transforms);
   const hasMotion=paths.some(path=>path.some(node=>node.motionTrack!==undefined));
@@ -208,5 +233,5 @@ export async function installSupplements(viewer, scene, root, data, resources, g
     updateFlares();
   });
   viewer.dataset.supplements=JSON.stringify({meshes:data.meshes.length,decals:data.decals.length,unsupported:data.unsupported.length});
-  return () => { unsubscribe(); disposeKillMarks(); disposeGlowDecals(); };
+  return () => { unsubscribe(); disposeKillMarks(); disposeGlowDecals(); disposeHoleDecals?.(); };
 }

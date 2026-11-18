@@ -97,6 +97,23 @@ def pack_supplements(record, assets, lighting=None, read_options=shader_options)
                         shader=assets.shader(effect), parameters=p,
                         textures=prepared))
                     continue
+                if (kind in ('additiveAreas', 'transparentAreas')
+                        and shader_name(effect) == 'fxv5.fx'):
+                    roles = ('Layer1Map', 'Layer2Map', 'LayerMaskMap')
+                    required = {'BaseColor', 'FresnelFactors', 'Layer1Transform', 'Layer2Transform',
+                                'Layer1Scroll', 'Layer2Scroll'}
+                    if not set(roles) <= textures.keys() or not required <= p.keys():
+                        unsupported.append(dict(node=node.get('name'), reason='missing-fx-inputs',
+                                                shader='fxv5.fx'))
+                        continue
+                    prepared = prepare_textures(node, area, textures, roles)
+                    if prepared is None: continue
+                    meshes.append(dict(name=node.get('name'), transforms=chain,
+                        material='fx-uv', blend=kind,
+                        geometry=assets.geometry(mesh['geometryResPath'], mesh.get('meshIndex', 0), area['index'], area['count']),
+                        shader=assets.shader(effect), parameters=p,
+                        textures=prepared))
+                    continue
                 if kind != 'additiveAreas' or shader_name(effect) not in ('ubershader.fx', 'ubershadertwosided.fx'):
                     unsupported.append(dict(node=node.get('name'), reason=kind, shader=shader_name(effect)))
                     continue
@@ -138,7 +155,8 @@ def pack_supplements(record, assets, lighting=None, read_options=shader_options)
         kind = shader_name(effect)
         counter = kind == 'decalcounterv5.fx'
         glow = kind == 'decalglowv5.fx'
-        if kind not in ('decalv5.fx', 'decalcounterv5.fx', 'decalglowv5.fx'):
+        hole = kind == 'decalholev5.fx'
+        if kind not in ('decalv5.fx', 'decalcounterv5.fx', 'decalglowv5.fx', 'decalholev5.fx'):
             unsupported.append(dict(node='decal:' + str(index), reason='decal-shader', shader=shader_name(effect)))
             continue
         buffers = decal.get('staticIndexBuffers', [])
@@ -150,10 +168,13 @@ def pack_supplements(record, assets, lighting=None, read_options=shader_options)
         # ships supply only DecalTransparencyMap plus their glow parameters.
         roles = {'DecalTransparencyMap'} if counter else {'DecalAlbedoMap', 'DecalTransparencyMap', 'DecalRoughnessMap', 'DecalFresnelMap'}
         if glow: roles = {'DecalTransparencyMap', 'DecalGlowMap'}
+        if hole: roles = {'DecalTransparencyMap', 'DecalHoleMap', 'DecalInsideCubeMap'}
         p = parameters(effect)
         if glow and not {'DecalTextureScaling', 'DecalTextureOffset', 'DecalIntensityData', 'DecalGlowColor'} <= p.keys():
             unsupported.append(dict(node='decal:' + str(index), reason='missing-glow-parameters', shader=kind))
             continue
+        if hole and 'DecalGlowColor' not in p:
+            p['DecalGlowColor'] = [1.0, 1.0, 1.0, 1.0]
         if counter and not {'DecalTextureScaling', 'DecalIntensityData', 'DecalGlowColor'} <= p.keys():
             unsupported.append(dict(node='decal:' + str(index), reason='missing-counter-parameters', shader=kind))
             continue
@@ -161,22 +182,25 @@ def pack_supplements(record, assets, lighting=None, read_options=shader_options)
             unsupported.append(dict(node='decal:' + str(index), reason='missing-decal-inputs', shader=kind))
             continue
         try:
-            prepared = {role: assets.texture(path) for role, path in textures.items()}
+            prepared = {role: (assets.cube_texture(path) if role == 'DecalInsideCubeMap'
+                               else assets.texture(path)) for role, path in textures.items()}
         except MissingResourceError as exc:
             unsupported.append(dict(node='decal:' + str(index), reason='missing-decal-resource', resource=exc.resource))
             continue
+        transform = {key: decal[key] for key in ('position', 'rotation', 'scaling')} if project else None
+        mesh_index = assets.decal_mesh(record['geometry'], buffers[0] if buffers else None, transform,
+                                       decal.get('meshIndex', 0))
         if project:
-            transform = {key: decal[key] for key in ('position', 'rotation', 'scaling')}
-            geometry = assets.geometry(record['geometry'], 0, indices=buffers[0] if buffers else None,
+            geometry = assets.geometry(record['geometry'], mesh_index, indices=buffers[0] if buffers else None,
                                        projection=transform)
         else:
-            geometry = assets.geometry(record['geometry'], 0, indices=buffers[0])
+            geometry = assets.geometry(record['geometry'], mesh_index, indices=buffers[0])
         layer = dict(position=decal['position'], rotation=decal['rotation'], scaling=decal['scaling'],
                      geometry=geometry, textures=prepared, shader=dict(resource=effect['effectFilePath']))
-        if counter or glow:
-            layer.update(material='glow' if glow else 'kill-counter', parameters=p)
+        if counter or glow or hole:
+            layer.update(material='hole' if hole else ('glow' if glow else 'kill-counter'), parameters=p)
         bone = decal.get('parentBoneIndex', -1)
-        if bone >= 0 or counter or glow:
+        if bone >= 0 or counter or glow or hole:
             layer['parentBoneIndex'] = bone
         decals.append(layer)
     return dict(version=1, meshes=meshes, flares=flares, decals=decals, unsupported=unsupported,

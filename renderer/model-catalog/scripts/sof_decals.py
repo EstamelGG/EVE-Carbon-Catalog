@@ -84,6 +84,7 @@ def decal_inputs(resources, definitions, geometry, dna=''):
                 position = [f32(a + b) for a, b in zip(item.get('position', [0., 0., 0.]), offset)]
                 output.append(dict(position=position, rotation=item.get('rotation', [0., 0., 0., 1.]),
                                    scaling=item.get('scaling', [1., 1., 1.]), parentBoneIndex=item.get('boneIndex', -1),
+                                   meshIndex=item.get('meshIndex', -1),
                                    staticIndexBuffers=lod_index_buffers(item, combined_geometry), decalEffect=effect,
                                    sourceProjection=True))
     return output
