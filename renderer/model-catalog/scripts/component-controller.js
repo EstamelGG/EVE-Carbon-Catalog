@@ -28,6 +28,7 @@ import panelMarkup from './viewer-panels.html';
 import { messages } from '../src/messages.mjs';
 import { bindNativeVisualPanel } from './component-visual.js';
 import { withSubsystems, subsystemItem } from '../src/subsystems.mjs';
+import { resolveViewerIdentity } from '../src/viewer-identity.mjs';
 
 export function createComponentController(root, emit) {
   const $ = (id) => root.getElementById(id);
@@ -40,8 +41,14 @@ export function createComponentController(root, emit) {
     );
   const name = (value) => value?.[language === 'en' ? 'en' : 'zh'] || value?.en || value?.zh || '';
   function renderHeading(item) {
-    const identity = item.viewerIdentity || {},
-      skin = currentSkins.find((entry) => String(entry.id) === String(options.officialSkin));
+    const itemIdentity = options.itemIdentity;
+    const identity = resolveViewerIdentity(
+      item,
+      itemIdentity && (itemIdentity.id == null || String(itemIdentity.id) === String(item.id))
+        ? itemIdentity
+        : {},
+    );
+    const skin = currentSkins.find((entry) => String(entry.id) === String(options.officialSkin));
     renderViewerHeading(root, item, name(item.name) || `ID ${item.id}`, {
       faction: name(identity.faction),
       factionIcon: identity.factionIcon,
@@ -606,17 +613,11 @@ export function createComponentController(root, emit) {
     // Skins stay off the open path: a requested skin costs one small file, and
     // the picker is filled once the model is already usable.
     currentSkins = [];
-    if (options.itemIdentity?.id === item.id && options.itemIdentity.name)
-      item = {
-        ...item,
-        name: options.itemIdentity.name,
-        viewerIdentity: {
-          faction: options.itemIdentity.faction || item.viewerIdentity?.faction,
-          factionIcon:
-            options.itemIdentity.factionIcon || item.viewerIdentity?.factionIcon,
-          type: options.itemIdentity.type || item.viewerIdentity?.type,
-        },
-      };
+    if (
+      options.itemIdentity?.name &&
+      (options.itemIdentity.id == null || String(options.itemIdentity.id) === String(item.id))
+    )
+      item = { ...item, name: options.itemIdentity.name };
     if (options.officialSkin != null && item.skins?.length) {
       const skin = (await Promise.all(item.skins.map(id => source.skin(id).catch(() => null))))
         .find(entry => entry && String(entry.id) === String(options.officialSkin));

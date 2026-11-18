@@ -14,8 +14,17 @@ export function renderViewerHeading(
   root.getElementById('stage-title').textContent = title;
   const factionNode = root.getElementById('stage-faction');
   const factionIconNode = root.getElementById('stage-faction-icon');
-  if (factionIcon) factionIconNode.src = factionIcon;
-  else factionIconNode.removeAttribute('src');
+  factionIconNode.onload = null;
+  factionIconNode.onerror = null;
+  if (factionIcon) {
+    factionIconNode.onload = () => {
+      if (factionIconNode.getAttribute('src') === factionIcon) factionNode.hidden = false;
+    };
+    factionIconNode.onerror = () => {
+      factionNode.hidden = true;
+    };
+    factionIconNode.src = factionIcon;
+  } else factionIconNode.removeAttribute('src');
   if (faction) factionNode.setAttribute('aria-label', faction);
   else factionNode.removeAttribute('aria-label');
   factionNode.hidden = !factionIcon;
