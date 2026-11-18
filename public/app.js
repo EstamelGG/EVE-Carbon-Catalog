@@ -145,7 +145,7 @@ function renderPreview(item, badge = '') {
 // Group 0 exists in the native catalogue; -1 is the virtual all-models entry.
 const catalog = createCatalogState({
   groups: () => groupsByID,
-  races: () => data.races,
+  races: () => data?.races || [],
   language: () => locale,
   name: localizedName,
 });
@@ -159,10 +159,12 @@ function renderURL(item) {
 }
 let data,
   catalogLoader,
-  groupsByID,
+  groupsByID = new Map(),
   racesByID,
   filtered = [],
   currentItem = null;
+let catalogLoaded = false,
+  catalogLoading = true;
 let lastFocus,
   renderTimer,
   suppressedClose = false;
@@ -476,8 +478,21 @@ const cardGrid = createCardGrid({
   prepareImages: prepareRenderImages,
 });
 
+function showCatalogLoading() {
+  cardGrid.clear();
+  $('cards').setAttribute('aria-busy', 'true');
+  $('cards').innerHTML =
+    `<div class="catalog-loading"><span class="loading-ring" aria-hidden="true"></span><span data-i18n="loadingCatalog">${esc(t('loadingCatalog'))}</span></div>`;
+  $('empty-state').hidden = true;
+  $('results-count').textContent = t('loading');
+}
+
 async function render() {
   const revision = ++renderRevision;
+  if (!catalogLoaded) {
+    showCatalogLoading();
+    return;
+  }
   cardGrid.clear();
   const group = catalog.state.group === -1 ? null : groupsByID.get(catalog.state.group),
     cat = group?.category;
@@ -1008,11 +1023,12 @@ for (const select of document.querySelectorAll('[data-language]')) {
     setLocale(select.value);
     renderPublicationDate();
     renderSponsor();
-    if (data) {
+    if (catalogLoaded) {
       buildTree();
       render();
       renderDetail();
-    } else renderCatalogError();
+    } else if (catalogLoading) showCatalogLoading();
+    else renderCatalogError();
   });
 }
 
@@ -1050,6 +1066,7 @@ async function init() {
       viewerConfig.killCount = Number(localStorage.getItem('viewer.killCount')) || 0;
     } catch {}
     const pendingInventory = Promise.allSettled([loadModelIndex(modelIndex)]);
+    showCatalogLoading();
     const identities = await loadJSON('./icons/identities.json?v=factions-r2-v1');
     const affiliation = createAffiliationResolver(identities);
     const applyInventory = inventory => {
@@ -1060,26 +1077,23 @@ async function init() {
       groupsByID = new Map(data.categories.flatMap(c => c.groups.map(g => [g.id, {...g,category:c}])));
       if (currentItem) renderDetailDNA();
     };
-    applyInventory(null);
-    racesByID = new Map(data.races.map((r) => [r.id, r]));
     readRoute();
-    buildTree();
     setupEvents();
+    const [inventory] = await pendingInventory;
+    if (inventory.status === 'rejected') {
+      $('model-index-status').hidden = false;
+      throw inventory.reason;
+    }
+    applyInventory(inventory.value);
+    racesByID = new Map(data.races.map((r) => [r.id, r]));
+    catalogLoaded = true;
+    catalogLoading = false;
+    buildTree();
     await render();
     loadRendererModule().catch(() => {});
-    try {
-      const [inventory] = await pendingInventory;
-      if (inventory.status === 'rejected') throw inventory.reason;
-      applyInventory(inventory.value);
-      buildTree();
-      await render();
-    } catch (error) {
-      $('model-index-status').hidden = false;
-      console.warn('Model index unavailable', error);
-      return;
-    }
     if (catalog.state.item || catalog.state.dna) openItem(catalog.state.item, false, catalog.state.dna);
   } catch (error) {
+    catalogLoading = false;
     renderCatalogError();
     console.error(error);
   }
