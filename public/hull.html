@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>EVE 船体展示</title>
+    <title>EVE Hull Viewer</title>
     <style>
       html,
       body {
@@ -34,10 +34,25 @@
     </main>
     <script type="module">
       import { loadPreviewRenderer } from './preview-renderer.mjs';
+      import { createResourceLocator } from './resource-location.mjs';
       const viewer = document.querySelector('eve-model-viewer');
       const status = document.getElementById('status');
+      let config, titleSequence = 0;
+      async function englishName(id, modelIndex) {
+        const indexResponse = await fetch(modelIndex, { cache: 'no-cache' });
+        if (!indexResponse.ok) return '';
+        const index = await indexResponse.json();
+        if (typeof index.items !== 'string') return '';
+        const itemURL = createResourceLocator(modelIndex)(
+          `${index.items.replace(/\/?$/, '/')}${id}.json`,
+        );
+        const itemResponse = await fetch(itemURL, { cache: 'no-cache' });
+        if (!itemResponse.ok) return '';
+        const name = (await itemResponse.json()).name;
+        return typeof name === 'string' ? name : name?.en || '';
+      }
       try {
-        await loadPreviewRenderer(viewer);
+        config = await loadPreviewRenderer(viewer);
         const style = document.createElement('style');
         style.textContent = `
           .layout,
@@ -58,11 +73,23 @@
         function showHull() {
           const id = location.hash.slice(1);
           const valid = /^[1-9]\d*$/.test(id) && Number.isSafeInteger(Number(id));
+          const sequence = ++titleSequence;
           viewer.hidden = !valid;
           status.hidden = valid;
           status.textContent = valid ? '' : '请在网址末尾填写物品 TypeID，例如 #638。';
-          if (valid) viewer.setAttribute('item-id', id);
-          else { viewer.cancel(); viewer.clear(); }
+          document.title = 'EVE Hull Viewer';
+          if (valid) {
+            document.title = `Hull ${id}`;
+            viewer.setAttribute('item-id', id);
+            englishName(id, config.modelIndex)
+              .then((name) => {
+                if (name && sequence === titleSequence) document.title = name;
+              })
+              .catch(() => {});
+          } else {
+            viewer.cancel();
+            viewer.clear();
+          }
         }
         window.addEventListener('hashchange', showHull);
         showHull();
