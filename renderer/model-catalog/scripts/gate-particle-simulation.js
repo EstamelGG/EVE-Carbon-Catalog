@@ -11,6 +11,7 @@ import {defaultMaxGpuParticles} from './gpu-particle-slots.js';
 
 const mix=(a,b,t)=>a+(b-a)*t;
 const vector=(a=[0,0,0])=>new Vector3(...a.slice(0,3));
+export const isGpuEmitter = emitter => /Gpu(?:Unique|Shared)Emitter$/.test(emitter?.type ?? '');
 class GateParticleEmitter {
   constructor(record) {
     this.record = record;
@@ -31,7 +32,7 @@ class GateParticleEmitter {
   range(a,b){return mix(a,b,this.random());}
   resetEmitter(){this.staticLoaded=false;this.remainder=0;this.emittedCount=0;this.seed=12345;}
   spawn(emitter) {
-    const gpu=emitter.type.endsWith('GpuUniqueEmitter');
+    const gpu=isGpuEmitter(emitter);
     const defaultLife = gpu ? 0 : 1;
     const minLife=emitter.minLifeTime??defaultLife, maxLife=emitter.maxLifeTime??defaultLife;
     const sample=this.random();
@@ -85,7 +86,7 @@ class GateParticleEmitter {
   }
   emitInto(items, capacity, dt, emitter, enabled, burst) {
     if(emitter.type.endsWith('StaticEmitter')){this.emitStatic(items,capacity);return;}
-    const gpu = emitter.type.endsWith('GpuUniqueEmitter');
+    const gpu = isGpuEmitter(emitter);
     const active = emitter.isValid !== false;
     const rate = enabled && active ? Math.max(0, emitter.rate ?? 0) : 0;
     this.remainder += dt * rate;
@@ -109,7 +110,7 @@ class GateParticleEmitter {
 }
 
 export class GateParticlePool extends GateParticleEmitter {
-  constructor(record, capacity=record.emitter?.type?.endsWith('GpuUniqueEmitter') ? defaultMaxGpuParticles : 2048, siblingRecords=[]) {
+  constructor(record, capacity=isGpuEmitter(record.emitter) ? defaultMaxGpuParticles : 2048, siblingRecords=[]) {
     super(record);
     this.capacity = capacity;
     this.otherEmitters = siblingRecords.map(sibling => new GateParticleEmitter(sibling));
@@ -135,7 +136,7 @@ export class GateParticlePool extends GateParticleEmitter {
   }
 
   trigger(emitter,siblings) {
-    if (emitter.type.endsWith('GpuUniqueEmitter')) {
+    if (isGpuEmitter(emitter)) {
       // Tr2GpuSharedEmitter::SpawnParticles with one unit rate modifier has
       // zero carry-in. Tr2GpuParticleSystem::Emit clamps that request.
       const count = Math.min(this.capacity, Math.max(0, Math.trunc(emitter.rate ?? 0)));
@@ -149,7 +150,7 @@ export class GateParticlePool extends GateParticleEmitter {
   }
 
   step(dt, emitter, enabled=true, burst=0, siblings=[], integrate=true) {
-    const gpu=emitter.type.endsWith('GpuUniqueEmitter');
+    const gpu=isGpuEmitter(emitter);
     this.emitInto(this.items, this.capacity, dt, emitter, enabled, burst);
     for (let i = 0; i < siblings.length; i++) {
       const sibling = siblings[i];
@@ -173,7 +174,7 @@ export class GateParticlePool extends GateParticleEmitter {
 export function particleColor(p, emitter, parameters) {
   if(p.color)return p.color;
   const t=p.life>0?Math.min(1,p.age/p.life):0;
-  if(emitter.type.endsWith('GpuUniqueEmitter'))return gpuParticleTint(emitter,t);
+  if(isGpuEmitter(emitter))return gpuParticleTint(emitter,t);
   const white=[1,1,1,1];
   const start=parameters.Color1??white;
   const control=parameters.Color2??start;

@@ -1,6 +1,6 @@
 // Mesh supplements are drawn with their authored transforms and texture inputs.
 /*! Source-authored ubershader mesh effects and projected decals. See third-party-notices.txt. */
-import { Object3D, Mesh, ShaderMaterial, GLSL3, Matrix4, NormalBlending, Quaternion, Vector3, Vector4, Color, SpotLight, PointLight } from 'three';
+import { Object3D, Mesh, InstancedMesh, ShaderMaterial, MeshStandardMaterial, GLSL3, Matrix4, NormalBlending, Quaternion, SRGBColorSpace, Vector3, Vector4, Color, SpotLight, PointLight } from 'three';
 import {setSourceLightRadii} from './source-light-contract.js';
 import {hangarLightIntensity} from './hangar-lighting.js';
 import { installKillMarks } from './kill-marks.js';
@@ -37,6 +37,43 @@ void main(){fragColor=texture(diffuseMap,beamUV*scaling.xy+translation.xy)*color
   }));
   material.userData.eveBloomEmission = true;
   return material;
+}
+
+async function instancedSurfaceMaterial(record, resources) {
+  const load=async role=>{
+    const source=record.textures?.[role];
+    if(!source)return null;
+    const texture=await resources.texture(source,{repeat:true});
+    if(role!=='AlbedoMap'||texture.colorSpace===SRGBColorSpace)return texture;
+    const view=resources.own(texture.clone());
+    view.colorSpace=SRGBColorSpace;
+    view.needsUpdate=true;
+    return view;
+  };
+  const [albedo, normal, glow, roughness]=await Promise.all([
+    load('AlbedoMap'),load('NormalMap'),load('GlowMap'),load('RoughnessMap')]);
+  const material=resources.own(new MeshStandardMaterial({
+    map:albedo,normalMap:normal,metalness:0,roughness:1,roughnessMap:roughness,
+    emissive:glow?0xffffff:0x000000,emissiveMap:glow,
+  }));
+  material.name=record.shader;
+  material.userData.eveBloomEmission=!!glow;
+  return material;
+}
+
+export function populateInstances(object, instances) {
+  const matrix=new Matrix4(),position=new Vector3(),rotation=new Quaternion(),scaling=new Vector3();
+  for(const [index,value] of instances.entries()){
+    const [px,py,pz,qx,qy,qz,qw,sx,sy,sz]=value;
+    position.set(px,py,pz);
+    const length=Math.hypot(qx,qy,qz,qw);
+    rotation.set(qx,qy,qz,qw).normalize();
+    if(!Number.isFinite(length)||length<1e-6)rotation.identity();
+    scaling.set(sx,sy,sz);
+    object.setMatrixAt(index,matrix.compose(position,rotation,scaling));
+  }
+  object.instanceMatrix.needsUpdate=true;
+  object.count=instances.length;
 }
 
 // The two scrolling textures modulate a scalar height field. Its surface gradient
@@ -96,6 +133,17 @@ export async function installSupplements(viewer, scene, root, data, resources, g
   const vector=(p,k,d)=>({value:new Vector4(...(p[k] || d))});
   await Promise.all(data.meshes.map(async record=>{
     const p=record.parameters;
+    if(record.instances?.length){
+      const object=new InstancedMesh(resources.geometry(record.geometry),
+        await instancedSurfaceMaterial(record,resources),record.instances.length);
+      object.name=record.name;
+      object.matrixAutoUpdate=false;
+      object.frustumCulled=false;
+      populateInstances(object,record.instances);
+      root.add(object);
+      entries.push({object,transforms:record.transforms||[]});
+      return;
+    }
     if (record.material==='texture-color' && record.blend==='opaque') {
       const map=await resources.texture(record.textures.DiffuseMap,{repeat:true});
       const object=new Mesh(resources.geometry(record.geometry),opaqueTextureMaterial(resources,p,map));
@@ -129,7 +177,11 @@ export async function installSupplements(viewer, scene, root, data, resources, g
         uniforms['transform'+i]=vector(p,'TextureTransform'+(i+1),[0,0,1,1]);
         uniforms['scroll'+i]=vector(p,'TextureScroll'+(i+1),[0,0,0,0]);
       }
-      const object=new Mesh(resources.geometry(record.geometry),resources.additiveMaterial(cubeVertex,cubeFragment,uniforms));
+      const material=resources.additiveMaterial(cubeVertex,cubeFragment,uniforms);
+      // The source area list decides whether the dome is additive or normal
+      // alpha blended; the shader body is identical in both passes.
+      if(record.blend==='transparentAreas')material.blending=NormalBlending;
+      const object=new Mesh(resources.geometry(record.geometry),material);
       object.name=record.name;object.matrixAutoUpdate=false;object.frustumCulled=false;
       root.add(object);entries.push({object,transforms:record.transforms});
       return;

@@ -4,7 +4,7 @@ import {particleGeometry} from './particle-geometry.js';
 import {gpuAtlasMaterial} from './gpu-particle-batch.js';
 import {defaultMaxGpuParticles} from './gpu-particle-slots.js';
 import {CpuParticleSort} from './cpu-particle-sort.js';
-import { GateParticlePool,particleColor } from './gate-particle-simulation.js';
+import { GateParticlePool,isGpuEmitter,particleColor } from './gate-particle-simulation.js';
 import { declaredGateParameters,gateMaterial } from './gate-materials.js';
 import {gpuParticleSize} from './gpu-particle-curves.js';
 import {GpuEmissionMotion,maxGpuFrameTime} from './gpu-particle-birth.js';
@@ -40,7 +40,7 @@ export function groupParticleSystems(records) {
 }
 
 export async function gateParticles(record,resources,root,siblingRecords=[], shareGpu=false, gpuCapacity=defaultMaxGpuParticles) {
-  const gpu=record.emitter.type.endsWith('GpuUniqueEmitter');
+  const gpu=isGpuEmitter(record.emitter);
   const system = record.systems?.[0];
   // Legacy packs may omit the element declaration. New CPU packs expose POSITION as element type 1.
   const sortByDistance = system?.requiresSorting && (!system.elements || system.elements.some(e => e.elementType === 1));

@@ -51,7 +51,7 @@ export function hullEffects(options,packet,faction,variants){
   const combined=mergeChildren(parts.children);
   return {...packet,...(combined.gate?{gate:combined.gate}:{}),fixtureColors:faction.colors,fixtureVisibility:[...visible],sprites:parts.sprites,attachmentSpotlights:parts.spotlights,
     planeGlow:{...packet.planeGlow,sets:parts.planes},lighting:{...packet.lighting,mode:parts.smart.length?'smart':'none',sets:parts.smart},
-    supplements:{...combined.supplements,decals:parts.decals}};
+    supplements:{...combined.supplements,meshes:[...(options.instancedMeshes||[]),...(combined.supplements.meshes||[])],decals:parts.decals}};
 }
 
 

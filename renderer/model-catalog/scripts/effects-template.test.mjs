@@ -38,3 +38,15 @@ test('merging repeated child resources preserves lines, motion, gate targets and
   assert.deepEqual(animation.evaluate(.5).map(t=>t.value),[1,1]);
   assert.equal(child.gate.meshes[0].material.fxParameters.Gain,0);
 });
+
+test('recipe hulls keep authored instanced meshes outside the rule list',async()=>{
+  const records={library:{version:4,factions:{a:{url:'a'}},races:{r:{url:'race'}}},
+    a:{definition:{},colors:[]},race:{parameters:{},textures:{},lights:{}}};
+  const template={version:4,kind:'sof-hull-effects',hull:'h',library:{url:'library'},
+    fixed:{fixtures:[],booster:{placements:[]},instancedMeshes:[{name:'group',instances:[[0,0,0,0,0,0,1,1,1,1,0]]}]},rules:[]};
+  const result=await assembleEffects(template,'h:a:r',async key=>records[key]);
+  assert.equal(result.instancedMeshes,undefined);
+  assert.equal(result.supplements.meshes.length,1);
+  assert.equal(result.supplements.meshes[0].name,'group');
+  assert.equal(result.supplements.meshes[0].instances.length,1);
+});

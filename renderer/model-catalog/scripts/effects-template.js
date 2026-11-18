@@ -51,8 +51,9 @@ export async function assembleEffects(template,dna,load) {
     draw.effectResource ? placeChild(await load(draw.effectResource.url),draw.placement) : draw))})));
   const insert=commands.get('respathinsert')?.split(';')[0]??faction.insert;
   const variants=insert && insert!=='none'?template.inserts?.[insert]||{}:{};
-  const packet={version:3,...structuredClone(template.fixed),planeGlow:{version:1,unsupported:[]},lighting:{unsupported:[]}};
-  const result=hullEffects({modern:template.modern,rules},packet,faction,variants);
+  const {instancedMeshes=[],...fixed}=structuredClone(template.fixed);
+  const packet={version:3,...fixed,planeGlow:{version:1,unsupported:[]},lighting:{unsupported:[]}};
+  const result=hullEffects({modern:template.modern,rules,instancedMeshes},packet,faction,variants);
   result.booster={...result.booster,...structuredClone(style)};
   return result;
 }
