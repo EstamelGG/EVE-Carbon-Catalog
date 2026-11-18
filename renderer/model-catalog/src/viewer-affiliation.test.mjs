@@ -3,7 +3,7 @@ import test from 'node:test';
 import { factionIconSource, resolveViewerAffiliation } from './viewer-affiliation.mjs';
 import { resolveViewerIdentity } from './viewer-identity.mjs';
 
-test('the published faction ID is the primary affiliation source', () => {
+test('a known SDE faction ID is authoritative', () => {
   const result = resolveViewerAffiliation({
     dna: 'cc2_t1:guristas:caldari',
     factionID: 500003,
@@ -23,24 +23,55 @@ test('an explicit identity faction ID overrides the item record', () => {
   assert.equal(result.faction.en, 'Minmatar Republic');
 });
 
-test('DNA race remains a compatibility fallback without a faction ID', () => {
+test('an NPC corporation ID falls back to the DNA faction token', () => {
+  const result = resolveViewerAffiliation({
+    dna: 'sf2_t1:sanshabase:sansha',
+    factionID: 1000162,
+    raceID: 32,
+  });
+  assert.equal(result.factionID, 500019);
+  assert.equal(result.faction.en, "Sansha's Nation");
+  assert.equal(result.source, 'dna-faction');
+});
+
+test('pirate hulls keep their authored DNA faction when SDE has no faction', () => {
+  assert.equal(
+    resolveViewerAffiliation({ dna: 'cc2_t1:guristas:caldari', raceID: 1 }).factionID,
+    500010,
+  );
+  assert.equal(
+    resolveViewerAffiliation({ dna: 'ab2_t1:bloodraider:amarr', raceID: 4 }).factionID,
+    500012,
+  );
+  assert.equal(
+    resolveViewerAffiliation({ dna: 'gc4_t1:serpentis:gallente', raceID: 8 }).factionID,
+    500020,
+  );
+});
+
+test('SDE raceID is the final fallback when DNA has no faction token', () => {
   assert.equal(
     resolveViewerAffiliation({ dna: 'cc3_t1:caldaribase:caldari', raceID: 1 }).factionID,
     500001,
   );
-  assert.equal(resolveViewerAffiliation({ dna: 'x:angel:angel' }).factionID, 500011);
-  assert.equal(resolveViewerAffiliation({ dna: 'x:sansha:sansha' }).factionID, 500019);
-  assert.equal(resolveViewerAffiliation({ dna: 'x:rogue:rogue' }).factionID, 500025);
+  assert.equal(
+    resolveViewerAffiliation({ dna: 'ab1_t1:amarrbase:amarr', raceID: 4 }).factionID,
+    500003,
+  );
+  assert.equal(
+    resolveViewerAffiliation({ dna: 'ore1_t1:orebase:ore', raceID: 128 }).factionID,
+    500014,
+  );
 });
 
-test('generic and unmapped race tokens become other', () => {
-  for (const dna of [
-    'x:caldaribase:generic',
-    'x:sleeperbase:sleeper',
-    'x:custom:unknown',
-    'not-a-dna',
+test('generic, sleeper and unmapped items become other', () => {
+  for (const item of [
+    { dna: 'x:caldaribase:generic' },
+    { dna: 'x:sleeperbase:sleeper', raceID: 64 },
+    { dna: 'x:custom:unknown' },
+    { dna: 'not-a-dna' },
   ]) {
-    const result = resolveViewerAffiliation({ dna, raceID: 1 });
+    const result = resolveViewerAffiliation(item);
     assert.equal(result.factionID, null);
     assert.deepEqual(result.faction, { id: null, en: 'Other', zh: '其他' });
     assert.equal(result.kind, 'other');
@@ -49,6 +80,7 @@ test('generic and unmapped race tokens become other', () => {
 
 test('faction icons prefer the published faction ID', () => {
   assert.equal(factionIconSource(500010, 17918), 'res/icons/factions/500010.png');
+  assert.equal(factionIconSource(1, 17918), 'res/icons/factions/500001.png');
 });
 
 test('other items fall back to their official type icon', () => {

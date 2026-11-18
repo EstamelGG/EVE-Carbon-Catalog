@@ -1050,7 +1050,7 @@ async function init() {
     } catch {}
     const pendingInventory = Promise.allSettled([loadModelIndex(modelIndex)]);
     const identities = await loadJSON('./icons/identities.json?v=factions-r2-v1');
-    const affiliation = createAffiliationResolver();
+    const affiliation = createAffiliationResolver(identities);
     const applyInventory = inventory => {
       renderFallbacks = inventory?.index?.renderFallbacks || {};
       dnaRecipes = inventory?.recipes || {};

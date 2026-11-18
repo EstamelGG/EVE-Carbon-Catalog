@@ -34,58 +34,52 @@ const factionNames = new Map([
   [500029, { en: 'Deathless Circle', zh: '不死循环' }],
 ]);
 
-// Published item records carry the Builder-resolved faction ID. The third DNA
-// component remains a compatibility fallback for records from older indexes;
-// the DNA faction token and SDE raceID never decide the affiliation.
+const knownFactions = new Set(factionNames.keys());
+
+const factionForDNA = new Map(Object.entries({
+  sanshabase: 500019,
+  bloodraider: 500012,
+  serpentis: 500020,
+  angelbase: 500011,
+  guristas: 500010,
+  mordubase: 500018,
+  soebase: 500016,
+  soctbase: 500017,
+  orebase: 500014,
+  ore_consortium: 500014,
+  triglavianbase: 500026,
+  concordcivilian: 500006,
+  deathless: 500029,
+  roguebase: 500025,
+  drifter: 500024,
+  jovebase: 500005,
+  concordbase: 500006,
+  concordmilitary: 500006,
+  'upwell-edencom': 500027,
+  air: 500028,
+  air_structure: 500028,
+  ammatar: 500007,
+  khanid: 500008,
+  syndicate: 500009,
+  sansha_winter: 500019,
+}));
+
 const factionForRace = new Map([
-  ['caldari', 500001],
-  ['minmatar', 500002],
-  ['amarr', 500003],
-  ['gallente', 500004],
-  ['jove', 500005],
-  ['jovebase', 500005],
-  ['concord', 500006],
-  ['concordbase', 500006],
-  ['concordcivilian', 500006],
-  ['concordmilitary', 500006],
-  ['ammatar', 500007],
-  ['khanid', 500008],
-  ['syndicate', 500009],
-  ['guristas', 500010],
-  ['angel', 500011],
-  ['angelbase', 500011],
-  ['bloodraider', 500012],
-  ['evermore', 500013],
-  ['ore', 500014],
-  ['orebase', 500014],
-  ['ore_consortium', 500014],
-  ['thukker', 500015],
-  ['soe', 500016],
-  ['soebase', 500016],
-  ['soct', 500017],
-  ['soctbase', 500017],
-  ['mordu', 500018],
-  ['mordubase', 500018],
-  ['sansha', 500019],
-  ['sanshabase', 500019],
-  ['sansha_winter', 500019],
-  ['serpentis', 500020],
-  ['drifter', 500024],
-  ['rogue', 500025],
-  ['roguebase', 500025],
-  ['triglavian', 500026],
-  ['triglavianbase', 500026],
-  ['edencom', 500027],
-  ['upwell-edencom', 500027],
-  ['air', 500028],
-  ['air_structure', 500028],
-  ['deathless', 500029],
+  [1, 500001],
+  [2, 500002],
+  [4, 500003],
+  [8, 500004],
+  [16, 500005],
+  [128, 500014],
+  [134, 500025],
+  [135, 500026],
 ]);
 
 const other = Object.freeze({ id: null, en: 'Other', zh: '其他' });
 
 export function factionIconSource(factionID, typeID) {
-  const id = Number(factionID);
+  const raw = Number(factionID);
+  const id = factionForRace.get(raw) ?? raw;
   if (Number.isSafeInteger(id) && id > 0) return `res/icons/factions/${id}.png`;
   const type = Number(typeID);
   if (Number.isSafeInteger(type) && type > 0)
@@ -96,23 +90,49 @@ export function factionIconSource(factionID, typeID) {
 export function resolveViewerAffiliation(item = {}, explicit = {}) {
   const stored = item.viewerIdentity || {};
   const type = explicit.type ?? stored.type ?? '';
+  const explicitID = [
+    explicit.factionID,
+    explicit.faction?.id,
+    stored.factionID,
+    stored.faction?.id,
+    item.factionID,
+  ]
+    .map(Number)
+    .find((id) => knownFactions.has(id));
+  const faction = explicitID ? factionNames.get(explicitID) : null;
+  if (faction) {
+    return {
+      factionID: explicitID,
+      faction: { id: explicitID, ...faction },
+      kind: 'faction',
+      source: 'faction-id',
+      type,
+    };
+  }
   const parts = typeof item.dna === 'string' ? item.dna.split(':') : [];
-  const race = parts.length >= 3 && parts[2] ? parts[2].toLowerCase() : '';
-  const explicitID = Number(explicit.factionID ?? explicit.faction?.id ?? item.factionID);
-  const storedID = Number(stored.factionID ?? stored.faction?.id);
-  const publishedID = Number.isSafeInteger(explicitID) && explicitID > 0
-    ? explicitID
-    : Number.isSafeInteger(storedID) && storedID > 0
-      ? storedID
-      : null;
-  const factionID = publishedID ?? factionForRace.get(race);
-  if (!factionID) return { factionID: null, faction: other, kind: 'other', source: 'other', type };
-  const faction = factionNames.get(factionID);
-  return {
-    factionID,
-    faction: faction ? { id: factionID, ...faction } : { id: factionID, ...other },
-    kind: 'faction',
-    source: publishedID ? 'faction-id' : 'dna-race',
-    type,
-  };
+  const token =
+    parts.length >= 3 && parts.slice(0, 3).every(Boolean) ? parts[1].toLowerCase() : '';
+  const inferredID = factionForDNA.get(token);
+  const inferred = knownFactions.has(inferredID) ? factionNames.get(inferredID) : null;
+  if (inferred) {
+    return {
+      factionID: inferredID,
+      faction: { id: inferredID, ...inferred },
+      kind: 'faction',
+      source: 'dna-faction',
+      type,
+    };
+  }
+  const raceID = factionForRace.get(Number(item.raceID));
+  const raceFaction = knownFactions.has(raceID) ? factionNames.get(raceID) : null;
+  if (raceFaction) {
+    return {
+      factionID: raceID,
+      faction: { id: raceID, ...raceFaction },
+      kind: 'faction',
+      source: 'sde-race',
+      type,
+    };
+  }
+  return { factionID: null, faction: other, kind: 'other', source: 'other', type };
 }
