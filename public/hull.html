@@ -4,12 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>EVE 船体展示</title>
-    <style>body { margin: 0; background: #10171e; color: #e6e8e9; } #status { padding: 16px; }</style>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+      body {
+        background: #10171e;
+        color: #e6e8e9;
+      }
+      main,
+      eve-model-viewer {
+        display: block;
+        width: 100%;
+        height: 100dvh;
+      }
+      #status {
+        padding: 16px;
+      }
+    </style>
   </head>
   <body>
     <main>
       <p id="status" role="status" hidden></p>
-      <eve-model-viewer background="none" hidden></eve-model-viewer>
+      <eve-model-viewer background="auto" hidden></eve-model-viewer>
     </main>
     <script type="module">
       import { loadPreviewRenderer } from './preview-renderer.mjs';
