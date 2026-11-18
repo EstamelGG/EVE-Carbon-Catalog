@@ -26,7 +26,7 @@ const result = await build({
   write: false,
   minify: true,
   format: 'esm',
-  loader: { '.html': 'text', '.css': 'text', '.otf': 'binary', '.png': 'dataurl' },
+  loader: { '.html': 'text', '.css': 'text', '.otf': 'binary' },
   legalComments: 'inline',
   metafile: true,
   plugins: [embeddedModules],
@@ -36,8 +36,8 @@ if (Object.keys(result.metafile.inputs).some((file) => /\.m?js\?v=/.test(file)))
   throw Error('Embed modules must have one identity without cache-version suffixes');
 if (output.length !== 1 || output[0].imports.length)
   throw Error('Embed must be a single self-contained JavaScript file');
-if (!result.outputFiles[0].text.includes('data:image/png;base64,'))
-  throw Error('Identity icons must be embedded in the standalone component');
+if (Object.keys(result.metafile.inputs).some((file) => /identity-icons|\.png$/i.test(file)))
+  throw Error('Faction icons must be loaded from the published resource base');
 await mkdir('dist/vendor/basis', { recursive: true });
 for (const file of result.outputFiles) await writeFile(file.path, file.contents);
 await copyFile('src/third-party-notices.txt', 'dist/third-party-notices.txt');

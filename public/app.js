@@ -10,7 +10,7 @@ import { createCardGrid } from './card-grid.mjs';
 import { createCatalogState } from './catalog-state.mjs?v=dna-route-v1';
 import { joinDirectory } from './build-directory.mjs';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
-import { createAffiliationResolver } from './affiliation.mjs';
+import { createAffiliationResolver, factionIconPath } from './affiliation.mjs';
 import { configureResourceBase, normalizeModelIndex, resourceURL } from './resource-location.mjs';
 import { defaultModelIndex, savedModelIndex, saveModelIndex } from './res-preference.mjs';
 import { loadJSON } from './resource-activity.mjs?v=resource-plan-sky-fade-v1';
@@ -233,8 +233,8 @@ function showModel(item, dna = '') {
       itemIdentity: {
         id: item.id,
         name: item.name,
+        factionID: item.factionID,
         faction,
-        factionIcon: faction?.icon,
         type: group?.name,
       },
       groupNames: Object.fromEntries([...groupsByID].map(([id, group]) => [id, group.name])),
@@ -309,10 +309,9 @@ function raceName(id) {
 }
 
 function raceMark(id) {
-  const url = racesByID.get(id)?.icon;
-  return url
-    ? `<img class="race-icon" src="${esc(url)}" width="20" height="20" alt="" aria-hidden="true">`
-    : '';
+  if (!id) return '';
+  const url = resourceURL(factionIconPath(id));
+  return `<img class="race-icon" src="${esc(url)}" width="20" height="20" alt="" aria-hidden="true">`;
 }
 
 function cardHTML(item, style = '') {
@@ -1042,8 +1041,8 @@ async function init() {
       viewerConfig.killCount = Number(localStorage.getItem('viewer.killCount')) || 0;
     } catch {}
     const pendingInventory = Promise.allSettled([loadModelIndex(modelIndex)]);
-    const identities = await loadJSON('./icons/identities.json?v=races-factions-1');
-    const affiliation = createAffiliationResolver(identities);
+    const identities = await loadJSON('./icons/identities.json?v=factions-r2-v1');
+    const affiliation = createAffiliationResolver();
     const applyInventory = inventory => {
       renderFallbacks = inventory?.index?.renderFallbacks || {};
       dnaRecipes = inventory?.recipes || {};

@@ -51,7 +51,7 @@ export function createComponentController(root, emit) {
     const skin = currentSkins.find((entry) => String(entry.id) === String(options.officialSkin));
     renderViewerHeading(root, item, name(item.name) || `ID ${item.id}`, {
       faction: name(identity.faction),
-      factionIcon: identity.factionIcon,
+      factionIcon: resources?.resolveURL(identity.factionIconPath),
       type: name(identity.type),
       skin: name(skin?.name) || (options.officialSkin ? '' : t('skin')),
     });

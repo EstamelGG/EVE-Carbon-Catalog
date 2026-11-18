@@ -34,9 +34,9 @@ const factionNames = new Map([
   [500029, { en: 'Deathless Circle', zh: '不死循环' }],
 ]);
 
-// The third DNA component is the visual race. Only this token decides the
-// affiliation; the faction token, SDE factionID and raceID are deliberately
-// ignored so every surface uses the same stable rule.
+// Published item records carry the Builder-resolved faction ID. The third DNA
+// component remains a compatibility fallback for records from older indexes;
+// the DNA faction token and SDE raceID never decide the affiliation.
 const factionForRace = new Map([
   ['caldari', 500001],
   ['minmatar', 500002],
@@ -84,19 +84,32 @@ const factionForRace = new Map([
 
 const other = Object.freeze({ id: null, en: 'Other', zh: '其他' });
 
+export function factionIconPath(factionID) {
+  const id = Number(factionID);
+  const name = Number.isSafeInteger(id) && id > 0 ? id : 'default_logo';
+  return `res/icons/factions/${name}.png`;
+}
+
 export function resolveViewerAffiliation(item = {}, explicit = {}) {
   const stored = item.viewerIdentity || {};
   const type = explicit.type ?? stored.type ?? '';
   const parts = typeof item.dna === 'string' ? item.dna.split(':') : [];
   const race = parts.length >= 3 && parts[2] ? parts[2].toLowerCase() : '';
-  const factionID = factionForRace.get(race);
+  const explicitID = Number(explicit.factionID ?? explicit.faction?.id ?? item.factionID);
+  const storedID = Number(stored.factionID ?? stored.faction?.id);
+  const publishedID = Number.isSafeInteger(explicitID) && explicitID > 0
+    ? explicitID
+    : Number.isSafeInteger(storedID) && storedID > 0
+      ? storedID
+      : null;
+  const factionID = publishedID ?? factionForRace.get(race);
+  if (!factionID) return { factionID: null, faction: other, kind: 'other', source: 'other', type };
   const faction = factionNames.get(factionID);
-  if (!faction) return { factionID: null, faction: other, kind: 'other', source: 'other', type };
   return {
     factionID,
-    faction: { id: factionID, ...faction },
+    faction: faction ? { id: factionID, ...faction } : { id: factionID, ...other },
     kind: 'faction',
-    source: 'dna-race',
+    source: publishedID ? 'faction-id' : 'dna-race',
     type,
   };
 }
