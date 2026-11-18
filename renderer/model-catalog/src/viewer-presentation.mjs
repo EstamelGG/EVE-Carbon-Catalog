@@ -1,4 +1,5 @@
 import { postprocessingBudget, occlusionRadius } from './viewer-profile.mjs?v=large-model-v1';
+import { configureOcclusionDenoise } from './occlusion-denoise.mjs';
 
 export function createViewerPostprocessing(viewer, { triangles, nativePreview }) {
   // Preserve HDR precision and multisample the geometry before postprocessing.
@@ -15,6 +16,7 @@ export function createViewerPostprocessing(viewer, { triangles, nativePreview })
   const ao = occlusion.effects[0];
   // Resolve narrow hull seams at full resolution, including large meshes.
   ao.resolution.scale = budget.aoScale;
+  configureOcclusionDenoise(ao);
   ao.luminanceInfluence = 0.15;
   occlusion.setAttribute('blend-mode', 'default');
   // Offscreen HDR buffers need an explicit final tone-map pass; renderer

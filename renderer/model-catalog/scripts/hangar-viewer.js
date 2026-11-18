@@ -37,7 +37,7 @@ export function createHangarViewer(viewer,{item,settings}) {
   // The room is much heavier than the catalog hull's triangle count. Use
   // the established large-model AO/MSAA budget without lowering textures.
   if(!originalBudget)return;
-  viewer.postprocessingBudget=active?{...originalBudget,msaa:Math.min(originalBudget.msaa,2),aoScale:Math.min(originalBudget.aoScale,.5)}:originalBudget;
+  viewer.postprocessingBudget=active?{...originalBudget,msaa:Math.min(originalBudget.msaa,2)}:originalBudget;
   applyPostprocessingSettings(viewer);
  }
  const reflection=viewer.nativeMaterialContext.reflection;

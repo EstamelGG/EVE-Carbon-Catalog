@@ -25,3 +25,8 @@ export function defaultModelIndex(config) {
     return new URL('res/model-index.json', normalizeResBase(config.resourceBaseURL)).href;
   return 'https://carbon-models.vanquisher.online/res/model-index.json';
 }
+
+export function preferredModelIndex(config) {
+  if (config?.localResources) return defaultModelIndex(config);
+  return savedModelIndex() || defaultModelIndex(config);
+}

@@ -12,7 +12,12 @@ import { joinDirectory } from './build-directory.mjs';
 import { hullKey } from './hull-variants.mjs?v=subsystem-assembly-v1';
 import { createAffiliationResolver, factionIconSource } from './affiliation.mjs';
 import { configureResourceBase, normalizeModelIndex, resourceURL } from './resource-location.mjs';
-import { defaultModelIndex, savedModelIndex, saveModelIndex } from './res-preference.mjs';
+import {
+  defaultModelIndex,
+  preferredModelIndex,
+  savedModelIndex,
+  saveModelIndex,
+} from './res-preference.mjs';
 import { loadJSON } from './resource-activity.mjs?v=resource-plan-sky-fade-v1';
 import { prepareRenderImages } from './render-images.mjs?v=equipment-icon-v1';
 const $ = (id) => document.getElementById(id);
@@ -1055,7 +1060,7 @@ async function init() {
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
     resField.placeholder = defaultModelIndex(config);
-    const modelIndex = savedModelIndex() || resField.placeholder;
+    const modelIndex = preferredModelIndex(config);
     configureResourceBase(config.resourceBaseURL, config.backgroundBaseURL, config.backgroundFiles, new URL('./', modelIndex).href);
     viewerConfig = {
       modelIndex,

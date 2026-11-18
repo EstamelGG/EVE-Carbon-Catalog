@@ -53,7 +53,13 @@ export function installHangarFramePipeline(viewer,scene,normalPass,ao,composer,s
     }finally{this.postRender();}
   };
   const originalNormal=normalPass.texture;
-  const modeChanged=()=>{if(!viewer.hangarActive){ao.normalBuffer=originalNormal;visibility.clear();buffers.reset();}};
+  const modeChanged=()=>{
+    if(!viewer.hangarActive){
+      ao.normalBuffer=originalNormal;
+      visibility.clear();
+      buffers.reset();
+    }
+  };
   viewer.addEventListener('hangar-mode-change',modeChanged);
   normalPass.render=function(renderer,input,...rest){
     if(input)size.set(input.width,input.height);else renderer.getDrawingBufferSize(size);

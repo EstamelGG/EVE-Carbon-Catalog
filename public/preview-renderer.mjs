@@ -1,4 +1,4 @@
-import { savedModelIndex, defaultModelIndex } from './res-preference.mjs';
+import { preferredModelIndex } from './res-preference.mjs';
 
 function rendererModuleURL(config) {
   if (config.rendererModuleURL) return config.rendererModuleURL;
@@ -12,7 +12,7 @@ export async function previewConfig() {
     const response = await fetch('./site-config.json', { cache: 'no-cache' });
     if (response.ok) config = await response.json();
   } catch {}
-  return { ...config, modelIndex: savedModelIndex() || defaultModelIndex(config) };
+  return { ...config, modelIndex: preferredModelIndex(config) };
 }
 
 export async function loadPreviewRenderer(viewer, config) {

@@ -2,6 +2,7 @@
   "name": "eve-carbon-catalog",
   "private": true,
   "scripts": {
-    "build": "npm ci --prefix renderer/model-catalog --no-audit --no-fund && npm --prefix renderer/model-catalog run build && python3 scripts/build_site.py"
+    "build": "npm ci --prefix renderer/model-catalog --no-audit --no-fund && npm --prefix renderer/model-catalog run build && python3 scripts/build_site.py",
+    "dev": "node scripts/dev_server.mjs"
   }
 }
