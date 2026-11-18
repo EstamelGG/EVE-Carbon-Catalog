@@ -6,6 +6,20 @@ export function effectInstanceURL(url,dna) {
   return result.href;
 }
 
+function resolveTemplateColors(value,colors) {
+  if(Array.isArray(value))return value.map(item=>resolveTemplateColors(item,colors));
+  if(!value || typeof value!=='object')return value;
+  if(Number.isInteger(value.$colorSlot)){
+    const source=colors?.[value.$colorSlot];
+    if(!Array.isArray(source))return value;
+    const gain=Number.isFinite(value.gain)?value.gain:1;
+    const offset=Array.isArray(value.offset)?value.offset:[];
+    return source.map((channel,index)=>channel*gain+(offset[index]??0));
+  }
+  return Object.fromEntries(Object.entries(value).map(([key,item])=>
+    [key,resolveTemplateColors(item,colors)]));
+}
+
 function placeChild(source,placement) {
   const child=structuredClone(source);
   function visit(node) {
@@ -48,7 +62,7 @@ export async function assembleEffects(template,dna,load) {
     (rule.visible==null || visible.has(rule.visible)) &&
     (rule.legacy==null || !(faction.definition.children||[]).some(c=>(c.groupIndex??-1)===rule.legacy && !c.isVisible))
   ).map(async rule=>({...rule,draws:await Promise.all(rule.draws.map(async draw=>
-    draw.effectResource ? placeChild(await load(draw.effectResource.url),draw.placement) : draw))})));
+    draw.effectResource ? placeChild(resolveTemplateColors(await load(draw.effectResource.url),faction.colors),draw.placement) : draw))})));
   const insert=commands.get('respathinsert')?.split(';')[0]??faction.insert;
   const variants=insert && insert!=='none'?template.inserts?.[insert]||{}:{};
   const {instancedMeshes=[],...fixed}=structuredClone(template.fixed);

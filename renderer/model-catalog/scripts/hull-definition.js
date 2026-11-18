@@ -74,7 +74,10 @@ export function mergeChildren(children){
     for(const key of Object.keys(supplements))supplements[key].push(...child[key]||[]);
     if(child.gate){
       const animation=child.gate.animation;
-      for(const set of animation.sets)for(const track of set.tracks)track.target+=targetBase;
+      for(const set of animation.sets){
+        for(const track of set.tracks)track.target+=targetBase;
+        if(set.recipe)for(const output of set.recipe.outputs)output.target+=targetBase;
+      }
       gate.animation.targets.push(...animation.targets);gate.animation.sets.push(...animation.sets);
       gate.animation.completeStates&&=animation.completeStates!==false;
       for(const key of ['meshes','particles','flares','lines','lights','unsupported'])gate[key].push(...child.gate[key]||[]);

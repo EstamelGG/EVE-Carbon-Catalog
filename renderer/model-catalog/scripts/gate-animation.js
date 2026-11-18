@@ -1,4 +1,5 @@
 import {Quaternion} from 'three';
+import {compileGateRecipe} from './gate-curve-runtime.js';
 // Captured clips sample at frame / fps, clamping the last frame to the clip duration.
 export const gateStates = ['Inactive', 'Active_Unlinked', 'Active_Linked'];
 // Uniform samples use the two bracketing weights, as in Three.js r183 LinearInterpolant.
@@ -45,6 +46,8 @@ export class GateAnimation {
     this.staticNodes=new WeakMap();
     this.parameterBindings=new WeakMap();
     this.selectedLoops=new Map();
+    this.recipes=new Map();
+    for(const set of data.sets)if(set.recipe)this.recipes.set(set,compileGateRecipe(set.recipe));
     this.hullName=null;this.hullSince=0;
   }
   hullAnimations(names) {
@@ -130,7 +133,14 @@ export class GateAnimation {
         time=range.start+(range.loop&&length>0?age%length:Math.min(age,length));
       }
       this.previousSets.add(set);
-      for(const track of set.tracks)this.targets[track.target][track.field]=sampleTrack(track,time,set.fps,set.duration);
+      const recipe=this.recipes.get(set);
+      if(recipe){
+        const values=recipe(time);
+        for(const output of set.recipe.outputs)
+          this.targets[output.target][output.field]=values[output.target]?.[output.field];
+      }else{
+        for(const track of set.tracks)this.targets[track.target][track.field]=sampleTrack(track,time,set.fps,set.duration);
+      }
     }
     return this.targets;
   }

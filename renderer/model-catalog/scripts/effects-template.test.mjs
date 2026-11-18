@@ -24,6 +24,23 @@ test('shared hull resolves faction visibility, race style and independent child 
   await assert.rejects(()=>assembleEffects({...template,version:3},'h:a:r',load),/Unsupported/);
 });
 
+test('shared child effects resolve inherited faction colors per hull',async()=>{
+  const records={library:{version:4,factions:{a:{url:'a'},b:{url:'b'}},races:{r:{url:'race'}}},
+    a:{definition:{visibilityGroupSet:{visibilityGroups:['a']}},colors:[[1,0,0,1]]},
+    b:{definition:{visibilityGroupSet:{visibilityGroups:['b']}},colors:[[0,1,0,1]]},
+    race:{parameters:{},textures:{},lights:{}},
+    child:{gate:{animation:{targets:[{color:{$colorSlot:0}}],completeStates:true,sets:[{name:'loop',
+      duration:1,fps:1,tracks:[{target:0,field:'color',values:[{$colorSlot:0}]}]}]},
+      meshes:[],particles:[],flares:[],lines:[],lights:[],unsupported:[]}}};
+  const template={version:4,kind:'sof-hull-effects',hull:'h',library:{url:'library'},
+    fixed:{fixtures:[],booster:{placements:[]}},rules:['a','b'].map(visible=>({field:'children',visible,
+      draws:[{effectResource:{url:'child'},placement:{translation:[0,0,0]}}]}))};
+  const load=async key=>records[key];
+  const a=await assembleEffects(template,'h:a:r',load),b=await assembleEffects(template,'h:b:r',load);
+  assert.deepEqual(a.gate.animation.targets[0].color,[1,0,0,1]);
+  assert.deepEqual(b.gate.animation.targets[0].color,[0,1,0,1]);
+});
+
 test('merging repeated child resources preserves lines, motion, gate targets and parameter bindings',()=>{
   const child={lines:[{transforms:[{motionTrack:0}]}],motionTracks:[{rotation:{channels:[]}}],gate:{
     animation:{targets:[{value:0}],completeStates:true,sets:[{name:'loop',duration:1,fps:1,

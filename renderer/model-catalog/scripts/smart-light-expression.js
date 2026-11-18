@@ -67,7 +67,8 @@ function parse(source){
       return c=>functions[name](...args.map(fn=>fn(c)));
     }
     if(name==='pi'||name==='pi2')return ()=>Math.fround(3.1415926)*(name==='pi2'?2:1);
-    if(!['time','shipSpeed','shipMaxSpeed','input1'].includes(name))throw new SyntaxError('Unknown light variable '+name);
+    if(!['time','shipSpeed','shipMaxSpeed','input1','input2','input3','input4'].includes(name))
+      throw new SyntaxError('Unknown light variable '+name);
     return c=>c[name];
   }
   function binary(level){
