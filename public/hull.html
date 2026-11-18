@@ -39,7 +39,21 @@
       try {
         await loadPreviewRenderer(viewer);
         const style = document.createElement('style');
-        style.textContent = '.footer, .viewer-heading, .viewer-dimensions { display: none; }';
+        style.textContent = `
+          .layout,
+          #viewer-stage {
+            height: 100% !important;
+            min-height: 100% !important;
+          }
+          #viewer-stage {
+            flex: 1 1 auto !important;
+          }
+          .footer,
+          .viewer-heading,
+          .viewer-dimensions {
+            display: none;
+          }
+        `;
         viewer.shadowRoot.append(style);
         function showHull() {
           const id = location.hash.slice(1);
