@@ -1822,9 +1822,37 @@ dialog::backdrop {
   height: 100%;
 }
 @media (max-width: 680px) {
-  #catalog-viewer {
-    height: calc(100dvh - 100px);
-    min-height: 480px;
+  #model-dialog:not(.viewer-expanded) {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  #model-dialog:not(.viewer-expanded) #catalog-viewer {
+    height: auto;
+    min-height: 0;
+    --viewer-sticky-top: 48px;
+  }
+}
+@media (max-height: 720px) {
+  .dialog-top {
+    position: sticky;
+    top: 0;
+    background: #151a1e;
+    z-index: 5;
+    height: 48px;
+  }
+  #model-dialog:not(.viewer-expanded) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  #model-dialog:not(.viewer-expanded) #catalog-viewer {
+    height: auto;
+    min-height: 0;
+    --viewer-sticky-top: 48px;
   }
 }
 

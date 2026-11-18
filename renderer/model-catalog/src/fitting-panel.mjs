@@ -8,6 +8,30 @@ import {
   hardpointSlotSize,
 } from './hardpoint-locators.mjs';
 
+export function fittingSlotLayout({
+  width,
+  count,
+  size = 48,
+  minGap = 8,
+  maxGap = 24,
+}) {
+  const minColumns = Math.min(4, count);
+  let columns = Math.min(8, count);
+  while (columns > minColumns && (width - columns * size) / (columns - 1) < minGap)
+    columns--;
+  return {
+    columns,
+    gap:
+      columns > 1
+        ? Math.min(maxGap, Math.max(0, (width - columns * size) / (columns - 1)))
+        : 0,
+  };
+}
+
+export function fittingSupported(item) {
+  return !!item?.fitting && item.groupID !== 963 && !item.subsystemParts;
+}
+
 export function createFittingPanel({
   root,
   currentViewer,
@@ -19,15 +43,48 @@ export function createFittingPanel({
   loading,
   readRecent = () => null,
   saveRecent = () => {},
+  onAvailability = () => {},
   loadResource = (url) => loadJSON(resourceURL(url)),
 }) {
   const $ = (id) => root.querySelector('#' + id),
     saved = new Map(),
     equipmentButtons = new Map();
+  const slotsHost = $('fitting-slots'),
+    stickyHost = $('fitting-controls');
+  function layoutSlots() {
+    const count = Number(slotsHost.dataset.count || 0),
+      width = slotsHost.clientWidth;
+    if (!count || !width) return;
+    const styles = getComputedStyle(slotsHost),
+      size = parseFloat(styles.getPropertyValue('--slot-size')) || 48,
+      minGap = parseFloat(styles.getPropertyValue('--slot-min-gap')) || 8,
+      maxGap = parseFloat(styles.getPropertyValue('--slot-max-gap')) || 24;
+    const { columns, gap } = fittingSlotLayout({ width, count, size, minGap, maxGap });
+    slotsHost.dataset.columns = String(columns);
+    slotsHost.style.setProperty('--slot-columns', String(columns));
+    slotsHost.style.setProperty('--slot-gap', `${gap.toFixed(2)}px`);
+  }
+  function syncStickySlotHeight() {
+    const styles = getComputedStyle(slotsHost),
+      height =
+        slotsHost.getBoundingClientRect().height +
+        (parseFloat(styles.marginTop) || 0) +
+        (parseFloat(styles.marginBottom) || 0);
+    stickyHost?.style.setProperty(
+      '--fitting-slots-sticky-height',
+      `${Math.ceil(height)}px`,
+    );
+  }
+  const slotObserver = new ResizeObserver(() => {
+    layoutSlots();
+    requestAnimationFrame(syncStickySlotHeight);
+  });
+  slotObserver.observe(slotsHost);
   let active = false,
     context = null,
     generation = 0,
     pending = null,
+    preloaded = new Map(),
     dataPromise = new Map(),
     data = null,
     operation = null,
@@ -124,20 +181,42 @@ export function createFittingPanel({
   async function mountData(viewer) {
     return loadData(viewerHardpoints(viewer));
   }
+  function preloadKey(item) {
+    return JSON.stringify([item?.fitting, item?.dna]);
+  }
+  function baseData(item) {
+    const key = preloadKey(item);
+    if (!preloaded.has(key))
+      preloaded.set(
+        key,
+        loadFittingData(item, loadResource).catch((error) => {
+          preloaded.delete(key);
+          throw error;
+        }),
+      );
+    return preloaded.get(key);
+  }
   function loadData(hardpoints = []) {
     const item = currentItem(),
+      families = hardpointFamilies(hardpoints),
       key = JSON.stringify([
         item?.fitting,
         item?.dna,
-        hardpointFamilies(hardpoints),
+        families,
       ]);
     if (!dataPromise.has(key))
       dataPromise.set(
         key,
-        loadFittingData(item, loadResource, hardpoints).catch((error) => {
-          dataPromise.delete(key);
-          throw error;
-        }),
+        baseData(item)
+          .then((data) =>
+            data.sourceVersion === 3 && families.length
+              ? loadFittingData(item, loadResource, hardpoints)
+              : data,
+          )
+          .catch((error) => {
+            dataPromise.delete(key);
+            throw error;
+          }),
       );
     return dataPromise.get(key);
   }
@@ -170,9 +249,15 @@ export function createFittingPanel({
     const fitting = context?.viewer.fitting,
       host = $('fitting-slots');
     if (!fitting) {
+      delete host.dataset.count;
+      delete host.dataset.columns;
+      host.style.removeProperty('--slot-columns');
+      host.style.removeProperty('--slot-gap');
       host.replaceChildren();
+      requestAnimationFrame(syncStickySlotHeight);
       return;
     }
+    host.dataset.count = String(fitting.slots.length);
     const s = state(context.item.id);
     host.replaceChildren(
       ...fitting.slots.map((definition) => {
@@ -200,7 +285,7 @@ export function createFittingPanel({
           t('fittingSlot', { slot: number, count }) +
           ' · ' +
           (item ? name(item.name) : t('fittingEmpty')) +
-          (size ? ` · ${size}` : '');
+          (size ? ` · ${size.toUpperCase()}` : '');
         target.setAttribute('aria-label', description);
         target.title = description;
         numberNode.className = 'fitting-slot-number';
@@ -245,6 +330,7 @@ export function createFittingPanel({
         return shell;
       }),
     );
+    requestAnimationFrame(layoutSlots);
   }
   function refreshRows() {
     const fitting = context?.viewer.fitting;
@@ -324,7 +410,7 @@ export function createFittingPanel({
       button.append(equipmentIcon(item), text);
       if (size) button.append(sizeNode);
       button.append(id);
-      button.title = size ? `${name(item.name)} · ${size}` : name(item.name);
+      button.title = size ? `${name(item.name)} · ${size.toUpperCase()}` : name(item.name);
       button.addEventListener('click', () => {
         if (busy()) return;
         const target = s.targeted
@@ -513,11 +599,13 @@ export function createFittingPanel({
     if (!valid(c)) return;
     if (c.viewer.fitting) {
       c.viewer.fitting.setEditing(active);
+      onAvailability(!!c.viewer.fitting.slots.length);
       return;
     }
     if (pending) return pending;
-    if (!c.item.fitting || c.item.subsystemParts || c.item.groupID === 963) {
+    if (!fittingSupported(c.item)) {
       status('fittingUnavailable');
+      onAvailability(false);
       return;
     }
     status('fittingLoadingHardpoints');
@@ -530,6 +618,7 @@ export function createFittingPanel({
         const locators = viewerHardpoints(c.viewer);
         if (data.version !== 2 || !locators?.length) {
           status('fittingUnavailable');
+          onAvailability(false);
           return;
         }
         const settings = await nativeSettings(c.viewer);
@@ -544,7 +633,7 @@ export function createFittingPanel({
           hullCategory: data.hullCategory ?? c.item.categoryID,
         });
         c.viewer.lifecycle.set('fitting', fitting);
-        $('tab-fitting').disabled = !fitting.slots.length;
+        onAvailability(!!fitting.slots.length);
         fitting.setEditing(active);
         const s = state(c.item.id);
         fitting.setDeployed(s.deployed);
@@ -570,6 +659,7 @@ export function createFittingPanel({
       } catch (error) {
         if (valid(c) && token === generation) {
           status('fittingFailed');
+          onAvailability(false);
           console.warn('Fitting metadata failed', error);
         }
       } finally {
@@ -614,6 +704,7 @@ export function createFittingPanel({
     ensure,
     resetResources() {
       dataPromise.clear();
+      preloaded.clear();
       data = null;
       saved.clear();
       lastEquipment = null;
@@ -634,8 +725,9 @@ export function createFittingPanel({
       render();
     },
     // A failed background request must not block startup; opening Fitting retries.
-    preload() {
-      return loadData().then(
+    preload(item = currentItem()) {
+      if (!fittingSupported(item)) return Promise.resolve(false);
+      return baseData(item).then(
         () => true,
         () => false,
       );
@@ -652,7 +744,6 @@ export function createFittingPanel({
       $('fitting-slots').replaceChildren();
       $('fitting-category').replaceChildren();
       status('fittingHint');
-      $('tab-fitting').disabled = true;
       void ensure();
     },
     reset() {
@@ -662,7 +753,6 @@ export function createFittingPanel({
       equipmentButtons.clear();
       context?.viewer.fitting?.setEditing(false);
       context = null;
-      $('tab-fitting').disabled = true;
       $('fitting-controls').hidden = true;
       $('fitting-slots').replaceChildren();
       $('fitting-category').replaceChildren();

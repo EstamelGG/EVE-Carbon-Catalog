@@ -1020,7 +1020,7 @@ function renderCatalogError() {
 async function init() {
   try {
     const config = await siteConfig;
-    rendererModuleURL = config.rendererModuleURL || './eve-model-viewer.js?v=build-index-v1';
+    rendererModuleURL = config.rendererModuleURL || './eve-model-viewer.js?v=tab-prefetch-v1';
     frontendPublishedAt = config.frontendPublishedAt;
     renderPublicationDate();
     resField.placeholder = defaultModelIndex(config);

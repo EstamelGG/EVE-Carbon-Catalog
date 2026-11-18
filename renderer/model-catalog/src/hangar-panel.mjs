@@ -20,6 +20,7 @@ export function createHangarPanel({
   let context = null,
     metadata = null,
     pendingMetadata = null,
+    pendingShips = null,
     ships = null,
     resourceRevision = 0,
     revision = 0;
@@ -69,6 +70,20 @@ export function createHangarPanel({
         throw error;
       });
     return pendingMetadata;
+  }
+  function shipsReady() {
+    const generation = resourceRevision;
+    pendingShips ||= Promise.resolve()
+      .then(() => catalog().ships())
+      .then((value) => {
+        if (generation === resourceRevision) ships = value;
+        return value;
+      })
+      .catch((error) => {
+        if (generation === resourceRevision) pendingShips = null;
+        throw error;
+      });
+    return pendingShips;
   }
   function shipOptions() {
     const s = state(),
@@ -145,7 +160,7 @@ export function createHangarPanel({
     try {
       await metadataReady();
       if (!valid(c) || token !== revision) return;
-      const choices = ships || (await catalog().ships());
+      const choices = ships || (await shipsReady());
       if (!valid(c) || token !== revision) return;
       ships = choices;
       if (choices.length && !choices.some(ship => ship.id === state().ship)) state().ship = choices[0].id;
@@ -203,6 +218,7 @@ export function createHangarPanel({
       metadata = null;
       pendingMetadata = null;
       ships = null;
+      pendingShips = null;
       saved.clear();
     },
     async getOptions() {
@@ -221,24 +237,25 @@ export function createHangarPanel({
       render();
       return apply();
     },
-    get available() { return valid(context) && !!metadata?.hangars?.length; },
+    preload(item = currentItem()) {
+      if (!supportsHangar(item)) return Promise.resolve(false);
+      void shipsReady().catch((error) => console.warn('Hangar ship list failed', error));
+      return metadataReady()
+        .then((value) => !!value?.hangars?.length)
+        .catch((error) => {
+          console.warn('Hangar metadata failed', error);
+          return false;
+        });
+    },
+    get available() { return !!metadata?.hangars?.length; },
     connect(viewer, item, module) {
       revision++;
       context = supportsHangar(item) ? { viewer, item, module } : null;
-      $('tab-hangar').disabled = true;
-      const c = context;
-      if (c) void metadataReady().then(() => {
-        if (valid(c)) {
-          $('tab-hangar').disabled = !metadata?.hangars?.length;
-          render();
-        }
-      }).catch(error => console.warn('Hangar metadata failed', error));
       render();
     },
     reset() {
       revision++;
       context = null;
-      $('tab-hangar').disabled = true;
       $('hangar-room').disabled = true;
     },
   };

@@ -239,7 +239,7 @@ slot[name='overlay'] {
 :host([expanded]) #panel {
   display: none;
 }
-@media (max-width: 680px) {
+@media (max-width: 680px), (max-height: 720px) {
   .layout {
     flex-direction: column;
   }
@@ -260,6 +260,72 @@ slot[name='overlay'] {
   main {
     height: auto;
     min-height: 240px;
+  }
+  :host(:not([expanded])) {
+    height: auto;
+    min-height: 0;
+  }
+  :host(:not([expanded])) .layout {
+    height: auto;
+    min-height: 0;
+  }
+  :host(:not([expanded])) main {
+    flex: none;
+    height: clamp(260px, 46dvh, 420px);
+    min-height: 260px;
+  }
+  :host(:not([expanded])) #panel {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  :host(:not([expanded])) #panel .detail-scroll {
+    flex: none;
+    overflow: visible;
+  }
+  :host(:not([expanded])) #panel.is-fitting-active {
+    max-height: none;
+    overflow: visible;
+  }
+  :host(:not([expanded])) #panel.is-fitting-active .detail-scroll {
+    display: block;
+    overflow: visible;
+  }
+  :host(:not([expanded])) #panel.is-fitting-active #panel-fitting:not([hidden]),
+  :host(:not([expanded])) #panel.is-fitting-active #fitting-controls {
+    display: flex;
+    flex: none;
+  }
+  :host(:not([expanded])) #panel.is-fitting-active .fitting-browser {
+    flex: none;
+  }
+  :host(:not([expanded])) #panel.is-fitting-active .fitting-category {
+    flex: none;
+    max-height: none;
+    overflow: visible;
+  }
+  :host(:not([expanded])) .fitting-slots {
+    position: sticky;
+    top: var(--viewer-sticky-top, 0px);
+    z-index: 12;
+    margin: 0 auto;
+    padding: 4px 0 6px;
+    background: #0d171e;
+    box-shadow: 0 1px 0 #8399a426;
+  }
+  :host(:not([expanded])) .fitting-results {
+    max-height: none;
+    overflow: visible;
+  }
+  :host(:not([expanded])) .fitting-category-chip {
+    position: sticky;
+    top: calc(
+      var(--viewer-sticky-top, 0px) + var(--fitting-slots-sticky-height, 0px)
+    );
+    z-index: 11;
+    background: #0d171e;
   }
 }
 

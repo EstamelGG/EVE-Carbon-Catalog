@@ -1022,6 +1022,10 @@ button.ship-annotation:focus-visible {
   border-bottom: 1px solid #526472;
 }
 .settings-tabs [role='tab'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   flex: 1;
   min-width: 0;
   padding: 6px 3px;
@@ -1031,6 +1035,29 @@ button.ship-annotation:focus-visible {
   color: #8fa1ad;
   font: 11px var(--font-ui);
   cursor: pointer;
+}
+.settings-tabs [role='tab'][aria-busy='true']::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: settings-tab-spin 0.7s linear infinite;
+}
+.settings-tabs [role='tab'][aria-busy='true']:disabled {
+  opacity: 0.72;
+}
+@keyframes settings-tab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-tabs [role='tab'][aria-busy='true']::before {
+    animation-duration: 1.8s;
+  }
 }
 .hangar-field {
   display: grid;
@@ -1173,7 +1200,7 @@ button.ship-annotation:focus-visible {
   color: #d5bd8b;
   font: 9px/16px var(--font-ui);
   text-align: center;
-  text-transform: lowercase;
+  text-transform: uppercase;
 }
 .fitting-equipment-size:empty {
   display: none;
@@ -1211,16 +1238,17 @@ button.ship-annotation:focus-visible {
   padding: 4px 7px;
   font-size: 11px;
 }
-#fitting-controls {
-  container-type: inline-size;
-}
 .fitting-slots {
-  --slot-gap: max(0px, calc((100cqw - 224px) / 3));
+  --slot-columns: 4;
+  --slot-size: 48px;
+  --slot-min-gap: 8px;
+  --slot-max-gap: 24px;
+  --slot-gap: 8px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 56px));
-  justify-content: space-between;
+  grid-template-columns: repeat(var(--slot-columns), minmax(0, var(--slot-size)));
+  justify-content: center;
   width: 100%;
-  column-gap: 0;
+  column-gap: var(--slot-gap);
   row-gap: var(--slot-gap);
   margin: 2px 0 5px;
   padding: 0;
@@ -1305,7 +1333,7 @@ button.ship-annotation:focus-visible {
   color: #d5bd8b;
   font: 8px/12px var(--font-ui);
   text-align: center;
-  text-transform: lowercase;
+  text-transform: uppercase;
 }
 .fitting-slot-size:empty {
   display: none;
@@ -1348,7 +1376,7 @@ button.ship-annotation:focus-visible {
   font-size: 28px;
   font-weight: 600;
   line-height: 1;
-  text-transform: lowercase;
+  text-transform: uppercase;
 }
 .fitting-slot-remove {
   position: absolute;

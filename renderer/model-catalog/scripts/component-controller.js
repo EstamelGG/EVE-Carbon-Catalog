@@ -18,7 +18,7 @@ import * as renderer from './viewer-entry.js';
 import { resetView } from '../src/view-reset.mjs';
 import { configureHullAnimations } from '../src/viewer-presentation.mjs';
 import { equipmentList } from './equipment-list.js';
-import { createFittingPanel } from '../src/fitting-panel.mjs';
+import { createFittingPanel, fittingSupported } from '../src/fitting-panel.mjs';
 import { createHangarPanel, supportsHangar } from '../src/hangar-panel.mjs';
 import { createSubsystemPanel } from './component-subsystems.js';
 import { bindViewerActions } from './component-actions.js';
@@ -116,6 +116,48 @@ export function createComponentController(root, emit) {
     backgroundPending: () => !!runtime.viewer?.backgroundLoading,
     automaticResources: false,
   });
+  const tabStates = {
+    fitting: { id: 'tab-fitting', state: 'idle', available: false },
+    subsystems: { id: 'tab-subsystems', state: 'idle', available: false },
+    hangar: { id: 'tab-hangar', state: 'idle', available: false },
+  };
+  let tabsModelReady = false,
+    tabsItemKey = '';
+  function syncTabs() {
+    for (const entry of Object.values(tabStates)) {
+      const button = $(entry.id),
+        loading = entry.state === 'loading';
+      if (!button) continue;
+      button.disabled = !tabsModelReady || entry.state !== 'ready';
+      button.setAttribute('aria-busy', String(loading));
+    }
+  }
+  function resetTabs() {
+    tabsModelReady = false;
+    tabsItemKey = '';
+    for (const entry of Object.values(tabStates)) {
+      entry.state = 'idle';
+      entry.available = false;
+    }
+    syncTabs();
+  }
+  function startTabLoad(name, supported) {
+    const entry = tabStates[name];
+    if (!supported) {
+      entry.state = 'idle';
+      entry.available = false;
+    } else if (entry.state !== 'loading' && entry.state !== 'ready') {
+      entry.state = 'loading';
+      entry.available = false;
+    }
+    syncTabs();
+  }
+  function settleTab(name, available) {
+    const entry = tabStates[name];
+    entry.state = available ? 'ready' : 'idle';
+    entry.available = !!available;
+    syncTabs();
+  }
   $('viewer-loading').hidden = true;
   const runtime = createViewerRuntime({
     mount: $('mount'),
@@ -140,7 +182,9 @@ export function createComponentController(root, emit) {
       begin(item, kind) {
         lastError = null;
         const retainSubsystemsTab = kind === 'subsystems' && tab === 'subsystems';
-        for (const id of ['tab-fitting', 'tab-subsystems', 'tab-hangar', 'official-skin', 'hull-animation', 'show-damage', 'skybox-select']) $(id).disabled = true;
+        tabsModelReady = false;
+        syncTabs();
+        for (const id of ['official-skin', 'hull-animation', 'show-damage', 'skybox-select']) $(id).disabled = true;
         if (!retainSubsystemsTab) selectTab('visual');
         fittingPanel.reset();
         hangarPanel.reset();
@@ -247,6 +291,7 @@ export function createComponentController(root, emit) {
       },
       failed({ error, retained }) {
         lastError = error || Error('Model loading failed');
+        for (const name of Object.keys(tabStates)) settleTab(name, false);
         if (retained) {
           currentItem = retained;
           loadedItem = `${retained.id}:${retained.subsystemSelection || ''}`;
@@ -327,6 +372,7 @@ export function createComponentController(root, emit) {
     loading,
     nativeSettings,
     loadResource,
+    onAvailability: (available) => settleTab('fitting', available),
     groupName: (id) => name(options.groupNames?.[id]) || String(id),
   });
   const hangarPanel = createHangarPanel({
@@ -376,6 +422,28 @@ export function createComponentController(root, emit) {
     translate: t,
     name,
   });
+  function prepareTabInfo(item, token) {
+    const key = String(item.id);
+    if (tabsItemKey !== key) {
+      tabsItemKey = key;
+      for (const entry of Object.values(tabStates)) {
+        entry.state = 'idle';
+        entry.available = false;
+      }
+    }
+    const fitting = fittingSupported(item),
+      hangar = supportsHangar(item),
+      subsystem = item.groupID === 963;
+    startTabLoad('fitting', fitting);
+    startTabLoad('hangar', hangar);
+    startTabLoad('subsystems', subsystem);
+    if (fitting && tabStates.fitting.state === 'loading')
+      void fittingPanel.preload(item);
+    if (hangar && tabStates.hangar.state === 'loading')
+      void hangarPanel.preload(item).then((available) => {
+        if (token === revision) settleTab('hangar', available);
+      });
+  }
   function selectTab(value) {
     tab = $('tab-' + value)?.disabled ? 'visual' : value;
     for (const button of root.querySelectorAll('[data-settings-tab]')) {
@@ -456,9 +524,8 @@ export function createComponentController(root, emit) {
   function renderPanel() {
     controls.sync();
     $('official-skin').disabled = !runtime.viewer || !currentSkins.length;
-    $('tab-subsystems').disabled = !runtime.viewer || currentItem?.groupID !== 963;
-    $('tab-fitting').disabled = !runtime.viewer?.fitting?.slots?.length;
-    $('tab-hangar').disabled = !hangarPanel.available;
+    tabsModelReady = !!runtime.viewer && !!loadedItem && !!currentItem;
+    syncTabs();
     $('skybox-select').disabled ||= currentItem?.renderKind === 'equipment';
     subsystems.render();
     selectTab(tab);
@@ -509,6 +576,8 @@ export function createComponentController(root, emit) {
     setLanguage(options.language);
     $('status').textContent = '';
     $('retry').hidden = true;
+    tabsModelReady = false;
+    syncTabs();
     loading.begin();
     emit('progress', { phase: 1, total: 5 });
     fittingPanel.setRecent(options.recentEquipment);
@@ -519,6 +588,7 @@ export function createComponentController(root, emit) {
       runtime.close();
       fittingPanel.resetResources();
       hangarPanel.resetResources();
+      resetTabs();
       loadedItem = null;
       fittingData = null;
       resources = nextResources;
@@ -530,6 +600,9 @@ export function createComponentController(root, emit) {
       throw Error('item-id must be a positive integer');
     let item = useDNA ? await source.dna(options.dna) : await source.item(itemId);
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
+    prepareTabInfo(item, token);
+    const subsystemPartsTask =
+      item.groupID === 963 && item.subsystems ? source.subsystemParts() : null;
     // Skins stay off the open path: a requested skin costs one small file, and
     // the picker is filled once the model is already usable.
     currentSkins = [];
@@ -556,7 +629,7 @@ export function createComponentController(root, emit) {
     }
     baseItem = item;
     if (item?.groupID === 963 && item.subsystems) {
-      const parts = await source.subsystemParts();
+      const parts = await subsystemPartsTask;
       if (token !== revision) throw new DOMException('Superseded', 'AbortError');
       baseItem = withSubsystems(item, parts);
       const assemblyBase = new URL(source.resolveURL('index.html'), document.baseURI);
@@ -567,6 +640,8 @@ export function createComponentController(root, emit) {
         })));
       }
     }
+    if (token === revision && item?.groupID === 963)
+      settleTab('subsystems', !!item.subsystemParts?.length);
     if (!item?.model) throw Error(`No model for item ${itemId}`);
     if (token !== revision) throw new DOMException('Superseded', 'AbortError');
     if (panelDNA !== item.dna) panelRender = {};
@@ -716,6 +791,7 @@ export function createComponentController(root, emit) {
       ++revision;
       requests.abort();
       loadedItem = null;
+      resetTabs();
       runtime.cancel();
       fittingPanel.reset();
       hangarPanel.reset();
@@ -725,6 +801,7 @@ export function createComponentController(root, emit) {
       powerRestore=null;
       runtime.close();
       options.hangar = undefined;
+      resetTabs();
       hangarPanel.reset();
       hangarPanel.resetResources();
       controls.sync();
@@ -762,6 +839,7 @@ export function createComponentController(root, emit) {
     },
     showError(error) {
       loading.finish(true);
+      resetTabs();
       $('status').textContent = error.message || t('modelFailed');
       $('retry').hidden = false;
       actions.sync();

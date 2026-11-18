@@ -26,6 +26,7 @@ test('version 5 uses only the hull compatibility shards and generic high slots',
   ]);
   assert.deepEqual(ship.slots,slots.map(slot=>({...slot,hardpoints:{high:2,launcher:2,turret:0}})));
   assert.deepEqual(ship.hardpoints,{high:2,launcher:2,turret:0});
+  assert.equal(ship.sourceVersion,5);
 });
 
 test('launcher-only hull data includes turret equipment', async()=>{

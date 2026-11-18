@@ -14,7 +14,7 @@ async function optionalShard(load, path) {
 }
 
 export async function loadFittingData(item, load, hardpoints = []) {
-  if (!item?.fitting) return {version:2, equipment:[]};
+  if (!item?.fitting) return {version:2, sourceVersion:0, equipment:[]};
   const descriptor = await load(item.fitting);
   if (![3,4,5].includes(descriptor.version) || !Array.isArray(descriptor.equipmentShards))
     throw Error('Per-hull fitting metadata version 3, 4 or 5 is required');
@@ -55,7 +55,7 @@ export async function loadFittingData(item, load, hardpoints = []) {
     ? descriptor.slots.map(definition=>descriptor.hardpoints
       ? {...definition,hardpoints:descriptor.hardpoints}:definition)
     : undefined;
-  return {version:2, equipment:[...equipment.values()], appearance,
+  return {version:2, sourceVersion:descriptor.version, equipment:[...equipment.values()], appearance,
     hullCategory:item.categoryID === 65 ? 65 : descriptor.hullCategory,
     hardpoints:descriptor.hardpoints, slots};
 }
