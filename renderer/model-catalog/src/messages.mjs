@@ -264,6 +264,8 @@ export const messages = {
   fullscreen: ['全屏', 'Fullscreen'],
   exitFullscreen: ['退出全屏', 'Exit fullscreen'],
   fullscreenFailed: ['当前浏览器不支持全屏', 'Fullscreen is unavailable'],
+  hideViewerUI: ['隐藏查看器界面', 'Hide viewer interface'],
+  showViewerUI: ['显示查看器界面', 'Show viewer interface'],
   frigate: ['护卫舰', 'Frigate'],
   skin: ['默认涂装', 'Default skin'],
   officialSkin: ['官方涂装', 'Official SKIN'],

@@ -93,6 +93,45 @@ model-viewer {
   border: 1px solid #34424c;
   background: #17212ac0;
 }
+.ui-visibility-toggle span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ui-visibility-toggle .ui-hidden-icon {
+  display: none;
+}
+:host([ui-hidden]) .ui-visibility-toggle .ui-visible-icon {
+  display: none;
+}
+:host([ui-hidden]) .ui-visibility-toggle .ui-hidden-icon {
+  display: flex;
+}
+:host([ui-hidden]) .viewer-overlay,
+:host([ui-hidden]) #status,
+:host([ui-hidden]) #retry,
+:host([ui-hidden]) .ship-annotations,
+:host([ui-hidden]) ::slotted([slot='overlay']) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+:host([ui-hidden]) main::before {
+  display: none;
+}
+:host([ui-hidden]) #panel {
+  display: none;
+}
+:host([ui-hidden]) .footer {
+  right: 20px;
+  left: auto;
+}
+:host([ui-hidden]) .footer > :not(#ui-visibility) {
+  display: none;
+}
+:host([ui-hidden]) #ui-visibility {
+  background: #0d161fd9;
+  border-color: #6f819066;
+}
 #fps {
   font: 11px monospace;
   min-width: 50px;

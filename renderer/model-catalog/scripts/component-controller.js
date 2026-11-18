@@ -56,6 +56,14 @@ export function createComponentController(root, emit) {
       skin: name(skin?.name) || (options.officialSkin ? '' : t('skin')),
     });
   }
+  function syncUIButton() {
+    const button = $('ui-visibility');
+    const hidden = root.host.hasAttribute('ui-hidden');
+    const label = t(hidden ? 'showViewerUI' : 'hideViewerUI');
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-pressed', String(hidden));
+  }
   function setLanguage(choice) {
     language = componentLocale(choice);
     for (const node of root.querySelectorAll('[data-i18n]'))
@@ -74,6 +82,7 @@ export function createComponentController(root, emit) {
     fittingPanel.render();
     hangarPanel.render();
     subsystems.render();
+    syncUIButton();
   }
   const animationRow = $('hull-animation-row'),
     animationSelect = $('hull-animation');
@@ -784,6 +793,10 @@ export function createComponentController(root, emit) {
     },
     placements,
     setLanguage,
+    setUIHidden(hidden) {
+      root.host.toggleAttribute('ui-hidden', !!hidden);
+      syncUIButton();
+    },
     clearPanelRender(overrides) {
       if (overrides === null) panelRender = {};
       else for (const key of Object.keys(overrides)) delete panelRender[key];

@@ -60,6 +60,15 @@ export class EveModelViewer extends HTMLElement {
   connectedCallback() {
     if (this._controller) return;
     this.shadowRoot.innerHTML = `<style>${nativeStyles}\n${styles}</style><div class="layout"><main id="viewer-stage"><div id="mount"></div><canvas id="snapshot" hidden></canvas>${overlay}<div id="status" role="status"></div><button id="retry" class="reset-button" hidden data-i18n="retry">Retry</button><slot name="overlay"></slot><div class="footer"><div class="hint"><span data-i18n="gestures">Drag to orbit · Scroll to zoom · Right-drag to pan</span><span id="gpu"></span></div><button id="reset" class="icon-button" title="Reset view" aria-label="Reset view" data-i18n-title="reset" data-i18n-aria-label="reset">${icons.reset}</button><button id="fullscreen" class="icon-button" title="Fullscreen" aria-label="Fullscreen" data-i18n-title="fullscreen" data-i18n-aria-label="fullscreen">${icons.expand}</button><span id="fps">— FPS</span></div></main><aside id="panel" class="detail-info" hidden></aside></div>`;
+    const uiVisibility = document.createElement('button');
+    uiVisibility.id = 'ui-visibility';
+    uiVisibility.type = 'button';
+    uiVisibility.className = 'icon-button ui-visibility-toggle';
+    uiVisibility.innerHTML = `<span class="ui-visible-icon">${icons.eyeOff}</span><span class="ui-hidden-icon">${icons.eye}</span>`;
+    this.shadowRoot.querySelector('.footer').append(uiVisibility);
+    uiVisibility.addEventListener('click', () => {
+      this.setUIHidden(!this.hasAttribute('ui-hidden'));
+    });
     this._controller = createComponentController(this.shadowRoot, (type, value) => {
       if (type === 'settings-change') {
         const { render, ...other } = value;
@@ -82,6 +91,15 @@ export class EveModelViewer extends HTMLElement {
     window.addEventListener('languagechange', this._languageChanged);
     this._controller.setLanguage(this._options.language);
     this._schedule();
+  }
+  setUIHidden(hidden, notify = true) {
+    const next = !!hidden;
+    if (this._controller) this._controller.setUIHidden(next);
+    else this.toggleAttribute('ui-hidden', next);
+    if (notify)
+      this.dispatchEvent(
+        new CustomEvent('ui-visibility-change', { detail: { hidden: next } }),
+      );
   }
   disconnectedCallback() {
     this._languageObserver?.disconnect();

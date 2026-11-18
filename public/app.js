@@ -213,6 +213,9 @@ viewer.addEventListener('settings-change', (event) => {
   } catch {}
 });
 viewer.addEventListener('fullscreen-request', () => toggleViewerExpanded());
+viewer.addEventListener('ui-visibility-change', ({ detail }) => {
+  $('model-dialog').classList.toggle('viewer-immersive', !!detail.hidden);
+});
 viewer.addEventListener('orbit-turns-change', ({ detail }) => {
   const counter = $('orbit-turns');
   if (detail.visible) counter.textContent = String(detail.count);
@@ -750,6 +753,7 @@ $('copy-dna').onclick = async () => {
 
 function renderDetail() {
   if (!currentItem) return;
+  renderDetailDNA();
   renderVariants();
   const list = detailList(),
     index = list.findIndex((i) => i.id === currentItem.id);
@@ -796,6 +800,8 @@ function closeDetail(route = true) {
   }
   viewer.removeAttribute('item-id');
   viewer.removeAttribute('dna');
+  viewer.setUIHidden?.(false);
+  $('model-dialog').classList.remove('viewer-immersive');
   viewer.clear?.();
   delete viewerConfig.hangar;
   currentItem = null;
