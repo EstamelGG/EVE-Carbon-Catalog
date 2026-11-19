@@ -24,6 +24,18 @@
 
 默认光照、材质参数和按 DNA 匹配的预设定义在 `renderer/model-catalog/src/render-settings.mjs`。修改后重新构建并发布渲染器即可生效。
 
+## iOS Metal Demo
+
+`ios/EVEHullDemo/` 是一个独立的 SwiftUI + MetalKit 技术 Demo，目标是验证原生 Metal 消费现有 GLB 和 KTX2 资产。它直接读取打包进 App 的原始战列舰、护卫舰、太空舱和航母 GLB，不修改模型格式；材质 JSON 由现有 `assembleDNA` 生成，KTX2 在运行时通过 Basis Universal 转成 Metal 纹理。当前已接入 albedo、normal、roughness、material mask、dirt、paint mask、glow、DDS 反射/漫反射 cubemap IBL、GPU skinning、动画通道、方向光阴影、初版 booster 火焰、sprite/spotlight 光点以及 HDR bloom；尚未接入完整 authored effects、机库、SSAO/DOF/TAA 和完整后期处理。
+
+```sh
+cd ios/EVEHullDemo
+xcodegen generate
+open EVEHullDemo.xcodeproj
+```
+
+详细限制和构建命令见 `ios/EVEHullDemo/README.md`。
+
 高频共享资源按 `renderer/model-catalog/scripts/page-cache-resources.json` 中的 `pathKeywords` 路径关键词规则按需常驻页面缓存。切换物品或关闭模型窗口会保留这些资源的纹理、数据和共享特效几何；刷新或关闭网页后释放。其他资源仍随模型会话清理。匹配忽略路径大小写，仅检查 URL 路径，不匹配域名或查询参数。缓存区分完整 URL、版本查询参数及纹理采样选项，不预加载命中目录；只在首次使用时缓存。
 
 安装 Node.js 22、npm 和 PowerShell 7 后运行 `./build.ps1`。脚本按锁文件安装 Renderer 依赖并构建完整站点。指定模型资源地址的示例为 `./build.ps1 -ResourceBaseURL https://assets.example.org/`。

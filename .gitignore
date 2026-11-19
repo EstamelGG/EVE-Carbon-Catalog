@@ -3,3 +3,9 @@ node_modules/
 .work/
 .deps/
 __pycache__/
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/**/DerivedData/
+ios/**/*.xcresult
+/ios
+renderer/model-catalog/scripts/build-ios-material-samples.mjs
