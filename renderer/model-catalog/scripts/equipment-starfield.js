@@ -4,6 +4,11 @@ import {
   InstancedBufferGeometry, Mesh, OneFactor, ShaderMaterial, ZeroFactor,
 } from 'three';
 
+// Packed scenes can omit values supplied by the EveStarfield constructor.
+const generatorDefaults = {
+  minDist: 100, maxDist: 300, minFlashRate: .5, maxFlashRate: 1, minFlashIntensity: 0,
+};
+
 // CCP Trinity f644516: TriMath.cpp::TriRand/TriRandInt and EveStarfield.cpp::GenerateStar.
 // The generator is reseeded for each field, so a thumbnail never affects another viewer.
 export function starfieldGeometry(settings) {
@@ -14,11 +19,10 @@ export function starfieldGeometry(settings) {
   let seed = ((settings.seed ?? 0) >>> 0) % 714025;
   const step = () => (seed = (((seed << 12) + 150889) >>> 0) % 714025);
   const random = () => f(step() / 714025);
-  for (const key of ['minDist','maxDist','minFlashRate','maxFlashRate','minFlashIntensity'])
-    if (!Number.isFinite(settings[key])) throw Error('Missing starfield parameter: ' + key);
-  const near = settings.minDist, far = settings.maxDist;
-  const low = settings.minFlashRate, high = settings.maxFlashRate;
-  const minimum = settings.minFlashIntensity;
+  const parameters = {...generatorDefaults, ...settings};
+  for (const key of Object.keys(generatorDefaults))
+    if (!Number.isFinite(parameters[key])) throw Error('Invalid starfield parameter: ' + key);
+  const {minDist: near, maxDist: far, minFlashRate: low, maxFlashRate: high, minFlashIntensity: minimum} = parameters;
   for (let i = 0; i < count; i++) {
     const angle = f(f(random() * 2) * f(Math.PI)), z = f(f(random() - .5) * 2);
     const distance = random();
