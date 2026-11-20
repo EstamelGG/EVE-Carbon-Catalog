@@ -1,5 +1,6 @@
 import { postprocessingBudget, occlusionRadius } from './viewer-profile.mjs?v=large-model-v1';
 import { configureOcclusionDenoise } from './occlusion-denoise.mjs';
+import {previewLens} from './space-camera.mjs';
 
 export function createViewerPostprocessing(viewer, { triangles, nativePreview }) {
   // Preserve HDR precision and multisample the geometry before postprocessing.
@@ -112,29 +113,10 @@ export function configureHullAnimations(
 
 export async function initializeViewerCamera(
   viewer,
-  { profile, composer, occlusion, ao, isActive, thumbnail },
+  { profile, composer, occlusion, ao, isActive },
 ) {
   viewer.lifecycle.release('releasePreload');
-  viewer.jumpCameraToGoal();
-  // Native wheel/pinch controls vary FOV when both radius limits agree.
-  // Keep enough clearance even when panning the target onto the hull.
-  const dimensions = viewer.getDimensions();
-  const homeDistance = thumbnail?.distance ?? Math.max(
-    viewer.getCameraOrbit().radius,
-    Math.hypot(dimensions.x, dimensions.y, dimensions.z) * 1.1,
-  );
-  viewer.dataset.homeDistance = String(homeDistance);
-  viewer.setAttribute('min-camera-orbit', `auto auto ${homeDistance}m`);
-  viewer.setAttribute(
-    'max-camera-orbit',
-    `auto ${viewer.equipmentPreview ? '86deg' : 'auto'} ${homeDistance}m`,
-  );
-  viewer.cameraOrbit = `${thumbnail?.azimuth??35}deg ${thumbnail?.polar??70}deg ${homeDistance}m`;
-  if(thumbnail){
-    const center=viewer.getBoundingBoxCenter();
-    viewer.cameraTarget=`${center.x}m ${center.y}m ${center.z}m`;
-    viewer.fieldOfView=thumbnail.fov+'deg';
-  }
+  const homeDistance = Number(viewer.dataset.homeDistance);
   await viewer.updateComplete;
   if (!isActive()) return false;
   viewer.jumpCameraToGoal();
@@ -172,9 +154,9 @@ export function configureViewerControls(
   viewer.setAttribute('loading', 'eager');
   viewer.setAttribute('interaction-prompt', 'none');
   viewer.setAttribute('camera-orbit', '35deg 70deg auto');
-  viewer.setAttribute('field-of-view', '30deg');
-  viewer.setAttribute('min-field-of-view', '8deg');
-  viewer.setAttribute('max-field-of-view', '60deg');
+  viewer.setAttribute('field-of-view', previewLens + 'deg');
+  viewer.setAttribute('min-field-of-view', '0.01deg');
+  viewer.setAttribute('max-field-of-view', '179deg');
   viewer.setAttribute('environment-image', 'neutral');
   viewer.setAttribute('tone-mapping', 'neutral');
   viewer.setAttribute('exposure', exposure);

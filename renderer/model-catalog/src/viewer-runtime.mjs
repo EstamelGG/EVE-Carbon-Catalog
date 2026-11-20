@@ -259,6 +259,7 @@ export function createViewerRuntime({mount, transition, loadRenderer, view, reso
     if (!loaded || !operation.isCurrent()) return false;
     context.errorKey = 'errorInit';
     view.progress(3, 'preparingCamera');
+    api.configureSpaceCamera(viewer, item, context.thumbnail);
     if (!await initializeViewerCamera(viewer, {...context, profile, isActive:() => controller.viewer === viewer})) return false;
     if (!operation.isCurrent() || !await install(viewer, item, context)) return false;
     return present(viewer, item, context, 'model');
