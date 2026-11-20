@@ -5,6 +5,7 @@ export {equipmentStarfield} from './equipment-starfield.js';
 import {BackSide, BoxGeometry, Mesh, ShaderMaterial, Vector3, Vector2, FramebufferTexture, NoBlending, NoColorSpace, SRGBColorSpace, UnsignedByteType} from 'three';
 import {gateMaterial} from './gate-materials.js';
 import {gateLayerFragment} from './layered-mesh-material.js';
+import {distantSkyProjection} from './skybox-orientation.js';
 
 // previewTurrets.red / background.fx Tint, retained for older published assets
 // which stored only NebulaMap. StarParameters.w is zero in this scene.
@@ -15,7 +16,8 @@ export function equipmentBackground(texture, parameters = {}, intensity = 1) {
     side:BackSide, depthTest:false, depthWrite:false,
     uniforms:{skyMap:{value:texture}, tint:{value:new Vector3(...(parameters.Tint || equipmentBackgroundTint).slice(0,3))}, intensity:{value:intensity}},
     vertexShader:`varying vec3 direction;
-      void main(){direction=position;vec4 p=projectionMatrix*vec4(mat3(viewMatrix)*position,1.0);gl_Position=p.xyww;}`,
+      ${distantSkyProjection}
+      void main(){direction=position;gl_Position=projectDistantSky(mat3(viewMatrix)*position);}`,
     fragmentShader:`uniform samplerCube skyMap;uniform vec3 tint;uniform float intensity;varying vec3 direction;
       void main(){gl_FragColor=vec4(textureCube(skyMap,vec3(-direction.x,direction.yz)).rgb*tint*intensity,1.0);
       #include <tonemapping_fragment>

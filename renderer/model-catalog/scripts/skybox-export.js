@@ -50,7 +50,7 @@ export function exportSkybox({entry,texture,stars}) {
  float phi=(uvSky.x-.5)*6.28318530718,theta=(1.-uvSky.y)*3.14159265359;
  // Inverse of Three equirectUv: longitude = atan(z, x).
  vec3 d=vec3(sin(theta)*cos(phi),cos(theta),sin(theta)*sin(phi));
- d=rotation*vec3(-d.x,d.yz);
+ d=rotation*d;
  vec3 color=textureCube(skyMap,d).rgb;
  if(hasStars) color+=sampleStarOverlay(starMap,d);
  gl_FragColor=vec4(color,1.);

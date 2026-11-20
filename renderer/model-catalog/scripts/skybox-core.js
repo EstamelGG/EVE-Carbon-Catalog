@@ -1,4 +1,4 @@
-import {distantSkyProjection, fileCubeRotation} from './skybox-orientation.js';
+import {catalogSkyProjection, fileCubeRotation} from './skybox-orientation.js';
 import {starOverlayGLSL} from './skybox-stars.js';
 import { selectedBackground } from './resource-plan.js';
 import { resourceURL } from '../src/resource-location.mjs';
@@ -75,8 +75,6 @@ export function createSkyboxState(resources) {
       );
     return pending.get(key);
   };
-  // Trinity builds rays from the projection; our backdrop limits lens zoom.
-  // https://github.com/carbonengine/trinity/blob/f644516ae4f921f6f3a3e58dc5d19107781571ec/trinity/Tr2RenderUtils.cpp#L53-L85
   const material = new ShaderMaterial({
     side: BackSide,
     depthTest: false,
@@ -96,16 +94,16 @@ export function createSkyboxState(resources) {
       previousRotation: { value: new Matrix3() },
     },
     vertexShader: `varying vec3 direction; uniform mat3 skyOrientation;
-      ${distantSkyProjection}
+      ${catalogSkyProjection}
       void main() { direction = position;
-        gl_Position = projectDistantSky(mat3(viewMatrix) * skyOrientation * position); }`,
+        gl_Position = projectCatalogSky(mat3(viewMatrix) * skyOrientation * position); }`,
     fragmentShader: `uniform samplerCube skyMap; uniform sampler2D starMap; uniform bool hasStars;
       uniform mat3 skyRotation; uniform float skyExposure; varying vec3 direction;
       uniform samplerCube previousMap; uniform sampler2D previousStars;
       uniform bool hasPrevious, previousHasStars; uniform mat3 previousRotation; uniform float skyMix;
       ${starOverlayGLSL}
       vec3 sampleSky(samplerCube cube, sampler2D starsMap, bool starsEnabled, mat3 rotation) {
-        vec3 ray = rotation * vec3(-direction.x, direction.yz);
+        vec3 ray = rotation * direction;
         vec3 color = textureCube(cube, ray).rgb;
         if (starsEnabled) color += sampleStarOverlay(starsMap, ray);
         return color;
