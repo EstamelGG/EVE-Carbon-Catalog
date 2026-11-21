@@ -91,5 +91,5 @@ export function installHullOcclusion(composer) {
 export {exportSkybox} from './skybox-export.js';
 
 
-export {captureFrame, waitForFrame, captureView, restoreView, configureSpaceCamera} from './viewer-camera.js';
+export {captureFrame, waitForFrame, captureView, restoreView} from './viewer-camera.js';
 export {watchViewerFPS, viewerGPU, watchViewerPerformance} from './viewer-metrics.js';

@@ -1,6 +1,5 @@
 import {locatorFire} from './locator-fire.js';
 import {frameIcon, renderIcon} from './icon-camera.js';
-import {wheelUnits} from '../src/space-camera.mjs';
 import {selectIconScene} from './icon-scene.js';
 import {loadFittingData} from '../src/fitting-data.mjs';
 import { diagnosticsContext } from './component-diagnostics.js';
@@ -241,10 +240,10 @@ export function createComponentController(root, emit) {
             event.stopImmediatePropagation();
             forwarding = true;
             try {
-              const steps = viewer.hangarActive
-                ? event.deltaY * (event.deltaMode === 1 ? 18 : 1) / 30
-                : -wheelUnits(event) / 120;
-              viewer.zoom((options.invertWheel ? -1 : 1) * steps);
+              viewer.zoom(
+                ((options.invertWheel ? -1 : 1) * event.deltaY * (event.deltaMode === 1 ? 18 : 1)) /
+                  30,
+              );
             } finally {
               forwarding = false;
             }
@@ -717,8 +716,7 @@ export function createComponentController(root, emit) {
       const {orbit,target,fov}=restored;
       viewer.cameraTarget=`${target.x}m ${target.y}m ${target.z}m`;
       viewer.cameraOrbit=`${orbit.theta}rad ${orbit.phi}rad ${orbit.radius}m`;
-      if (viewer.hangarActive) viewer.fieldOfView=`${fov}deg`;
-      viewer.jumpCameraToGoal();
+      viewer.fieldOfView=`${fov}deg`;viewer.jumpCameraToGoal();
     }
     loading.finish(true);
     runtime.applyDisplaySettings(settings.display);

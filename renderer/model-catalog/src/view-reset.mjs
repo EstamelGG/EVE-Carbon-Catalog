@@ -11,7 +11,7 @@ export function cancelViewReset(viewer) {
 
 export function resetView(viewer, {
   reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false,
-  target = viewer.spaceCamera?.target ?? 'auto auto auto', preserveOrbit = false, interruptFocus = false,
+  target = 'auto auto auto', preserveOrbit = false, interruptFocus = false,
 } = {}) {
   cancelViewReset(viewer);
   const autoRotate = viewer.autoRotate;
@@ -43,10 +43,8 @@ export function resetView(viewer, {
 
   if (!preserveOrbit) {
     restoreFocusLimits(viewer);
-    if (viewer.spaceCamera) {
-      viewer.cameraOrbit = viewer.spaceCamera.orbit;
-      viewer.fieldOfView = viewer.spaceCamera.lens + 'deg';
-    }
+    viewer.cameraOrbit = `35deg 70deg ${viewer.dataset.homeDistance ? viewer.dataset.homeDistance + 'm' : 'auto'}`;
+    viewer.fieldOfView = '30deg';
   }
   viewer.cameraTarget = target;
   if (reducedMotion) {

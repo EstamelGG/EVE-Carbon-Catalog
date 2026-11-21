@@ -1,4 +1,4 @@
-import {distantSkyProjection, fileCubeRotation} from './skybox-orientation.js';
+import {catalogSkyProjection, fileCubeRotation} from './skybox-orientation.js';
 import {starOverlayGLSL} from './skybox-stars.js';
 import { selectedBackground } from './resource-plan.js';
 import { resourceURL } from '../src/resource-location.mjs';
@@ -94,9 +94,9 @@ export function createSkyboxState(resources) {
       previousRotation: { value: new Matrix3() },
     },
     vertexShader: `varying vec3 direction; uniform mat3 skyOrientation;
-      ${distantSkyProjection}
+      ${catalogSkyProjection}
       void main() { direction = position;
-        gl_Position = projectDistantSky(mat3(viewMatrix) * skyOrientation * position); }`,
+        gl_Position = projectCatalogSky(mat3(viewMatrix) * skyOrientation * position); }`,
     fragmentShader: `uniform samplerCube skyMap; uniform sampler2D starMap; uniform bool hasStars;
       uniform mat3 skyRotation; uniform float skyExposure; varying vec3 direction;
       uniform samplerCube previousMap; uniform sampler2D previousStars;

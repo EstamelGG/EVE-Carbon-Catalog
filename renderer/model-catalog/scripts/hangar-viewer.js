@@ -268,7 +268,7 @@ export function createHangarViewer(viewer,{item,settings}) {
   ++revision;cancelViewReset(viewer);applyEnvironment(null);
   restoreFocusLimits(viewer);hangarCamera.restore();
   disposeAsset(current?.ship);disposeAsset(current?.room);current=null;
-  applyMode();controls.updateNearFar(original.near,original.far);resetView(viewer);delete viewer.dataset.hangarDock;stage('idle');
+  controls.updateNearFar(original.near,original.far);applyMode();resetView(viewer);delete viewer.dataset.hangarDock;stage('idle');
  }
  return {setRoom,setShip,reset,setMode(value){if(disposed)return;mode=value;applyMode();reset();},
   setDockRange(name){return current?.room.effects?.sceneEffects?.setDockRange(name)??false;},
