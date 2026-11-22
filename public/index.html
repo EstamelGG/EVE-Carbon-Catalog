@@ -14,8 +14,8 @@
     <link rel="icon" type="image/svg+xml" sizes="any" href="./mark.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=2" />
     <link rel="stylesheet" href="./github-assets/fonts/fonts.css?v=metrics-v3" />
-    <link rel="stylesheet" href="./styles.css?v=viewer-immersive-v1" />
-    <script type="module" src="./app.js?v=viewer-immersive-v1"></script>
+    <link rel="stylesheet" href="./styles.css?v=copyright-dialog-v2" />
+    <script type="module" src="./app.js?v=copyright-dialog-v2"></script>
   </head>
   <body>
     <svg class="icon-defs" aria-hidden="true">
@@ -78,7 +78,7 @@
           ><svg aria-hidden="true"><use href="#i-cube" /></svg
           ><span data-i18n="viewerGuide">Component guide</span></a
         >
-        <button id="open-about" class="header-button" aria-haspopup="dialog">
+        <button id="open-about" class="header-button" type="button" aria-haspopup="dialog" aria-controls="about-dialog">
           <svg aria-hidden="true"><use href="#i-info" /></svg><span data-i18n="about">About</span>
         </button>
         <a
@@ -149,11 +149,13 @@
           </dd>
         </dl>
         <section class="about-section">
-          <h3 data-i18n="copyrightTitle">Copyright and assets</h3>
-          <p data-i18n="copyrightBody">
-            EVE Online and its game models, textures, renders, item icons and faction icons belong
-            to CCP Games. This is a fan-made website, not affiliated with or endorsed by CCP Games.
-          </p>
+          <h3 id="copyright-heading" lang="en" tabindex="-1">Copyright &amp; Disclaimer</h3>
+          <div lang="en">
+            <p>EVE Online and its associated names, logos, artwork, 3D models, textures, and other game assets are the intellectual property of their respective rights holders, including Fenris Creations (formerly CCP Games).</p>
+            <p>This material is used with limited permission of CCP Games. No official affiliation or endorsement by CCP Games is stated or implied.</p>
+            <p>EVE Model Viewer 2 is an independent, unofficial fan project and is not affiliated with, endorsed by, or sponsored by Fenris Creations.</p>
+            <p>For more information, please refer to the <a href="https://support.eveonline.com/hc/en-us/articles/8563917741084-EVE-Online-Content-Creation-Terms-of-Use">EVE Online Content Creation Terms of Use</a>.</p>
+          </div>
           <p class="about-muted" data-i18n="iconCredits">
             Item renders and icons come from the official EVE image service; faction icons come from
             game assets. Interface controls use inline SVG icons.
@@ -268,8 +270,7 @@
           </div>
         </div>
         <footer class="page-footer">
-          <span>{{appName}} <span class="app-version">{{appVersion}}</span></span>
-          <span data-i18n="credit">Assets © CCP Games · Unofficial project</span>
+          <button id="open-copyright" type="button" lang="en" aria-haspopup="dialog" aria-controls="about-dialog">Copyright &amp; Disclaimer</button>
         </footer>
       </main>
     </div>

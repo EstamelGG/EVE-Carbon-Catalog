@@ -121,10 +121,15 @@ $('copy-sponsor-name').addEventListener('click', async () => {
   renderSponsor();
 });
 // About stays usable even when the remote catalog cannot be loaded.
-$('open-about').addEventListener('click', () => {
+function openAbout() {
   renderPublicationDate();
   $('about-dialog').showModal();
   loadSponsor();
+}
+$('open-about').addEventListener('click', openAbout);
+$('open-copyright').addEventListener('click', () => {
+  openAbout();
+  $('copyright-heading').focus();
 });
 $('close-about').addEventListener('click', () => $('about-dialog').close());
 $('about-dialog').addEventListener('click', (event) => {
